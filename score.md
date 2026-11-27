@@ -29,9 +29,23 @@ _No certified implementation increments yet._
 - Conformance: decoder acceptance + observable behaviour checks from `spec/`.
 - Full methodology and machine-readable results: `cert/`.
 
+## Real-video reference anchors (not a certification claim)
+
+Measured on the user-provided corpus, published in `benchmarks.md` / `README.md`:
+
+| Case | Reference throughput |
+| --- | ---: |
+| 640×360, 120 f, `medium`, CRF 23, 6 threads (synthetic `testsrc2`) | 609.14 fps |
+| 1920×1080, 8 f, `ultrafast`, CRF 23, 6 threads (Fortnite I420) | 126.98 fps |
+| 1920×1080, 8 f, `medium`, CRF 23, 6 threads | 40.61 fps |
+| 1920×1080, 8 f, `veryslow`, CRF 23, 6 threads | 13.84 fps |
+
+The reproducible A/B runner is `cert/real_bench.py` (clips pinned in `cert/real_clips.json`); its reference-only results are under `cert/results/real/`. **The candidate remains NOT CERTIFIED until ffmpeg decodes its output cleanly on every case.** A missing or invalid `build/x264pp.exe` is reported honestly and produces only the reference-only table — no speedup is inferred or fabricated.
+
 ## Progress log
 
 | Date | Event |
 | --- | --- |
 | 2026-11-27 | Repository created (initially as a fork — discarded) |
 | 2026-11-27 | Reset to clean-room process; reference source purged; only black-box oracle retained |
+| 2026-11-27 | Added reproducible real-video A/B harness; candidate absent → reference-only table, NOT CERTIFIED |
