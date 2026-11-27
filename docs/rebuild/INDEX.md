@@ -22,8 +22,8 @@ One document per source file, same tree, `.md` appended. Regenerate with `pwsh d
 | `common/aarch64/deblock-a-sve.S` | [common/aarch64/deblock-a-sve.S.md](common/aarch64/deblock-a-sve.S.md) | thin | 57 |
 | `common/aarch64/mc.h` | common/aarch64/mc.h.md | pending | 0 |
 | `common/aarch64/mc-a.S` | common/aarch64/mc-a.S.md | pending | 0 |
-| `common/aarch64/mc-a-common.S` | common/aarch64/mc-a-common.S.md | pending | 0 |
-| `common/aarch64/mc-a-sve.S` | common/aarch64/mc-a-sve.S.md | pending | 0 |
+| `common/aarch64/mc-a-common.S` | [common/aarch64/mc-a-common.S.md](common/aarch64/mc-a-common.S.md) | thin | 46 |
+| `common/aarch64/mc-a-sve.S` | [common/aarch64/mc-a-sve.S.md](common/aarch64/mc-a-sve.S.md) | done | 64 |
 | `common/aarch64/mc-c.c` | common/aarch64/mc-c.c.md | pending | 0 |
 | `common/aarch64/pixel.h` | common/aarch64/pixel.h.md | pending | 0 |
 | `common/aarch64/pixel-a.S` | common/aarch64/pixel-a.S.md | pending | 0 |
@@ -98,9 +98,9 @@ One document per source file, same tree, `.md` appended. Regenerate with `pwsh d
 | `common/mips/mc-c.c` | common/mips/mc-c.c.md | pending | 0 |
 | `common/mips/pixel.h` | [common/mips/pixel.h.md](common/mips/pixel.h.md) | thin | 40 |
 | `common/mips/pixel-c.c` | common/mips/pixel-c.c.md | pending | 0 |
-| `common/mips/predict.h` | common/mips/predict.h.md | pending | 0 |
+| `common/mips/predict.h` | [common/mips/predict.h.md](common/mips/predict.h.md) | thin | 46 |
 | `common/mips/predict-c.c` | common/mips/predict-c.c.md | pending | 0 |
-| `common/mips/quant.h` | common/mips/quant.h.md | pending | 0 |
+| `common/mips/quant.h` | [common/mips/quant.h.md](common/mips/quant.h.md) | thin | 43 |
 | `common/mips/quant-c.c` | common/mips/quant-c.c.md | pending | 0 |
 | `common/mvpred.c` | [common/mvpred.c.md](common/mvpred.c.md) | done | 186 |
 | `common/opencl.c` | common/opencl.c.md | pending | 0 |
@@ -115,7 +115,7 @@ One document per source file, same tree, `.md` appended. Regenerate with `pwsh d
 | `common/osdep.c` | [common/osdep.c.md](common/osdep.c.md) | thin | 43 |
 | `common/osdep.h` | [common/osdep.h.md](common/osdep.h.md) | thin | 47 |
 | `common/pixel.c` | [common/pixel.c.md](common/pixel.c.md) | done | 197 |
-| `common/pixel.h` | common/pixel.h.md | pending | 0 |
+| `common/pixel.h` | [common/pixel.h.md](common/pixel.h.md) | done | 116 |
 | `common/ppc/dct.c` | common/ppc/dct.c.md | pending | 0 |
 | `common/ppc/dct.h` | common/ppc/dct.h.md | pending | 0 |
 | `common/ppc/deblock.c` | common/ppc/deblock.c.md | pending | 0 |
@@ -133,14 +133,14 @@ One document per source file, same tree, `.md` appended. Regenerate with `pwsh d
 | `common/predict.h` | [common/predict.h.md](common/predict.h.md) | done | 117 |
 | `common/quant.c` | [common/quant.c.md](common/quant.c.md) | done | 238 |
 | `common/quant.h` | [common/quant.h.md](common/quant.h.md) | done | 120 |
-| `common/rectangle.c` | common/rectangle.c.md | pending | 0 |
-| `common/rectangle.h` | common/rectangle.h.md | pending | 0 |
+| `common/rectangle.c` | [common/rectangle.c.md](common/rectangle.c.md) | thin | 39 |
+| `common/rectangle.h` | [common/rectangle.h.md](common/rectangle.h.md) | thin | 53 |
 | `common/set.c` | [common/set.c.md](common/set.c.md) | thin | 51 |
 | `common/set.h` | [common/set.h.md](common/set.h.md) | thin | 54 |
 | `common/tables.c` | common/tables.c.md | pending | 0 |
 | `common/tables.h` | common/tables.h.md | pending | 0 |
 | `common/threadpool.c` | common/threadpool.c.md | pending | 0 |
-| `common/threadpool.h` | common/threadpool.h.md | pending | 0 |
+| `common/threadpool.h` | [common/threadpool.h.md](common/threadpool.h.md) | thin | 50 |
 | `common/vlc.c` | common/vlc.c.md | pending | 0 |
 | `common/win32thread.c` | common/win32thread.c.md | pending | 0 |
 | `common/win32thread.h` | common/win32thread.h.md | pending | 0 |
@@ -150,21 +150,21 @@ One document per source file, same tree, `.md` appended. Regenerate with `pwsh d
 | `common/x86/const-a.asm` | [common/x86/const-a.asm.md](common/x86/const-a.asm.md) | done | 74 |
 | `common/x86/cpu-a.asm` | [common/x86/cpu-a.asm.md](common/x86/cpu-a.asm.md) | done | 83 |
 | `common/x86/dct.h` | [common/x86/dct.h.md](common/x86/dct.h.md) | done | 194 |
-| `common/x86/dct-32.asm` | [common/x86/dct-32.asm.md](common/x86/dct-32.asm.md) | done | 177 |
+| `common/x86/dct-32.asm` | [common/x86/dct-32.asm.md](common/x86/dct-32.asm.md) | done | 225 |
 | `common/x86/dct-64.asm` | [common/x86/dct-64.asm.md](common/x86/dct-64.asm.md) | done | 229 |
 | `common/x86/dct-a.asm` | [common/x86/dct-a.asm.md](common/x86/dct-a.asm.md) | done | 271 |
 | `common/x86/deblock.h` | [common/x86/deblock.h.md](common/x86/deblock.h.md) | done | 143 |
 | `common/x86/deblock-a.asm` | [common/x86/deblock-a.asm.md](common/x86/deblock-a.asm.md) | done | 232 |
 | `common/x86/mc.h` | common/x86/mc.h.md | pending | 0 |
-| `common/x86/mc-a.asm` | common/x86/mc-a.asm.md | pending | 0 |
+| `common/x86/mc-a.asm` | [common/x86/mc-a.asm.md](common/x86/mc-a.asm.md) | done | 102 |
 | `common/x86/mc-a2.asm` | common/x86/mc-a2.asm.md | pending | 0 |
 | `common/x86/mc-c.c` | common/x86/mc-c.c.md | pending | 0 |
 | `common/x86/pixel.h` | [common/x86/pixel.h.md](common/x86/pixel.h.md) | done | 157 |
 | `common/x86/pixel-32.asm` | [common/x86/pixel-32.asm.md](common/x86/pixel-32.asm.md) | done | 151 |
 | `common/x86/pixel-a.asm` | [common/x86/pixel-a.asm.md](common/x86/pixel-a.asm.md) | done | 279 |
 | `common/x86/predict.h` | [common/x86/predict.h.md](common/x86/predict.h.md) | done | 131 |
-| `common/x86/predict-a.asm` | [common/x86/predict-a.asm.md](common/x86/predict-a.asm.md) | done | 208 |
-| `common/x86/predict-c.c` | [common/x86/predict-c.c.md](common/x86/predict-c.c.md) | done | 190 |
+| `common/x86/predict-a.asm` | [common/x86/predict-a.asm.md](common/x86/predict-a.asm.md) | done | 263 |
+| `common/x86/predict-c.c` | [common/x86/predict-c.c.md](common/x86/predict-c.c.md) | done | 244 |
 | `common/x86/quant.h` | [common/x86/quant.h.md](common/x86/quant.h.md) | done | 259 |
 | `common/x86/quant-a.asm` | [common/x86/quant-a.asm.md](common/x86/quant-a.asm.md) | done | 299 |
 | `common/x86/sad16-a.asm` | [common/x86/sad16-a.asm.md](common/x86/sad16-a.asm.md) | done | 99 |
@@ -180,8 +180,8 @@ One document per source file, same tree, `.md` appended. Regenerate with `pwsh d
 | `doc/threads.txt` | [doc/threads.txt.md](doc/threads.txt.md) | done | 131 |
 | `doc/vui.txt` | [doc/vui.txt.md](doc/vui.txt.md) | done | 101 |
 | `encoder/analyse.c` | [encoder/analyse.c.md](encoder/analyse.c.md) | done | 195 |
-| `encoder/analyse.h` | encoder/analyse.h.md | pending | 0 |
-| `encoder/api.c` | encoder/api.c.md | pending | 0 |
+| `encoder/analyse.h` | [encoder/analyse.h.md](encoder/analyse.h.md) | done | 73 |
+| `encoder/api.c` | [encoder/api.c.md](encoder/api.c.md) | done | 60 |
 | `encoder/cabac.c` | [encoder/cabac.c.md](encoder/cabac.c.md) | done | 93 |
 | `encoder/cavlc.c` | [encoder/cavlc.c.md](encoder/cavlc.c.md) | done | 80 |
 | `encoder/encoder.c` | encoder/encoder.c.md | pending | 0 |
@@ -209,15 +209,15 @@ One document per source file, same tree, `.md` appended. Regenerate with `pwsh d
 | `extras/stdint.h` | extras/stdint.h.md | pending | 0 |
 | `filters/filters.c` | [filters/filters.c.md](filters/filters.c.md) | thin | 46 |
 | `filters/filters.h` | [filters/filters.h.md](filters/filters.h.md) | thin | 45 |
-| `filters/video/cache.c` | filters/video/cache.c.md | pending | 0 |
-| `filters/video/crop.c` | filters/video/crop.c.md | pending | 0 |
+| `filters/video/cache.c` | [filters/video/cache.c.md](filters/video/cache.c.md) | thin | 54 |
+| `filters/video/crop.c` | [filters/video/crop.c.md](filters/video/crop.c.md) | thin | 46 |
 | `filters/video/depth.c` | filters/video/depth.c.md | pending | 0 |
 | `filters/video/fix_vfr_pts.c` | filters/video/fix_vfr_pts.c.md | pending | 0 |
 | `filters/video/internal.c` | [filters/video/internal.c.md](filters/video/internal.c.md) | thin | 44 |
 | `filters/video/internal.h` | [filters/video/internal.h.md](filters/video/internal.h.md) | thin | 39 |
 | `filters/video/resize.c` | filters/video/resize.c.md | pending | 0 |
 | `filters/video/select_every.c` | filters/video/select_every.c.md | pending | 0 |
-| `filters/video/source.c` | filters/video/source.c.md | pending | 0 |
+| `filters/video/source.c` | [filters/video/source.c.md](filters/video/source.c.md) | thin | 44 |
 | `filters/video/video.c` | [filters/video/video.c.md](filters/video/video.c.md) | thin | 40 |
 | `filters/video/video.h` | [filters/video/video.h.md](filters/video/video.h.md) | thin | 56 |
 | `input/avs.c` | [input/avs.c.md](input/avs.c.md) | done | 62 |
@@ -246,7 +246,7 @@ One document per source file, same tree, `.md` appended. Regenerate with `pwsh d
 | `tools/checkasm-aarch64.S` | tools/checkasm-aarch64.S.md | pending | 0 |
 | `tools/checkasm-arm.S` | tools/checkasm-arm.S.md | pending | 0 |
 | `tools/checkasm-loongarch.S` | tools/checkasm-loongarch.S.md | pending | 0 |
-| `tools/cltostr.sh` | tools/cltostr.sh.md | pending | 0 |
+| `tools/cltostr.sh` | [tools/cltostr.sh.md](tools/cltostr.sh.md) | done | 70 |
 | `tools/countquant_x264.pl` | tools/countquant_x264.pl.md | pending | 0 |
 | `tools/digress/__init__.py` | [tools/digress/__init__.py.md](tools/digress/__init__.py.md) | done | 60 |
 | `tools/digress/cli.py` | [tools/digress/cli.py.md](tools/digress/cli.py.md) | done | 95 |
@@ -258,7 +258,7 @@ One document per source file, same tree, `.md` appended. Regenerate with `pwsh d
 | `tools/digress/scm/git.py` | [tools/digress/scm/git.py.md](tools/digress/scm/git.py.md) | done | 90 |
 | `tools/digress/testing.py` | [tools/digress/testing.py.md](tools/digress/testing.py.md) | done | 158 |
 | `tools/gas-preprocessor.pl` | tools/gas-preprocessor.pl.md | pending | 0 |
-| `tools/msvsdepend.sh` | tools/msvsdepend.sh.md | pending | 0 |
+| `tools/msvsdepend.sh` | [tools/msvsdepend.sh.md](tools/msvsdepend.sh.md) | done | 74 |
 | `tools/test_x264.py` | tools/test_x264.py.md | pending | 0 |
 | `version.sh` | [version.sh.md](version.sh.md) | done | 82 |
 | `x264.c` | [x264.c.md](x264.c.md) | done | 171 |
@@ -266,4 +266,4 @@ One document per source file, same tree, `.md` appended. Regenerate with `pwsh d
 | `x264cli.h` | [x264cli.h.md](x264cli.h.md) | done | 83 |
 | `x264dll.c` | [x264dll.c.md](x264dll.c.md) | done | 64 |
 
-**Progress: 102 / 261 documents complete (thin docs need expansion).**
+**Progress: 109 / 261 documents complete (thin docs need expansion).**

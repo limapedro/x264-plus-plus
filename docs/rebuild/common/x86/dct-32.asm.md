@@ -147,6 +147,60 @@ four rows at a time; `DCT4_1D`/`TRANSPOSE2x4x4W`/`STORE_DCT` for forward, and
 `IDCT4_1D`/`TRANSPOSE2x4x4W`/`DIFFx2`/`STORE_IDCT` for inverse. Structurally the
 same as `dct-64.asm` but with spills because only eight XMM registers exist.
 
+### 5.10 Explicit equations and decision conditions
+
+The 8-point butterfly in this file computes the same function as
+`dct-64.asm.md` section 5.9; the algebraic transform is identical, only the
+register/memory schedule differs. For a column `x0..x7`:
+
+```
+s07=x0+x7, d07=x0-x7 ;  s16=x1+x6, d16=x1-x6
+s25=x2+x5, d25=x2-x5 ;  s34=x3+x4, d34=x3-x4
+a0=s34+s07, a2=s34-s07 ;  a1=s25+s16, a3=s25-s16
+a4=d07+(d07>>1)+d16+d25
+a7=d34+(d34>>1)+d16-d25
+a5=d34-d07-d25-(d25>>1)
+a6=d34+d07-d16-(d16>>1)
+b0=a1+a0, b4=a1-a0
+b1=a4+(a7>>2), b7=(a4>>2)-a7
+b2=a2+(a3>>1), b6=(a2>>1)-a3
+b3=a5+(a6>>2), b5=a6-(a5>>2)
+```
+All shifts are arithmetic. The final `SWAP` reorders `[b0..b7]` into H.264
+coefficient order. The inverse reconstructs the eight samples by reversing
+these stages, adding `+32` to the DC term before the second stage, and shifting
+right by 6 at the very end.
+
+**Decision conditions specific to the 32-bit kernels:**
+* The macro's spill destinations `%10`,`%11`,`%12` must not alias any of the
+  eight live data registers; the chosen addresses are the `dct` buffer itself,
+  which is guaranteed to be at least 64/128 bytes.
+* `SAVE_MM_PERMUTATION` must be executed before every `ret` in a helper that
+  uses MMX registers, and `RESET_MM_PERMUTATION` at the corresponding call site,
+  otherwise the macro assembler's logical register numbering drifts.
+* The `movdqa`→`movaps` / `punpcklqdq`→`movlhps` aliases used in the SSE2 block
+  are safe only because the relevant loads are 16-byte aligned; the aliases
+  must be undefined before instantiating SSSE3/SSE4 variants (`%undef`).
+* The `DIFFx2`/`STORE_IDCT` pair assumes the destination pointer `r0` has
+  already been advanced by `4*FDEC_STRIDE` so that pre- and post-increments
+  address rows `-4..+3` relative to the advanced pointer.
+
+### 5.11 Scratch lifetime map
+
+For the high-bit-depth `add8x8_idct8`, the reference uses the coefficient
+buffer as a six-register spill arena with offsets `-8,-6,-4,-2,2,4,6` (words)
+then `-5,-3,-1,3,5,7`, and finally `-8,-7,-6,-5,-4,-3,-2,-1` for all eight
+rows. The sequence is:
+1. Load six rows, compute the first 1D inverse, transpose, add bias, spill four
+   rows back at `-8..-2`.
+2. Transpose the other four, reload from odd offsets, compute the second 1D
+   inverse, and spill again.
+3. Reload all eight rows from consecutive negative offsets, run the final 1D
+   inverses, and store.
+A clean implementation may substitute a private stack array, but must preserve
+the same values at each stage; the offsets themselves are not semantically
+significant, only the data flow between stages.
+
 ## 6. Dependencies
 
 * Includes `x86inc.asm`, `x86util.asm`.

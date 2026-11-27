@@ -156,6 +156,69 @@ Notable choices:
   DDR/VR/HD (and `vr_cache64_ssse3` on cacheline-64); high-bit-depth also gets
   SSE2/SSSE3/AVX/AVX2 variants; `h_avx2` requires AVX2.
 
+### 5.8 Explicit plane-P derivations
+
+The H.264 plane prediction for a block of width `W` and height `H` uses the
+top samples `T[0..W-1]` (at `src[x-FDEC_STRIDE]`), left samples
+`L[0..H-1]` (at `src[y*FDEC_STRIDE-1]`), and corner `lt = T[-1]`.
+The parameter formulas implemented here are:
+
+```
+a = 16 * (L[H-1] + T[W-1])
+```
+
+For 16x16 (`j=7`, `i=1..8`):
+```
+Hgrad = Σ_{i=1..8} i*(T[7+i] - T[7-i])
+Vgrad = Σ_{i=1..8} i*(L[7+i] - L[7-i])       /* L index = row */
+b = (5*Hgrad + 32) >> 6
+c = (5*Vgrad + 32) >> 6
+i00 = a - 7*b - 7*c + 16
+```
+The `7*` offsets arise because the plane core computes
+`i00 + b*x + c*y` at the block centre offset `x=y=0` corresponding to the
+corner extrapolation; the core then adds `b*x + c*y` per sample.
+
+For 8x8c (`j=3`, `i=1..4`):
+```
+Hgrad = Σ_{i=1..4} i*(T[3+i] - T[3-i])
+Vgrad = Σ_{i=1..4} i*(L[3+i] - L[3-i])
+b = c = (17*Hgrad/Vgrad + 16) >> 5
+i00 = a - 3*b - 3*c + 16        /* 8-bit only */
+```
+For `8x16c`:
+```
+Hgrad = Σ_{i=0..3} (i+1)*(T[4+i] - T[2-i])
+Vgrad = Σ_{i=0..7} (i+1)*(L[8+i] - L[6-i])
+b = (17*Hgrad + 16) >> 5
+c = (5*Vgrad + 32) >> 6
+i00 = a - 3*b - 7*c + 16        /* 8-bit only */
+```
+High-bit-depth variants pass `a` directly to the core, which applies the
+`-3/-7` offsets internally (a semantic difference that must be mirrored).
+
+**Overflow guard:** for `BIT_DEPTH > 8`, if `i00 > 0x7fff` or `|b| > 1092` or
+`|c| > 1092`, the SIMD core could overflow its 16-bit arithmetic, so the code
+calls the portable C implementation. The thresholds are derived from the
+maximum representable intermediate `(i00 + b*x + c*y)` for `x,y <= 15`.
+
+### 5.9 Dispatch decision table (summary)
+
+| Feature check (in order) | 16x16 | 8x8c | 8x16c | 8x8 luma | 4x4 |
+|---|---|---|---|---|---|
+| MMX (8-bit only) | — | V | V | — | — |
+| MMX2 | V,H | DC,H,P(32b) | DC,H,P(32b) | V,H,DC,DC_TOP,DC_LEFT,HD,VL,filter | DC,DDL,DDR,VL,HD,HU,VR |
+| SSE | V (sse/avx) | V (sse) | V (sse) | V (sse) | — |
+| SSE2 | DC/DC_TOP/DC_LEFT,P | DC/DC_TOP/H,P | DC/DC_TOP/H,P | DDL/VL/VR/DDR/HD/HU | DDL/DDR/HD/VL/VR (HBD) |
+| SSE2_IS_SLOW | skip DC_TOP/DC_LEFT/P(sse2) | — | — | — | — |
+| SSSE3 | H (if !SLOW_PSHUFB), P inline | H, P inline | H, P inline | HU, filter, DDL/VR (if !SLOW_PALIGNR) | DDR/VR/HD |
+| CACHELINE_64 | — | — | — | DDL/DDR cache64 | VR cache64 |
+| AVX | V (avx), P(8bit) | P (avx) | P (avx) | directional modes, filter | directional modes |
+| AVX2 | H,DC*,P | H,P | H,P | — | H (HBD) |
+
+A clean implementation must reproduce this precedence, including the
+`SSE2_IS_SLOW` early return and the two slow-shuffle exceptions.
+
 ## 6. Dependencies
 
 * Includes `common/common.h`, `predict.h`, `pixel.h`.

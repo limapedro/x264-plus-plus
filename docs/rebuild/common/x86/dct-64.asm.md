@@ -162,16 +162,16 @@ a1 = s25 + s16 ;  a3 = s25 - s16
 Odd coefficients (integer approximations of `cos` products):
 ```
 a4 = d07 + (d07>>1) + d16 + d25
-a5 = d25 + (d25>>1) - d07 - d34
-a6 = d16 + (d16>>1) - d07 + d34
 a7 = d34 + (d34>>1) + d16 - d25
+a5 = d34 - d07 - d25 - (d25>>1)
+a6 = d34 + d07 - d16 - (d16>>1)
 ```
 Final stage:
 ```
-b0 = a0 + a1 ;  b4 = a0 - a1
-b1 = a2 + (a3>>1) ;  b7 = (a2>>2) - a3
-b2 = a3 + (a3>>1) - a1?  (per source: a1+(a1>>1)-a3) ;  b6 = (a1>>1) - a3
-b3 = a5 + (a6>>2) ;  b5 = a5 - (a5>>2) - a6
+b0 = a1 + a0 ;  b4 = a1 - a0
+b1 = a4 + (a7>>2) ;  b7 = (a4>>2) - a7
+b2 = a2 + (a3>>1) ;  b6 = (a2>>1) - a3
+b3 = a5 + (a6>>2) ;  b5 = a6 - (a5>>2)
 ```
 The eight results are then permuted by the macro's final `SWAP` chain into
 coefficient order `[b0,b1,b2,b3,b4,b5,b6,b7]` with the odd coefficients
