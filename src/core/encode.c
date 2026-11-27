@@ -351,6 +351,8 @@ static int encode_mb( x264pp_encoder_t *e, x264pp_bs_t *bs,
     }
 
     /* ---- bitstream syntax ---- */
+    /* H.264 Table 7-11: I_16x16 mb_type = 1 + pred_mode
+     * + 4*CodedBlockPatternChroma + 12*CodedBlockPatternLuma_flag. */
     cbp = (cbp_luma ? 12 : 0) + cbp_chroma * 4;
     x264pp_bs_ue( bs, (unsigned)(1 + pred_mode + cbp) );
     x264pp_bs_ue( bs, 0 );                   /* intra_chroma_pred_mode = DC */

@@ -19,6 +19,11 @@ This file is the human-readable standings sheet. `score.md` is the certification
 | Case | Reference throughput | Conditions |
 | --- | ---: | --- |
 | 640×360, 120 frames, preset `medium`, CRF 23, 6 threads | **609.14 fps** | deterministic `testsrc2` I420 clip, warm-up + timed run, MSYS2 MinGW GCC 16.2 / i5-12400F |
+| 1920×1080, 8 frames, preset `ultrafast`, CRF 23, 6 threads | **126.98 fps** | real content: `D:\Videos\Wx264-reference\fortnite_prefix128.yuv` |
+| 1920×1080, 8 frames, preset `medium`, CRF 23, 6 threads | **40.61 fps** | same real clip |
+| 1920×1080, 8 frames, preset `veryslow`, CRF 23, 6 threads | **13.84 fps** | same real clip |
+
+Real-video corpus made available for certification: `D:\Videos` (dozens of MP4/WebM clips) and a ready 1920×1080 × 128-frame I420 file at `D:\Videos\Wx264-reference\fortnite_prefix128.yuv`. The 8-frame subset above keeps iteration fast; the full 128-frame clip will be used for final per-preset numbers.
 
 Earlier fork-iteration measurements were withdrawn when the project was reset to clean room; only the oracle number above is retained as a fixed reference anchor.
 
