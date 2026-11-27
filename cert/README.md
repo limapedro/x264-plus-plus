@@ -28,6 +28,45 @@ python cert\certify.py --self-test --cases 2 --reps 2 --frames-cap 60
 never appends to the reliability log, and never touches `score.md`. Its
 numbers are **not** measurements of the candidate.
 
+### Real-video A/B benchmark (`cert/real_bench.py`)
+
+A separate, deterministic harness benchmarks the oracle against the candidate
+on the **real video corpus** the user provided (`D:\Videos`), not just
+generated clips. It reads the hash-pinned clip list in `cert/real_clips.json`
+(Fortnite 1920x1080 I420 + several MP4s), decodes each container to a bounded
+number of leading I420 frames with ffmpeg, caches the exact bytes with a
+SHA256 manifest **outside** the repo, and runs A/B (warm-up + alternating
+interleaved reps, median wall clock/fps) across `--presets` (default
+`ultrafast medium veryslow`). Every bitstream is ffmpeg-decoded and PSNR/SSIM
+is measured against the exact source I420.
+
+```powershell
+# quick smoke run on real clips (small frame count)
+python cert\real_bench.py --frames 8 --reps 2 --warmups 1
+
+# full run: 128-frame Fortnite clip, 5 reps
+python cert\real_bench.py --frames 128 --reps 5
+
+# one clip / one preset, list the curated corpus
+python cert\real_bench.py --clips fortnite-raw-1080p --presets medium
+python cert\real_bench.py --discover
+```
+
+Outputs: `cert/results/real/latest.json` (machine-readable), `latest.md`
+(Markdown tables) and immutable `runs/<run_id>.json`. Exit codes: 0 completed,
+1 partial, 2 blocked. A **blocked** run still writes the reference-only table.
+
+**Candidate gating:** a missing or invalid `build/x264pp.exe` is reported as
+`NOT CERTIFIED`; candidate fps/speedup cells stay `n/a` / `—`. A present
+candidate must decode cleanly on **every** case before any speedup is
+published. Using the oracle as a stand-in candidate (pipeline check) is only
+for validating the harness and must never be presented as a candidate result.
+
+The four already-established reference anchors (640x360 medium 609.14 fps;
+1080p ultrafast/medium/veryslow 126.98/40.61/13.84 fps) are documented in
+`benchmarks.md` / `README.md` and reproduced as a labelled historical table
+in the generated report; they are never overwritten by a fresh smoke run.
+
 The default `--cases 9` is a smoke run, not a statistical certification batch:
 spec §4 suggests ≥100 cases initially and ≥300 for a final claim. Runs below
 100 cases emit a warning and mark the score-table notes "SMOKE sample".
@@ -37,6 +76,9 @@ spec §4 suggests ≥100 cases initially and ≥300 for a final claim. Runs belo
 | File | Purpose |
 | --- | --- |
 | `certify.py` | Main runner: sampling, timing, verification, results, score-table update. |
+| `real_bench.py` | Real-video A/B runner (Fortnite + MP4 corpus), warm-up/interleaved timing, decode + PSNR/SSIM, reference-only fallback. |
+| `real_clips.json` | Hash-pinned curated clip list for `real_bench.py` (read-only input). |
+| `results/real/` | Machine-readable + Markdown output of `real_bench.py`. |
 | `usage_model.py` | Reads `spec/usage-model.md`; built-in fallback profile; seeded sampling. |
 | `clipgen.py` | Deterministic I420 clip generator keyed by case parameters + SHA256 manifest. |
 | `verify.py` | ffmpeg decode check, PSNR/SSIM measurement, quality-envelope parsing. |

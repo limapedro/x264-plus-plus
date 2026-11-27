@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "corpus_dir": "D:\\Videos",
+  "note": "Curated, stable subset of the user-provided real-video corpus. Paths are relative to corpus_dir. source_sha256 is recorded for provenance and verified at run time; a mismatch is a warning, never a silent substitution. Raw clips are bounded to --frames before encoding; container clips are decoded to that many I420 frames with ffmpeg.",
+  "clips": [
+    {
+      "id": "fortnite-raw-1080p",
+      "label": "Fortnite 1080p (ready I420 prefix)",
+      "kind": "raw",
+      "rel": "Wx264-reference\\fortnite_prefix128.yuv",
+      "width": 1920,
+      "height": 1080,
+      "fps": 30,
+      "available_frames": 128,
+      "source_sha256": "c0e2c11233791b9e6a25f5672da5ba91d9071f22f0ffa3087bb96cd16f166375",
+      "note": "Exactly 1920x1080 I420, 128 frames; the reference anchor clip used for the documented 1080p numbers."
+    },
+    {
+      "id": "twitter-640x360",
+      "label": "640x360 social clip",
+      "kind": "container",
+      "rel": "ssstwitter.com_1732158697723.mp4",
+      "width": 640,
+      "height": 360,
+      "fps": 30,
+      "source_sha256": "ee5dabeb8ebc6bcb5a846746f7d1c82c91337d8ae040ff099acdfb6fafcf496f",
+      "note": "178-frame 640x360 H.264 MP4; matches the resolution of the documented synthetic 609.14 fps anchor."
+    },
+    {
+      "id": "twitter-1080p",
+      "label": "1080p social clip",
+      "kind": "container",
+      "rel": "ssstwitter.com_1736929558402.mp4",
+      "width": 1920,
+      "height": 1080,
+      "fps": 30,
+      "source_sha256": "284afeb9449c1baa1e6ebb3d1f6a0749aa04c1c4334190ac5b624dc03e674aa6",
+      "note": "206-frame 1920x1080 H.264 MP4; independent 1080p content from the Fortnite clip."
+    },
+    {
+      "id": "twitter-720p60",
+      "label": "720p60 social clip",
+      "kind": "container",
+      "rel": "ssstwitter.com_1731881880284.mp4",
+      "width": 1280,
+      "height": 720,
+      "fps": 60,
+      "source_sha256": "3191e8de186709b3d4b9383cd2116b09f7710bef8679916267088497bfec1609",
+      "note": "661-frame 1280x720/60 H.264 MP4; exercises a second frame rate and resolution."
+    }
+  ]
+}
