@@ -10,9 +10,10 @@ This file is the human-readable standings sheet. `score.md` is the certification
 | --- | --- | --- |
 | Documentation (261 per-file rebuild specs) | complete | `docs/rebuild/INDEX.md`, 0 pending |
 | Clean CLI/input/output (I0) | committed, compiles | `src/verification/I0.md` |
-| Clean C codec core (I1) | builds, **not valid yet** | ffmpeg decodes SPS/PPS but reports `corrupted macroblock 0 0 (total_coeff=-1)` |
-| Assembly kernels | not started (deliberately paused until C core is valid) | `src/x86/` contains only `ABI.md` + `kernels.h` |
-| Certified speedup | **none** | `score.md`: "not certified yet" |
+| Clean C codec core (I1) | builds, decodes cleanly, **size envelope fails** | PR #3: all-I_PCM fallback, 8×1080p = 25,287,468 B vs oracle 200,535 B (126×) |
+| AVX2 assembly kernels | 14 original NASM kernels merged | PR #4: `nasm -f win64`, link and 14 exported symbols verified |
+| Real-video certification harness | merged | PR #2: `cert/real_bench.py` with `D:\Videos` corpus |
+| Certified speedup | **none** | candidate valid but far outside quality/size band; speed not publishable |
 
 ## Reference measurements (oracle, black box)
 
@@ -50,12 +51,12 @@ The other three clips (640×360, second 1080p, 720p60) and the full A/B table wi
 | veryfast | — | — | — | not certified | — |
 | faster | — | — | — | not certified | — |
 | fast | — | — | — | not certified | — |
-| medium | 609.14 | — | — | **fails** (CAVLC `total_coeff=-1`) | 3-frame 64×64 smoke encode produced 15,018 bytes; SPS/PPS parsed correctly |
+| medium | 609.14 | — | — | **valid** (all-I_PCM) but size ratio ≈126× | 8×1920×1080 = 25,287,468 B vs oracle 200,535 B; outside quality/size envelope |
 | slow | — | — | — | not certified | — |
 | slower | — | — | — | not certified | — |
 | veryslow | — | — | — | not certified | — |
 
-**Honest summary:** x264++ is currently slower-or-unknown and not bitstream-valid. The 2× target is not met. The immediate blocker is CAVLC table correctness in `src/core/cavlc.c`; a fix is in progress against the normative ITU-T tables. **The candidate stays `NOT CERTIFIED` in both harnesses until ffmpeg decodes its output cleanly on every measured case** — a missing, invalid, or failing candidate never produces a speedup claim.
+**Honest summary:** x264++ now produces ffmpeg-clean H.264, but only via an all-I_PCM fallback, making it ≈126× larger than the oracle and therefore outside the quality/size envelope. It stays `NOT CERTIFIED`; no speedup is published. The 2× target is not met. In progress: I_4x4 CAVLC path (PR #5) and an independent bitstream diagnostic (PR #6). A missing, invalid, or out-of-envelope candidate never produces a speedup claim.
 
 ## Reproduction
 
