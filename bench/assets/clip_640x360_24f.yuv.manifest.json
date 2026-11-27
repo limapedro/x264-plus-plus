@@ -1,0 +1,16 @@
+{
+  "generator_version": 1,
+  "backend": "numpy",
+  "width": 640,
+  "height": 360,
+  "frames": 24,
+  "fps": 30,
+  "seed": 1337,
+  "format": "I420 / YUV420P (planar Y, U, V; 8-bit)",
+  "file": "clip_640x360_24f.yuv",
+  "size_bytes": 8294400,
+  "sha256": "75449bc1ffb201505d2d42b4f10ed7a064b11194e6e4f10b9e17fb0f93ab24c6",
+  "numpy_version": "2.2.6",
+  "python_version": "3.10.11",
+  "content": "Drifting 2D sine fields + spatial ramp + moving Gaussian blob + moving rectangular patch + hash-based grain; chroma has independent drifting patterns."
+}

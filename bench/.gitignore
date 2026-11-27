@@ -1,0 +1,6 @@
+# Generated media (store the generator, not the .yuv)
+assets/*.yuv
+
+# Runtime encode artifacts
+temp/
+__pycache__/
