@@ -1,269 +1,269 @@
 ﻿# Rebuild specification index
 
-One document per source file, same tree, `.md` appended. Status is updated as dirty-side agents complete docs.
+One document per source file, same tree, `.md` appended. Regenerate with `pwsh docs/rebuild/update-index.ps1`.
 
-| Source file | Specification |
-| --- | --- |
-| `autocomplete.c` | [autocomplete.c.md](autocomplete.c.md) |
-| `common/aarch64/asm.S` | [common/aarch64/asm.S.md](common/aarch64/asm.S.md) |
-| `common/aarch64/asm-offsets.c` | [common/aarch64/asm-offsets.c.md](common/aarch64/asm-offsets.c.md) |
-| `common/aarch64/asm-offsets.h` | [common/aarch64/asm-offsets.h.md](common/aarch64/asm-offsets.h.md) |
-| `common/aarch64/bitstream.h` | [common/aarch64/bitstream.h.md](common/aarch64/bitstream.h.md) |
-| `common/aarch64/bitstream-a.S` | [common/aarch64/bitstream-a.S.md](common/aarch64/bitstream-a.S.md) |
-| `common/aarch64/cabac-a.S` | [common/aarch64/cabac-a.S.md](common/aarch64/cabac-a.S.md) |
-| `common/aarch64/dct.h` | [common/aarch64/dct.h.md](common/aarch64/dct.h.md) |
-| `common/aarch64/dct-a.S` | [common/aarch64/dct-a.S.md](common/aarch64/dct-a.S.md) |
-| `common/aarch64/dct-a-common.S` | [common/aarch64/dct-a-common.S.md](common/aarch64/dct-a-common.S.md) |
-| `common/aarch64/dct-a-sve.S` | [common/aarch64/dct-a-sve.S.md](common/aarch64/dct-a-sve.S.md) |
-| `common/aarch64/dct-a-sve2.S` | [common/aarch64/dct-a-sve2.S.md](common/aarch64/dct-a-sve2.S.md) |
-| `common/aarch64/deblock.h` | [common/aarch64/deblock.h.md](common/aarch64/deblock.h.md) |
-| `common/aarch64/deblock-a.S` | [common/aarch64/deblock-a.S.md](common/aarch64/deblock-a.S.md) |
-| `common/aarch64/deblock-a-common.S` | [common/aarch64/deblock-a-common.S.md](common/aarch64/deblock-a-common.S.md) |
-| `common/aarch64/deblock-a-sve.S` | [common/aarch64/deblock-a-sve.S.md](common/aarch64/deblock-a-sve.S.md) |
-| `common/aarch64/mc.h` | [common/aarch64/mc.h.md](common/aarch64/mc.h.md) |
-| `common/aarch64/mc-a.S` | [common/aarch64/mc-a.S.md](common/aarch64/mc-a.S.md) |
-| `common/aarch64/mc-a-common.S` | [common/aarch64/mc-a-common.S.md](common/aarch64/mc-a-common.S.md) |
-| `common/aarch64/mc-a-sve.S` | [common/aarch64/mc-a-sve.S.md](common/aarch64/mc-a-sve.S.md) |
-| `common/aarch64/mc-c.c` | [common/aarch64/mc-c.c.md](common/aarch64/mc-c.c.md) |
-| `common/aarch64/pixel.h` | [common/aarch64/pixel.h.md](common/aarch64/pixel.h.md) |
-| `common/aarch64/pixel-a.S` | [common/aarch64/pixel-a.S.md](common/aarch64/pixel-a.S.md) |
-| `common/aarch64/pixel-a-common.S` | [common/aarch64/pixel-a-common.S.md](common/aarch64/pixel-a-common.S.md) |
-| `common/aarch64/pixel-a-sve.S` | [common/aarch64/pixel-a-sve.S.md](common/aarch64/pixel-a-sve.S.md) |
-| `common/aarch64/predict.h` | [common/aarch64/predict.h.md](common/aarch64/predict.h.md) |
-| `common/aarch64/predict-a.S` | [common/aarch64/predict-a.S.md](common/aarch64/predict-a.S.md) |
-| `common/aarch64/predict-c.c` | [common/aarch64/predict-c.c.md](common/aarch64/predict-c.c.md) |
-| `common/aarch64/quant.h` | [common/aarch64/quant.h.md](common/aarch64/quant.h.md) |
-| `common/aarch64/quant-a.S` | [common/aarch64/quant-a.S.md](common/aarch64/quant-a.S.md) |
-| `common/arm/asm.S` | [common/arm/asm.S.md](common/arm/asm.S.md) |
-| `common/arm/bitstream.h` | [common/arm/bitstream.h.md](common/arm/bitstream.h.md) |
-| `common/arm/bitstream-a.S` | [common/arm/bitstream-a.S.md](common/arm/bitstream-a.S.md) |
-| `common/arm/cpu-a.S` | [common/arm/cpu-a.S.md](common/arm/cpu-a.S.md) |
-| `common/arm/dct.h` | [common/arm/dct.h.md](common/arm/dct.h.md) |
-| `common/arm/dct-a.S` | [common/arm/dct-a.S.md](common/arm/dct-a.S.md) |
-| `common/arm/deblock.h` | [common/arm/deblock.h.md](common/arm/deblock.h.md) |
-| `common/arm/deblock-a.S` | [common/arm/deblock-a.S.md](common/arm/deblock-a.S.md) |
-| `common/arm/mc.h` | [common/arm/mc.h.md](common/arm/mc.h.md) |
-| `common/arm/mc-a.S` | [common/arm/mc-a.S.md](common/arm/mc-a.S.md) |
-| `common/arm/mc-c.c` | [common/arm/mc-c.c.md](common/arm/mc-c.c.md) |
-| `common/arm/pixel.h` | [common/arm/pixel.h.md](common/arm/pixel.h.md) |
-| `common/arm/pixel-a.S` | [common/arm/pixel-a.S.md](common/arm/pixel-a.S.md) |
-| `common/arm/predict.h` | [common/arm/predict.h.md](common/arm/predict.h.md) |
-| `common/arm/predict-a.S` | [common/arm/predict-a.S.md](common/arm/predict-a.S.md) |
-| `common/arm/predict-c.c` | [common/arm/predict-c.c.md](common/arm/predict-c.c.md) |
-| `common/arm/quant.h` | [common/arm/quant.h.md](common/arm/quant.h.md) |
-| `common/arm/quant-a.S` | [common/arm/quant-a.S.md](common/arm/quant-a.S.md) |
-| `common/base.c` | [common/base.c.md](common/base.c.md) |
-| `common/base.h` | [common/base.h.md](common/base.h.md) |
-| `common/bitstream.c` | [common/bitstream.c.md](common/bitstream.c.md) |
-| `common/bitstream.h` | [common/bitstream.h.md](common/bitstream.h.md) |
-| `common/cabac.c` | [common/cabac.c.md](common/cabac.c.md) |
-| `common/cabac.h` | [common/cabac.h.md](common/cabac.h.md) |
-| `common/common.c` | [common/common.c.md](common/common.c.md) |
-| `common/common.h` | [common/common.h.md](common/common.h.md) |
-| `common/cpu.c` | [common/cpu.c.md](common/cpu.c.md) |
-| `common/cpu.h` | [common/cpu.h.md](common/cpu.h.md) |
-| `common/dct.c` | [common/dct.c.md](common/dct.c.md) |
-| `common/dct.h` | [common/dct.h.md](common/dct.h.md) |
-| `common/deblock.c` | [common/deblock.c.md](common/deblock.c.md) |
-| `common/frame.c` | [common/frame.c.md](common/frame.c.md) |
-| `common/frame.h` | [common/frame.h.md](common/frame.h.md) |
-| `common/loongarch/dct.h` | [common/loongarch/dct.h.md](common/loongarch/dct.h.md) |
-| `common/loongarch/dct-a.S` | [common/loongarch/dct-a.S.md](common/loongarch/dct-a.S.md) |
-| `common/loongarch/deblock.h` | [common/loongarch/deblock.h.md](common/loongarch/deblock.h.md) |
-| `common/loongarch/deblock-a.S` | [common/loongarch/deblock-a.S.md](common/loongarch/deblock-a.S.md) |
-| `common/loongarch/loongson_asm.S` | [common/loongarch/loongson_asm.S.md](common/loongarch/loongson_asm.S.md) |
-| `common/loongarch/loongson_util.S` | [common/loongarch/loongson_util.S.md](common/loongarch/loongson_util.S.md) |
-| `common/loongarch/mc.h` | [common/loongarch/mc.h.md](common/loongarch/mc.h.md) |
-| `common/loongarch/mc-a.S` | [common/loongarch/mc-a.S.md](common/loongarch/mc-a.S.md) |
-| `common/loongarch/mc-c.c` | [common/loongarch/mc-c.c.md](common/loongarch/mc-c.c.md) |
-| `common/loongarch/pixel.h` | [common/loongarch/pixel.h.md](common/loongarch/pixel.h.md) |
-| `common/loongarch/pixel-a.S` | [common/loongarch/pixel-a.S.md](common/loongarch/pixel-a.S.md) |
-| `common/loongarch/pixel-c.c` | [common/loongarch/pixel-c.c.md](common/loongarch/pixel-c.c.md) |
-| `common/loongarch/predict.h` | [common/loongarch/predict.h.md](common/loongarch/predict.h.md) |
-| `common/loongarch/predict-a.S` | [common/loongarch/predict-a.S.md](common/loongarch/predict-a.S.md) |
-| `common/loongarch/predict-c.c` | [common/loongarch/predict-c.c.md](common/loongarch/predict-c.c.md) |
-| `common/loongarch/quant.h` | [common/loongarch/quant.h.md](common/loongarch/quant.h.md) |
-| `common/loongarch/quant-a.S` | [common/loongarch/quant-a.S.md](common/loongarch/quant-a.S.md) |
-| `common/loongarch/sad-a.S` | [common/loongarch/sad-a.S.md](common/loongarch/sad-a.S.md) |
-| `common/macroblock.c` | [common/macroblock.c.md](common/macroblock.c.md) |
-| `common/macroblock.h` | [common/macroblock.h.md](common/macroblock.h.md) |
-| `common/mc.c` | [common/mc.c.md](common/mc.c.md) |
-| `common/mc.h` | [common/mc.h.md](common/mc.h.md) |
-| `common/mips/dct.h` | [common/mips/dct.h.md](common/mips/dct.h.md) |
-| `common/mips/dct-c.c` | [common/mips/dct-c.c.md](common/mips/dct-c.c.md) |
-| `common/mips/deblock.h` | [common/mips/deblock.h.md](common/mips/deblock.h.md) |
-| `common/mips/deblock-c.c` | [common/mips/deblock-c.c.md](common/mips/deblock-c.c.md) |
-| `common/mips/macros.h` | [common/mips/macros.h.md](common/mips/macros.h.md) |
-| `common/mips/mc.h` | [common/mips/mc.h.md](common/mips/mc.h.md) |
-| `common/mips/mc-c.c` | [common/mips/mc-c.c.md](common/mips/mc-c.c.md) |
-| `common/mips/pixel.h` | [common/mips/pixel.h.md](common/mips/pixel.h.md) |
-| `common/mips/pixel-c.c` | [common/mips/pixel-c.c.md](common/mips/pixel-c.c.md) |
-| `common/mips/predict.h` | [common/mips/predict.h.md](common/mips/predict.h.md) |
-| `common/mips/predict-c.c` | [common/mips/predict-c.c.md](common/mips/predict-c.c.md) |
-| `common/mips/quant.h` | [common/mips/quant.h.md](common/mips/quant.h.md) |
-| `common/mips/quant-c.c` | [common/mips/quant-c.c.md](common/mips/quant-c.c.md) |
-| `common/mvpred.c` | [common/mvpred.c.md](common/mvpred.c.md) |
-| `common/opencl.c` | [common/opencl.c.md](common/opencl.c.md) |
-| `common/opencl.h` | [common/opencl.h.md](common/opencl.h.md) |
-| `common/opencl/bidir.cl` | [common/opencl/bidir.cl.md](common/opencl/bidir.cl.md) |
-| `common/opencl/downscale.cl` | [common/opencl/downscale.cl.md](common/opencl/downscale.cl.md) |
-| `common/opencl/intra.cl` | [common/opencl/intra.cl.md](common/opencl/intra.cl.md) |
-| `common/opencl/motionsearch.cl` | [common/opencl/motionsearch.cl.md](common/opencl/motionsearch.cl.md) |
-| `common/opencl/subpel.cl` | [common/opencl/subpel.cl.md](common/opencl/subpel.cl.md) |
-| `common/opencl/weightp.cl` | [common/opencl/weightp.cl.md](common/opencl/weightp.cl.md) |
-| `common/opencl/x264-cl.h` | [common/opencl/x264-cl.h.md](common/opencl/x264-cl.h.md) |
-| `common/osdep.c` | [common/osdep.c.md](common/osdep.c.md) |
-| `common/osdep.h` | [common/osdep.h.md](common/osdep.h.md) |
-| `common/pixel.c` | [common/pixel.c.md](common/pixel.c.md) |
-| `common/pixel.h` | [common/pixel.h.md](common/pixel.h.md) |
-| `common/ppc/dct.c` | [common/ppc/dct.c.md](common/ppc/dct.c.md) |
-| `common/ppc/dct.h` | [common/ppc/dct.h.md](common/ppc/dct.h.md) |
-| `common/ppc/deblock.c` | [common/ppc/deblock.c.md](common/ppc/deblock.c.md) |
-| `common/ppc/deblock.h` | [common/ppc/deblock.h.md](common/ppc/deblock.h.md) |
-| `common/ppc/mc.c` | [common/ppc/mc.c.md](common/ppc/mc.c.md) |
-| `common/ppc/mc.h` | [common/ppc/mc.h.md](common/ppc/mc.h.md) |
-| `common/ppc/pixel.c` | [common/ppc/pixel.c.md](common/ppc/pixel.c.md) |
-| `common/ppc/pixel.h` | [common/ppc/pixel.h.md](common/ppc/pixel.h.md) |
-| `common/ppc/ppccommon.h` | [common/ppc/ppccommon.h.md](common/ppc/ppccommon.h.md) |
-| `common/ppc/predict.c` | [common/ppc/predict.c.md](common/ppc/predict.c.md) |
-| `common/ppc/predict.h` | [common/ppc/predict.h.md](common/ppc/predict.h.md) |
-| `common/ppc/quant.c` | [common/ppc/quant.c.md](common/ppc/quant.c.md) |
-| `common/ppc/quant.h` | [common/ppc/quant.h.md](common/ppc/quant.h.md) |
-| `common/predict.c` | [common/predict.c.md](common/predict.c.md) |
-| `common/predict.h` | [common/predict.h.md](common/predict.h.md) |
-| `common/quant.c` | [common/quant.c.md](common/quant.c.md) |
-| `common/quant.h` | [common/quant.h.md](common/quant.h.md) |
-| `common/rectangle.c` | [common/rectangle.c.md](common/rectangle.c.md) |
-| `common/rectangle.h` | [common/rectangle.h.md](common/rectangle.h.md) |
-| `common/set.c` | [common/set.c.md](common/set.c.md) |
-| `common/set.h` | [common/set.h.md](common/set.h.md) |
-| `common/tables.c` | [common/tables.c.md](common/tables.c.md) |
-| `common/tables.h` | [common/tables.h.md](common/tables.h.md) |
-| `common/threadpool.c` | [common/threadpool.c.md](common/threadpool.c.md) |
-| `common/threadpool.h` | [common/threadpool.h.md](common/threadpool.h.md) |
-| `common/vlc.c` | [common/vlc.c.md](common/vlc.c.md) |
-| `common/win32thread.c` | [common/win32thread.c.md](common/win32thread.c.md) |
-| `common/win32thread.h` | [common/win32thread.h.md](common/win32thread.h.md) |
-| `common/x86/bitstream.h` | [common/x86/bitstream.h.md](common/x86/bitstream.h.md) |
-| `common/x86/bitstream-a.asm` | [common/x86/bitstream-a.asm.md](common/x86/bitstream-a.asm.md) |
-| `common/x86/cabac-a.asm` | [common/x86/cabac-a.asm.md](common/x86/cabac-a.asm.md) |
-| `common/x86/const-a.asm` | [common/x86/const-a.asm.md](common/x86/const-a.asm.md) |
-| `common/x86/cpu-a.asm` | [common/x86/cpu-a.asm.md](common/x86/cpu-a.asm.md) |
-| `common/x86/dct.h` | [common/x86/dct.h.md](common/x86/dct.h.md) |
-| `common/x86/dct-32.asm` | [common/x86/dct-32.asm.md](common/x86/dct-32.asm.md) |
-| `common/x86/dct-64.asm` | [common/x86/dct-64.asm.md](common/x86/dct-64.asm.md) |
-| `common/x86/dct-a.asm` | [common/x86/dct-a.asm.md](common/x86/dct-a.asm.md) |
-| `common/x86/deblock.h` | [common/x86/deblock.h.md](common/x86/deblock.h.md) |
-| `common/x86/deblock-a.asm` | [common/x86/deblock-a.asm.md](common/x86/deblock-a.asm.md) |
-| `common/x86/mc.h` | [common/x86/mc.h.md](common/x86/mc.h.md) |
-| `common/x86/mc-a.asm` | [common/x86/mc-a.asm.md](common/x86/mc-a.asm.md) |
-| `common/x86/mc-a2.asm` | [common/x86/mc-a2.asm.md](common/x86/mc-a2.asm.md) |
-| `common/x86/mc-c.c` | [common/x86/mc-c.c.md](common/x86/mc-c.c.md) |
-| `common/x86/pixel.h` | [common/x86/pixel.h.md](common/x86/pixel.h.md) |
-| `common/x86/pixel-32.asm` | [common/x86/pixel-32.asm.md](common/x86/pixel-32.asm.md) |
-| `common/x86/pixel-a.asm` | [common/x86/pixel-a.asm.md](common/x86/pixel-a.asm.md) |
-| `common/x86/predict.h` | [common/x86/predict.h.md](common/x86/predict.h.md) |
-| `common/x86/predict-a.asm` | [common/x86/predict-a.asm.md](common/x86/predict-a.asm.md) |
-| `common/x86/predict-c.c` | [common/x86/predict-c.c.md](common/x86/predict-c.c.md) |
-| `common/x86/quant.h` | [common/x86/quant.h.md](common/x86/quant.h.md) |
-| `common/x86/quant-a.asm` | [common/x86/quant-a.asm.md](common/x86/quant-a.asm.md) |
-| `common/x86/sad16-a.asm` | [common/x86/sad16-a.asm.md](common/x86/sad16-a.asm.md) |
-| `common/x86/sad-a.asm` | [common/x86/sad-a.asm.md](common/x86/sad-a.asm.md) |
-| `common/x86/trellis-64.asm` | [common/x86/trellis-64.asm.md](common/x86/trellis-64.asm.md) |
-| `common/x86/util.h` | [common/x86/util.h.md](common/x86/util.h.md) |
-| `common/x86/x86inc.asm` | [common/x86/x86inc.asm.md](common/x86/x86inc.asm.md) |
-| `common/x86/x86util.asm` | [common/x86/x86util.asm.md](common/x86/x86util.asm.md) |
-| `configure` | [configure.md](configure.md) |
-| `doc/ratecontrol.txt` | [doc/ratecontrol.txt.md](doc/ratecontrol.txt.md) |
-| `doc/regression_test.txt` | [doc/regression_test.txt.md](doc/regression_test.txt.md) |
-| `doc/standards.txt` | [doc/standards.txt.md](doc/standards.txt.md) |
-| `doc/threads.txt` | [doc/threads.txt.md](doc/threads.txt.md) |
-| `doc/vui.txt` | [doc/vui.txt.md](doc/vui.txt.md) |
-| `encoder/analyse.c` | [encoder/analyse.c.md](encoder/analyse.c.md) |
-| `encoder/analyse.h` | [encoder/analyse.h.md](encoder/analyse.h.md) |
-| `encoder/api.c` | [encoder/api.c.md](encoder/api.c.md) |
-| `encoder/cabac.c` | [encoder/cabac.c.md](encoder/cabac.c.md) |
-| `encoder/cavlc.c` | [encoder/cavlc.c.md](encoder/cavlc.c.md) |
-| `encoder/encoder.c` | [encoder/encoder.c.md](encoder/encoder.c.md) |
-| `encoder/lookahead.c` | [encoder/lookahead.c.md](encoder/lookahead.c.md) |
-| `encoder/macroblock.c` | [encoder/macroblock.c.md](encoder/macroblock.c.md) |
-| `encoder/macroblock.h` | [encoder/macroblock.h.md](encoder/macroblock.h.md) |
-| `encoder/me.c` | [encoder/me.c.md](encoder/me.c.md) |
-| `encoder/me.h` | [encoder/me.h.md](encoder/me.h.md) |
-| `encoder/ratecontrol.c` | [encoder/ratecontrol.c.md](encoder/ratecontrol.c.md) |
-| `encoder/ratecontrol.h` | [encoder/ratecontrol.h.md](encoder/ratecontrol.h.md) |
-| `encoder/rdo.c` | [encoder/rdo.c.md](encoder/rdo.c.md) |
-| `encoder/set.c` | [encoder/set.c.md](encoder/set.c.md) |
-| `encoder/set.h` | [encoder/set.h.md](encoder/set.h.md) |
-| `encoder/slicetype.c` | [encoder/slicetype.c.md](encoder/slicetype.c.md) |
-| `encoder/slicetype-cl.c` | [encoder/slicetype-cl.c.md](encoder/slicetype-cl.c.md) |
-| `encoder/slicetype-cl.h` | [encoder/slicetype-cl.h.md](encoder/slicetype-cl.h.md) |
-| `example.c` | [example.c.md](example.c.md) |
-| `extras/avisynth_c.h` | [extras/avisynth_c.h.md](extras/avisynth_c.h.md) |
-| `extras/cl.h` | [extras/cl.h.md](extras/cl.h.md) |
-| `extras/cl_platform.h` | [extras/cl_platform.h.md](extras/cl_platform.h.md) |
-| `extras/getopt.c` | [extras/getopt.c.md](extras/getopt.c.md) |
-| `extras/getopt.h` | [extras/getopt.h.md](extras/getopt.h.md) |
-| `extras/intel_dispatcher.h` | [extras/intel_dispatcher.h.md](extras/intel_dispatcher.h.md) |
-| `extras/inttypes.h` | [extras/inttypes.h.md](extras/inttypes.h.md) |
-| `extras/stdint.h` | [extras/stdint.h.md](extras/stdint.h.md) |
-| `filters/filters.c` | [filters/filters.c.md](filters/filters.c.md) |
-| `filters/filters.h` | [filters/filters.h.md](filters/filters.h.md) |
-| `filters/video/cache.c` | [filters/video/cache.c.md](filters/video/cache.c.md) |
-| `filters/video/crop.c` | [filters/video/crop.c.md](filters/video/crop.c.md) |
-| `filters/video/depth.c` | [filters/video/depth.c.md](filters/video/depth.c.md) |
-| `filters/video/fix_vfr_pts.c` | [filters/video/fix_vfr_pts.c.md](filters/video/fix_vfr_pts.c.md) |
-| `filters/video/internal.c` | [filters/video/internal.c.md](filters/video/internal.c.md) |
-| `filters/video/internal.h` | [filters/video/internal.h.md](filters/video/internal.h.md) |
-| `filters/video/resize.c` | [filters/video/resize.c.md](filters/video/resize.c.md) |
-| `filters/video/select_every.c` | [filters/video/select_every.c.md](filters/video/select_every.c.md) |
-| `filters/video/source.c` | [filters/video/source.c.md](filters/video/source.c.md) |
-| `filters/video/video.c` | [filters/video/video.c.md](filters/video/video.c.md) |
-| `filters/video/video.h` | [filters/video/video.h.md](filters/video/video.h.md) |
-| `input/avs.c` | [input/avs.c.md](input/avs.c.md) |
-| `input/ffms.c` | [input/ffms.c.md](input/ffms.c.md) |
-| `input/input.c` | [input/input.c.md](input/input.c.md) |
-| `input/input.h` | [input/input.h.md](input/input.h.md) |
-| `input/lavf.c` | [input/lavf.c.md](input/lavf.c.md) |
-| `input/raw.c` | [input/raw.c.md](input/raw.c.md) |
-| `input/thread.c` | [input/thread.c.md](input/thread.c.md) |
-| `input/timecode.c` | [input/timecode.c.md](input/timecode.c.md) |
-| `input/y4m.c` | [input/y4m.c.md](input/y4m.c.md) |
-| `Makefile` | [Makefile.md](Makefile.md) |
-| `output/flv.c` | [output/flv.c.md](output/flv.c.md) |
-| `output/flv_bytestream.c` | [output/flv_bytestream.c.md](output/flv_bytestream.c.md) |
-| `output/flv_bytestream.h` | [output/flv_bytestream.h.md](output/flv_bytestream.h.md) |
-| `output/matroska.c` | [output/matroska.c.md](output/matroska.c.md) |
-| `output/matroska_ebml.c` | [output/matroska_ebml.c.md](output/matroska_ebml.c.md) |
-| `output/matroska_ebml.h` | [output/matroska_ebml.h.md](output/matroska_ebml.h.md) |
-| `output/mp4.c` | [output/mp4.c.md](output/mp4.c.md) |
-| `output/mp4_lsmash.c` | [output/mp4_lsmash.c.md](output/mp4_lsmash.c.md) |
-| `output/output.h` | [output/output.h.md](output/output.h.md) |
-| `output/raw.c` | [output/raw.c.md](output/raw.c.md) |
-| `tools/bash-autocomplete.sh` | [tools/bash-autocomplete.sh.md](tools/bash-autocomplete.sh.md) |
-| `tools/checkasm.c` | [tools/checkasm.c.md](tools/checkasm.c.md) |
-| `tools/checkasm-a.asm` | [tools/checkasm-a.asm.md](tools/checkasm-a.asm.md) |
-| `tools/checkasm-aarch64.S` | [tools/checkasm-aarch64.S.md](tools/checkasm-aarch64.S.md) |
-| `tools/checkasm-arm.S` | [tools/checkasm-arm.S.md](tools/checkasm-arm.S.md) |
-| `tools/checkasm-loongarch.S` | [tools/checkasm-loongarch.S.md](tools/checkasm-loongarch.S.md) |
-| `tools/cltostr.sh` | [tools/cltostr.sh.md](tools/cltostr.sh.md) |
-| `tools/countquant_x264.pl` | [tools/countquant_x264.pl.md](tools/countquant_x264.pl.md) |
-| `tools/digress/__init__.py` | [tools/digress/__init__.py.md](tools/digress/__init__.py.md) |
-| `tools/digress/cli.py` | [tools/digress/cli.py.md](tools/digress/cli.py.md) |
-| `tools/digress/comparers.py` | [tools/digress/comparers.py.md](tools/digress/comparers.py.md) |
-| `tools/digress/constants.py` | [tools/digress/constants.py.md](tools/digress/constants.py.md) |
-| `tools/digress/errors.py` | [tools/digress/errors.py.md](tools/digress/errors.py.md) |
-| `tools/digress/scm/__init__.py` | [tools/digress/scm/__init__.py.md](tools/digress/scm/__init__.py.md) |
-| `tools/digress/scm/dummy.py` | [tools/digress/scm/dummy.py.md](tools/digress/scm/dummy.py.md) |
-| `tools/digress/scm/git.py` | [tools/digress/scm/git.py.md](tools/digress/scm/git.py.md) |
-| `tools/digress/testing.py` | [tools/digress/testing.py.md](tools/digress/testing.py.md) |
-| `tools/gas-preprocessor.pl` | [tools/gas-preprocessor.pl.md](tools/gas-preprocessor.pl.md) |
-| `tools/msvsdepend.sh` | [tools/msvsdepend.sh.md](tools/msvsdepend.sh.md) |
-| `tools/test_x264.py` | [tools/test_x264.py.md](tools/test_x264.py.md) |
-| `version.sh` | [version.sh.md](version.sh.md) |
-| `x264.c` | [x264.c.md](x264.c.md) |
-| `x264.h` | [x264.h.md](x264.h.md) |
-| `x264cli.h` | [x264cli.h.md](x264cli.h.md) |
-| `x264dll.c` | [x264dll.c.md](x264dll.c.md) |
+| Source file | Specification | Status | Lines |
+| --- | --- | --- | ---: |
+| `autocomplete.c` | autocomplete.c.md | pending | 0 |
+| `common/aarch64/asm.S` | common/aarch64/asm.S.md | pending | 0 |
+| `common/aarch64/asm-offsets.c` | common/aarch64/asm-offsets.c.md | pending | 0 |
+| `common/aarch64/asm-offsets.h` | common/aarch64/asm-offsets.h.md | pending | 0 |
+| `common/aarch64/bitstream.h` | common/aarch64/bitstream.h.md | pending | 0 |
+| `common/aarch64/bitstream-a.S` | common/aarch64/bitstream-a.S.md | pending | 0 |
+| `common/aarch64/cabac-a.S` | common/aarch64/cabac-a.S.md | pending | 0 |
+| `common/aarch64/dct.h` | common/aarch64/dct.h.md | pending | 0 |
+| `common/aarch64/dct-a.S` | common/aarch64/dct-a.S.md | pending | 0 |
+| `common/aarch64/dct-a-common.S` | common/aarch64/dct-a-common.S.md | pending | 0 |
+| `common/aarch64/dct-a-sve.S` | common/aarch64/dct-a-sve.S.md | pending | 0 |
+| `common/aarch64/dct-a-sve2.S` | common/aarch64/dct-a-sve2.S.md | pending | 0 |
+| `common/aarch64/deblock.h` | common/aarch64/deblock.h.md | pending | 0 |
+| `common/aarch64/deblock-a.S` | common/aarch64/deblock-a.S.md | pending | 0 |
+| `common/aarch64/deblock-a-common.S` | common/aarch64/deblock-a-common.S.md | pending | 0 |
+| `common/aarch64/deblock-a-sve.S` | common/aarch64/deblock-a-sve.S.md | pending | 0 |
+| `common/aarch64/mc.h` | common/aarch64/mc.h.md | pending | 0 |
+| `common/aarch64/mc-a.S` | common/aarch64/mc-a.S.md | pending | 0 |
+| `common/aarch64/mc-a-common.S` | common/aarch64/mc-a-common.S.md | pending | 0 |
+| `common/aarch64/mc-a-sve.S` | common/aarch64/mc-a-sve.S.md | pending | 0 |
+| `common/aarch64/mc-c.c` | common/aarch64/mc-c.c.md | pending | 0 |
+| `common/aarch64/pixel.h` | common/aarch64/pixel.h.md | pending | 0 |
+| `common/aarch64/pixel-a.S` | common/aarch64/pixel-a.S.md | pending | 0 |
+| `common/aarch64/pixel-a-common.S` | common/aarch64/pixel-a-common.S.md | pending | 0 |
+| `common/aarch64/pixel-a-sve.S` | common/aarch64/pixel-a-sve.S.md | pending | 0 |
+| `common/aarch64/predict.h` | common/aarch64/predict.h.md | pending | 0 |
+| `common/aarch64/predict-a.S` | common/aarch64/predict-a.S.md | pending | 0 |
+| `common/aarch64/predict-c.c` | common/aarch64/predict-c.c.md | pending | 0 |
+| `common/aarch64/quant.h` | common/aarch64/quant.h.md | pending | 0 |
+| `common/aarch64/quant-a.S` | common/aarch64/quant-a.S.md | pending | 0 |
+| `common/arm/asm.S` | common/arm/asm.S.md | pending | 0 |
+| `common/arm/bitstream.h` | common/arm/bitstream.h.md | pending | 0 |
+| `common/arm/bitstream-a.S` | common/arm/bitstream-a.S.md | pending | 0 |
+| `common/arm/cpu-a.S` | common/arm/cpu-a.S.md | pending | 0 |
+| `common/arm/dct.h` | common/arm/dct.h.md | pending | 0 |
+| `common/arm/dct-a.S` | common/arm/dct-a.S.md | pending | 0 |
+| `common/arm/deblock.h` | common/arm/deblock.h.md | pending | 0 |
+| `common/arm/deblock-a.S` | common/arm/deblock-a.S.md | pending | 0 |
+| `common/arm/mc.h` | common/arm/mc.h.md | pending | 0 |
+| `common/arm/mc-a.S` | common/arm/mc-a.S.md | pending | 0 |
+| `common/arm/mc-c.c` | common/arm/mc-c.c.md | pending | 0 |
+| `common/arm/pixel.h` | common/arm/pixel.h.md | pending | 0 |
+| `common/arm/pixel-a.S` | common/arm/pixel-a.S.md | pending | 0 |
+| `common/arm/predict.h` | common/arm/predict.h.md | pending | 0 |
+| `common/arm/predict-a.S` | common/arm/predict-a.S.md | pending | 0 |
+| `common/arm/predict-c.c` | common/arm/predict-c.c.md | pending | 0 |
+| `common/arm/quant.h` | common/arm/quant.h.md | pending | 0 |
+| `common/arm/quant-a.S` | common/arm/quant-a.S.md | pending | 0 |
+| `common/base.c` | common/base.c.md | pending | 0 |
+| `common/base.h` | common/base.h.md | pending | 0 |
+| `common/bitstream.c` | [common/bitstream.c.md](common/bitstream.c.md) | done | 153 |
+| `common/bitstream.h` | [common/bitstream.h.md](common/bitstream.h.md) | done | 130 |
+| `common/cabac.c` | common/cabac.c.md | pending | 0 |
+| `common/cabac.h` | common/cabac.h.md | pending | 0 |
+| `common/common.c` | common/common.c.md | pending | 0 |
+| `common/common.h` | common/common.h.md | pending | 0 |
+| `common/cpu.c` | common/cpu.c.md | pending | 0 |
+| `common/cpu.h` | common/cpu.h.md | pending | 0 |
+| `common/dct.c` | common/dct.c.md | pending | 0 |
+| `common/dct.h` | common/dct.h.md | pending | 0 |
+| `common/deblock.c` | common/deblock.c.md | pending | 0 |
+| `common/frame.c` | common/frame.c.md | pending | 0 |
+| `common/frame.h` | common/frame.h.md | pending | 0 |
+| `common/loongarch/dct.h` | common/loongarch/dct.h.md | pending | 0 |
+| `common/loongarch/dct-a.S` | common/loongarch/dct-a.S.md | pending | 0 |
+| `common/loongarch/deblock.h` | common/loongarch/deblock.h.md | pending | 0 |
+| `common/loongarch/deblock-a.S` | common/loongarch/deblock-a.S.md | pending | 0 |
+| `common/loongarch/loongson_asm.S` | common/loongarch/loongson_asm.S.md | pending | 0 |
+| `common/loongarch/loongson_util.S` | common/loongarch/loongson_util.S.md | pending | 0 |
+| `common/loongarch/mc.h` | common/loongarch/mc.h.md | pending | 0 |
+| `common/loongarch/mc-a.S` | common/loongarch/mc-a.S.md | pending | 0 |
+| `common/loongarch/mc-c.c` | common/loongarch/mc-c.c.md | pending | 0 |
+| `common/loongarch/pixel.h` | common/loongarch/pixel.h.md | pending | 0 |
+| `common/loongarch/pixel-a.S` | common/loongarch/pixel-a.S.md | pending | 0 |
+| `common/loongarch/pixel-c.c` | common/loongarch/pixel-c.c.md | pending | 0 |
+| `common/loongarch/predict.h` | common/loongarch/predict.h.md | pending | 0 |
+| `common/loongarch/predict-a.S` | common/loongarch/predict-a.S.md | pending | 0 |
+| `common/loongarch/predict-c.c` | common/loongarch/predict-c.c.md | pending | 0 |
+| `common/loongarch/quant.h` | common/loongarch/quant.h.md | pending | 0 |
+| `common/loongarch/quant-a.S` | common/loongarch/quant-a.S.md | pending | 0 |
+| `common/loongarch/sad-a.S` | common/loongarch/sad-a.S.md | pending | 0 |
+| `common/macroblock.c` | common/macroblock.c.md | pending | 0 |
+| `common/macroblock.h` | common/macroblock.h.md | pending | 0 |
+| `common/mc.c` | common/mc.c.md | pending | 0 |
+| `common/mc.h` | common/mc.h.md | pending | 0 |
+| `common/mips/dct.h` | common/mips/dct.h.md | pending | 0 |
+| `common/mips/dct-c.c` | common/mips/dct-c.c.md | pending | 0 |
+| `common/mips/deblock.h` | common/mips/deblock.h.md | pending | 0 |
+| `common/mips/deblock-c.c` | common/mips/deblock-c.c.md | pending | 0 |
+| `common/mips/macros.h` | common/mips/macros.h.md | pending | 0 |
+| `common/mips/mc.h` | common/mips/mc.h.md | pending | 0 |
+| `common/mips/mc-c.c` | common/mips/mc-c.c.md | pending | 0 |
+| `common/mips/pixel.h` | common/mips/pixel.h.md | pending | 0 |
+| `common/mips/pixel-c.c` | common/mips/pixel-c.c.md | pending | 0 |
+| `common/mips/predict.h` | common/mips/predict.h.md | pending | 0 |
+| `common/mips/predict-c.c` | common/mips/predict-c.c.md | pending | 0 |
+| `common/mips/quant.h` | common/mips/quant.h.md | pending | 0 |
+| `common/mips/quant-c.c` | common/mips/quant-c.c.md | pending | 0 |
+| `common/mvpred.c` | common/mvpred.c.md | pending | 0 |
+| `common/opencl.c` | common/opencl.c.md | pending | 0 |
+| `common/opencl.h` | common/opencl.h.md | pending | 0 |
+| `common/opencl/bidir.cl` | common/opencl/bidir.cl.md | pending | 0 |
+| `common/opencl/downscale.cl` | common/opencl/downscale.cl.md | pending | 0 |
+| `common/opencl/intra.cl` | common/opencl/intra.cl.md | pending | 0 |
+| `common/opencl/motionsearch.cl` | common/opencl/motionsearch.cl.md | pending | 0 |
+| `common/opencl/subpel.cl` | common/opencl/subpel.cl.md | pending | 0 |
+| `common/opencl/weightp.cl` | common/opencl/weightp.cl.md | pending | 0 |
+| `common/opencl/x264-cl.h` | common/opencl/x264-cl.h.md | pending | 0 |
+| `common/osdep.c` | common/osdep.c.md | pending | 0 |
+| `common/osdep.h` | common/osdep.h.md | pending | 0 |
+| `common/pixel.c` | common/pixel.c.md | pending | 0 |
+| `common/pixel.h` | common/pixel.h.md | pending | 0 |
+| `common/ppc/dct.c` | common/ppc/dct.c.md | pending | 0 |
+| `common/ppc/dct.h` | common/ppc/dct.h.md | pending | 0 |
+| `common/ppc/deblock.c` | common/ppc/deblock.c.md | pending | 0 |
+| `common/ppc/deblock.h` | common/ppc/deblock.h.md | pending | 0 |
+| `common/ppc/mc.c` | common/ppc/mc.c.md | pending | 0 |
+| `common/ppc/mc.h` | common/ppc/mc.h.md | pending | 0 |
+| `common/ppc/pixel.c` | common/ppc/pixel.c.md | pending | 0 |
+| `common/ppc/pixel.h` | common/ppc/pixel.h.md | pending | 0 |
+| `common/ppc/ppccommon.h` | common/ppc/ppccommon.h.md | pending | 0 |
+| `common/ppc/predict.c` | common/ppc/predict.c.md | pending | 0 |
+| `common/ppc/predict.h` | common/ppc/predict.h.md | pending | 0 |
+| `common/ppc/quant.c` | common/ppc/quant.c.md | pending | 0 |
+| `common/ppc/quant.h` | common/ppc/quant.h.md | pending | 0 |
+| `common/predict.c` | common/predict.c.md | pending | 0 |
+| `common/predict.h` | common/predict.h.md | pending | 0 |
+| `common/quant.c` | common/quant.c.md | pending | 0 |
+| `common/quant.h` | common/quant.h.md | pending | 0 |
+| `common/rectangle.c` | common/rectangle.c.md | pending | 0 |
+| `common/rectangle.h` | common/rectangle.h.md | pending | 0 |
+| `common/set.c` | common/set.c.md | pending | 0 |
+| `common/set.h` | common/set.h.md | pending | 0 |
+| `common/tables.c` | common/tables.c.md | pending | 0 |
+| `common/tables.h` | common/tables.h.md | pending | 0 |
+| `common/threadpool.c` | common/threadpool.c.md | pending | 0 |
+| `common/threadpool.h` | common/threadpool.h.md | pending | 0 |
+| `common/vlc.c` | common/vlc.c.md | pending | 0 |
+| `common/win32thread.c` | common/win32thread.c.md | pending | 0 |
+| `common/win32thread.h` | common/win32thread.h.md | pending | 0 |
+| `common/x86/bitstream.h` | common/x86/bitstream.h.md | pending | 0 |
+| `common/x86/bitstream-a.asm` | common/x86/bitstream-a.asm.md | pending | 0 |
+| `common/x86/cabac-a.asm` | common/x86/cabac-a.asm.md | pending | 0 |
+| `common/x86/const-a.asm` | common/x86/const-a.asm.md | pending | 0 |
+| `common/x86/cpu-a.asm` | common/x86/cpu-a.asm.md | pending | 0 |
+| `common/x86/dct.h` | common/x86/dct.h.md | pending | 0 |
+| `common/x86/dct-32.asm` | common/x86/dct-32.asm.md | pending | 0 |
+| `common/x86/dct-64.asm` | common/x86/dct-64.asm.md | pending | 0 |
+| `common/x86/dct-a.asm` | common/x86/dct-a.asm.md | pending | 0 |
+| `common/x86/deblock.h` | common/x86/deblock.h.md | pending | 0 |
+| `common/x86/deblock-a.asm` | common/x86/deblock-a.asm.md | pending | 0 |
+| `common/x86/mc.h` | common/x86/mc.h.md | pending | 0 |
+| `common/x86/mc-a.asm` | common/x86/mc-a.asm.md | pending | 0 |
+| `common/x86/mc-a2.asm` | common/x86/mc-a2.asm.md | pending | 0 |
+| `common/x86/mc-c.c` | common/x86/mc-c.c.md | pending | 0 |
+| `common/x86/pixel.h` | common/x86/pixel.h.md | pending | 0 |
+| `common/x86/pixel-32.asm` | common/x86/pixel-32.asm.md | pending | 0 |
+| `common/x86/pixel-a.asm` | common/x86/pixel-a.asm.md | pending | 0 |
+| `common/x86/predict.h` | common/x86/predict.h.md | pending | 0 |
+| `common/x86/predict-a.asm` | common/x86/predict-a.asm.md | pending | 0 |
+| `common/x86/predict-c.c` | common/x86/predict-c.c.md | pending | 0 |
+| `common/x86/quant.h` | common/x86/quant.h.md | pending | 0 |
+| `common/x86/quant-a.asm` | common/x86/quant-a.asm.md | pending | 0 |
+| `common/x86/sad16-a.asm` | common/x86/sad16-a.asm.md | pending | 0 |
+| `common/x86/sad-a.asm` | common/x86/sad-a.asm.md | pending | 0 |
+| `common/x86/trellis-64.asm` | common/x86/trellis-64.asm.md | pending | 0 |
+| `common/x86/util.h` | common/x86/util.h.md | pending | 0 |
+| `common/x86/x86inc.asm` | common/x86/x86inc.asm.md | pending | 0 |
+| `common/x86/x86util.asm` | common/x86/x86util.asm.md | pending | 0 |
+| `configure` | configure.md | pending | 0 |
+| `doc/ratecontrol.txt` | doc/ratecontrol.txt.md | pending | 0 |
+| `doc/regression_test.txt` | doc/regression_test.txt.md | pending | 0 |
+| `doc/standards.txt` | doc/standards.txt.md | pending | 0 |
+| `doc/threads.txt` | doc/threads.txt.md | pending | 0 |
+| `doc/vui.txt` | doc/vui.txt.md | pending | 0 |
+| `encoder/analyse.c` | encoder/analyse.c.md | pending | 0 |
+| `encoder/analyse.h` | encoder/analyse.h.md | pending | 0 |
+| `encoder/api.c` | encoder/api.c.md | pending | 0 |
+| `encoder/cabac.c` | [encoder/cabac.c.md](encoder/cabac.c.md) | done | 93 |
+| `encoder/cavlc.c` | encoder/cavlc.c.md | pending | 0 |
+| `encoder/encoder.c` | encoder/encoder.c.md | pending | 0 |
+| `encoder/lookahead.c` | encoder/lookahead.c.md | pending | 0 |
+| `encoder/macroblock.c` | encoder/macroblock.c.md | pending | 0 |
+| `encoder/macroblock.h` | encoder/macroblock.h.md | pending | 0 |
+| `encoder/me.c` | encoder/me.c.md | pending | 0 |
+| `encoder/me.h` | encoder/me.h.md | pending | 0 |
+| `encoder/ratecontrol.c` | encoder/ratecontrol.c.md | pending | 0 |
+| `encoder/ratecontrol.h` | encoder/ratecontrol.h.md | pending | 0 |
+| `encoder/rdo.c` | encoder/rdo.c.md | pending | 0 |
+| `encoder/set.c` | [encoder/set.c.md](encoder/set.c.md) | done | 109 |
+| `encoder/set.h` | [encoder/set.h.md](encoder/set.h.md) | done | 68 |
+| `encoder/slicetype.c` | encoder/slicetype.c.md | pending | 0 |
+| `encoder/slicetype-cl.c` | encoder/slicetype-cl.c.md | pending | 0 |
+| `encoder/slicetype-cl.h` | encoder/slicetype-cl.h.md | pending | 0 |
+| `example.c` | [example.c.md](example.c.md) | done | 91 |
+| `extras/avisynth_c.h` | extras/avisynth_c.h.md | pending | 0 |
+| `extras/cl.h` | extras/cl.h.md | pending | 0 |
+| `extras/cl_platform.h` | extras/cl_platform.h.md | pending | 0 |
+| `extras/getopt.c` | extras/getopt.c.md | pending | 0 |
+| `extras/getopt.h` | extras/getopt.h.md | pending | 0 |
+| `extras/intel_dispatcher.h` | extras/intel_dispatcher.h.md | pending | 0 |
+| `extras/inttypes.h` | extras/inttypes.h.md | pending | 0 |
+| `extras/stdint.h` | extras/stdint.h.md | pending | 0 |
+| `filters/filters.c` | filters/filters.c.md | pending | 0 |
+| `filters/filters.h` | filters/filters.h.md | pending | 0 |
+| `filters/video/cache.c` | filters/video/cache.c.md | pending | 0 |
+| `filters/video/crop.c` | filters/video/crop.c.md | pending | 0 |
+| `filters/video/depth.c` | filters/video/depth.c.md | pending | 0 |
+| `filters/video/fix_vfr_pts.c` | filters/video/fix_vfr_pts.c.md | pending | 0 |
+| `filters/video/internal.c` | filters/video/internal.c.md | pending | 0 |
+| `filters/video/internal.h` | filters/video/internal.h.md | pending | 0 |
+| `filters/video/resize.c` | filters/video/resize.c.md | pending | 0 |
+| `filters/video/select_every.c` | filters/video/select_every.c.md | pending | 0 |
+| `filters/video/source.c` | filters/video/source.c.md | pending | 0 |
+| `filters/video/video.c` | filters/video/video.c.md | pending | 0 |
+| `filters/video/video.h` | filters/video/video.h.md | pending | 0 |
+| `input/avs.c` | input/avs.c.md | pending | 0 |
+| `input/ffms.c` | input/ffms.c.md | pending | 0 |
+| `input/input.c` | [input/input.c.md](input/input.c.md) | done | 80 |
+| `input/input.h` | [input/input.h.md](input/input.h.md) | done | 82 |
+| `input/lavf.c` | input/lavf.c.md | pending | 0 |
+| `input/raw.c` | input/raw.c.md | pending | 0 |
+| `input/thread.c` | input/thread.c.md | pending | 0 |
+| `input/timecode.c` | input/timecode.c.md | pending | 0 |
+| `input/y4m.c` | input/y4m.c.md | pending | 0 |
+| `Makefile` | Makefile.md | pending | 0 |
+| `output/flv.c` | output/flv.c.md | pending | 0 |
+| `output/flv_bytestream.c` | output/flv_bytestream.c.md | pending | 0 |
+| `output/flv_bytestream.h` | output/flv_bytestream.h.md | pending | 0 |
+| `output/matroska.c` | output/matroska.c.md | pending | 0 |
+| `output/matroska_ebml.c` | output/matroska_ebml.c.md | pending | 0 |
+| `output/matroska_ebml.h` | output/matroska_ebml.h.md | pending | 0 |
+| `output/mp4.c` | output/mp4.c.md | pending | 0 |
+| `output/mp4_lsmash.c` | output/mp4_lsmash.c.md | pending | 0 |
+| `output/output.h` | output/output.h.md | pending | 0 |
+| `output/raw.c` | output/raw.c.md | pending | 0 |
+| `tools/bash-autocomplete.sh` | tools/bash-autocomplete.sh.md | pending | 0 |
+| `tools/checkasm.c` | tools/checkasm.c.md | pending | 0 |
+| `tools/checkasm-a.asm` | tools/checkasm-a.asm.md | pending | 0 |
+| `tools/checkasm-aarch64.S` | tools/checkasm-aarch64.S.md | pending | 0 |
+| `tools/checkasm-arm.S` | tools/checkasm-arm.S.md | pending | 0 |
+| `tools/checkasm-loongarch.S` | tools/checkasm-loongarch.S.md | pending | 0 |
+| `tools/cltostr.sh` | tools/cltostr.sh.md | pending | 0 |
+| `tools/countquant_x264.pl` | tools/countquant_x264.pl.md | pending | 0 |
+| `tools/digress/__init__.py` | tools/digress/__init__.py.md | pending | 0 |
+| `tools/digress/cli.py` | tools/digress/cli.py.md | pending | 0 |
+| `tools/digress/comparers.py` | tools/digress/comparers.py.md | pending | 0 |
+| `tools/digress/constants.py` | tools/digress/constants.py.md | pending | 0 |
+| `tools/digress/errors.py` | tools/digress/errors.py.md | pending | 0 |
+| `tools/digress/scm/__init__.py` | tools/digress/scm/__init__.py.md | pending | 0 |
+| `tools/digress/scm/dummy.py` | tools/digress/scm/dummy.py.md | pending | 0 |
+| `tools/digress/scm/git.py` | tools/digress/scm/git.py.md | pending | 0 |
+| `tools/digress/testing.py` | tools/digress/testing.py.md | pending | 0 |
+| `tools/gas-preprocessor.pl` | tools/gas-preprocessor.pl.md | pending | 0 |
+| `tools/msvsdepend.sh` | tools/msvsdepend.sh.md | pending | 0 |
+| `tools/test_x264.py` | tools/test_x264.py.md | pending | 0 |
+| `version.sh` | version.sh.md | pending | 0 |
+| `x264.c` | x264.c.md | pending | 0 |
+| `x264.h` | x264.h.md | pending | 0 |
+| `x264cli.h` | [x264cli.h.md](x264cli.h.md) | done | 83 |
+| `x264dll.c` | [x264dll.c.md](x264dll.c.md) | done | 64 |
 
-Total source files: 261
+**Progress: 10 / 261 documents complete (thin docs need expansion).**
