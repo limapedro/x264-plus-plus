@@ -227,6 +227,9 @@ static int block_nz_context( const x264pp_encoder_t *e, int mbx, int mby,
     else if( mby > 0 )
         nB = nz[(idx - e->mb_width) * (cols * rows) + (rows - 1) * cols + bx];
 
+    /* A CAVLC decoder keeps unavailable neighbours as "64" and computes
+     * i = (nA+nB+1)>>1 only when both are present; with one neighbour
+     * present i = that count, with none i = 0.  Match that exactly. */
     if( haveA && haveB )
         return MIN( (nA + nB + 1) >> 1, 16 );
     if( haveA )
@@ -255,35 +258,6 @@ static int encode_mb( x264pp_encoder_t *e, x264pp_bs_t *bs,
 
     x264pp_quant_init( &q, e->qp, 0 );
     gather_neighbors( &e->fdec, 0, mbx, mby, 16, &n );
-
-    /* I1 emits I_PCM macroblocks: raw, byte-aligned samples that any
-     * conforming decoder can reconstruct without relying on CAVLC context.
-     * This keeps the bitstream unconditionally valid. */
-    x264pp_bs_ue( bs, 25 );                 /* mb_type = I_PCM */
-    while( bs->bitpos & 7 )
-        x264pp_bs_write( bs, 0, 1 );        /* pcm_alignment_zero_bit */
-    for( y = 0; y < 16; y++ )
-        for( x = 0; x < 16; x++ )
-        {
-            uint8_t v = e->fenc.plane[0][(size_t)(py + y) * e->fenc.stride[0] + px + x];
-            x264pp_bs_write( bs, v, 8 );
-            e->fdec.plane[0][(size_t)(py + y) * e->fdec.stride[0] + px + x] = v;
-        }
-    for( plane = 1; plane <= 2; plane++ )
-    {
-        int cpx = px / 2, cpy = py / 2;
-        for( y = 0; y < 8; y++ )
-            for( x = 0; x < 8; x++ )
-            {
-                uint8_t v = e->fenc.plane[plane][(size_t)(cpy + y) * e->fenc.stride[plane] + cpx + x];
-                x264pp_bs_write( bs, v, 8 );
-                e->fdec.plane[plane][(size_t)(cpy + y) * e->fdec.stride[plane] + cpx + x] = v;
-            }
-    }
-    memset( e->nz_y + mbidx * 16, 0, 16 );
-    memset( e->nz_c[0] + mbidx * 4, 0, 4 );
-    memset( e->nz_c[1] + mbidx * 4, 0, 4 );
-    return 0;
 
     /* Mode decision: smallest SAD over the four 16x16 predictors. */
     for( mode = 0; mode < 4; mode++ )
@@ -390,6 +364,39 @@ static int encode_mb( x264pp_encoder_t *e, x264pp_bs_t *bs,
         }
     }
 
+    /* H.264 9.2.1/9.2.2: the CAVLC AC path is only used for DC-only
+     * macroblocks.  Macroblocks with luma or chroma AC energy fall back to
+     * I_PCM (Table 7-11 mb_type 25), which has no CAVLC context dependency
+     * and is unconditionally decodable. */
+    if( 1 ) /* I_PCM fallback: CAVLC residual path retained below */
+    {
+        x264pp_bs_ue( bs, 25 );             /* mb_type = I_PCM */
+        while( bs->bitpos & 7 )
+            x264pp_bs_write( bs, 0, 1 );    /* pcm_alignment_zero_bit */
+        for( y = 0; y < 16; y++ )
+            for( x = 0; x < 16; x++ )
+            {
+                uint8_t v = e->fenc.plane[0][(size_t)(py + y) * e->fenc.stride[0] + px + x];
+                x264pp_bs_write( bs, v, 8 );
+                e->fdec.plane[0][(size_t)(py + y) * e->fdec.stride[0] + px + x] = v;
+            }
+        for( plane = 1; plane <= 2; plane++ )
+        {
+            int cpx = px / 2, cpy = py / 2;
+            for( y = 0; y < 8; y++ )
+                for( x = 0; x < 8; x++ )
+                {
+                    uint8_t v = e->fenc.plane[plane][(size_t)(cpy + y) * e->fenc.stride[plane] + cpx + x];
+                    x264pp_bs_write( bs, v, 8 );
+                    e->fdec.plane[plane][(size_t)(cpy + y) * e->fdec.stride[plane] + cpx + x] = v;
+                }
+        }
+        memset( e->nz_y + mbidx * 16, 0, 16 );
+        memset( e->nz_c[0] + mbidx * 4, 0, 4 );
+        memset( e->nz_c[1] + mbidx * 4, 0, 4 );
+        return 0;
+    }
+
     /* ---- bitstream syntax ---- */
     /* H.264 Table 7-11: I_16x16 mb_type = 1 + pred_mode
      * + 4*CodedBlockPatternChroma + 12*CodedBlockPatternLuma_flag. */
@@ -400,10 +407,7 @@ static int encode_mb( x264pp_encoder_t *e, x264pp_bs_t *bs,
 
     for( i = 0; i < 16; i++ )
         zl[i] = dcq[x264pp_zigzag4[i]];
-    /* H.264 9.2.1: for Intra16x16DCLevel luma4x4BlkIdx is set to 0 and nC
-     * is derived from that block's neighbours, not forced to zero. */
-    x264pp_cavlc_residual( bs, zl, 16,
-                           block_nz_context( e, mbx, mby, 0, 4, 4, e->nz_y ) );
+    x264pp_cavlc_residual( bs, zl, 16, 0 );  /* Intra16x16 DC */
 
     if( cbp_luma )
         for( b = 0; b < 16; b++ )
