@@ -198,12 +198,14 @@ static void write_vlc( x264pp_bs_t *bs, x264pp_vlc_t v )
 }
 
 /* Map the caller's nC to a Table 9-5 category.  Non-negative nC is the
- * standard neighbour count; -1/-2 are the dedicated chroma-DC contexts.
- * The I1 convention uses nC = 5 for a 2x2 chroma-DC block. */
+ * standard neighbour count (0..16); only the negative values are the
+ * dedicated chroma-DC contexts: -1 for a 2x2 block (4:2:0), -2 for a 2x4
+ * block (4:2:2).  Positive values 5 and 6 are ordinary neighbour counts and
+ * must be mapped to the normal 4<=nC<8 table, never to a chroma-DC table. */
 static int coeff_token_category( int nC )
 {
-    if( nC == -2 || nC == 6 ) return 5;
-    if( nC == -1 || nC == 5 ) return 4;
+    if( nC == -1 ) return 4;
+    if( nC == -2 ) return 5;
     if( nC < 2 ) return 0;
     if( nC < 4 ) return 1;
     if( nC < 8 ) return 2;
@@ -336,12 +338,20 @@ void x264pp_cavlc_residual( x264pp_bs_t *bs, const int16_t *levels,
 
     suffix = (total > 10 && trailing < 3) ? 1 : 0;
 
-    /* Remaining levels, reverse scan order. */
+    /* Remaining (non-trailing) levels, reverse scan order.  Only non-zero
+     * coefficients carry a level syntax element; zero levels are described
+     * by total_zeros/run_before, so iterating over every scan position here
+     * would emit a spurious level code for each gap and desynchronise the
+     * decoder. */
     for( i = last - trailing; i >= 0; i-- )
     {
         int level = levels[i];
-        int abs_level = level < 0 ? -level : level;
-        int level_code = 2 * abs_level - 2 + (level < 0 ? 1 : 0);
+        int abs_level;
+        int level_code;
+        if( level == 0 )
+            continue;
+        abs_level = level < 0 ? -level : level;
+        level_code = 2 * abs_level - 2 + (level < 0 ? 1 : 0);
         if( first_non_t1 && trailing < 3 )
             level_code -= 2;            /* inverse of 9.2.2 step 7 */
         first_non_t1 = 0;
