@@ -21,7 +21,8 @@ typedef struct x264pp_vlc
 
 /* Write one residual block in zigzag order.  `levels` holds `n` levels,
  * with zeros already interleaved; `nC` is the CAVLC neighbour context
- * (0..4 for 4x4 blocks, 5 for a 2x2 chroma DC block). */
+ * (0..16 for 4x4 blocks, -1 for a 2x2 chroma DC block, -2 for a 2x4
+ * chroma DC block). */
 void x264pp_cavlc_residual( x264pp_bs_t *bs, const int16_t *levels,
                             int n, int nC );
 

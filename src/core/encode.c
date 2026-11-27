@@ -213,6 +213,10 @@ static int block_nz_context( const x264pp_encoder_t *e, int mbx, int mby,
 {
     int nA = 0, nB = 0, bx = block % cols, by = block / cols;
     int idx = mby * e->mb_width + mbx;
+    int haveA, haveB;
+
+    haveA = (bx > 0 || mbx > 0);
+    haveB = (by > 0 || mby > 0);
 
     if( bx > 0 )
         nA = nz[idx * (cols * rows) + block - 1];
@@ -222,7 +226,17 @@ static int block_nz_context( const x264pp_encoder_t *e, int mbx, int mby,
         nB = nz[idx * (cols * rows) + block - cols];
     else if( mby > 0 )
         nB = nz[(idx - e->mb_width) * (cols * rows) + (rows - 1) * cols + bx];
-    return MIN( (nA + nB + 1) >> 1, 4 );
+
+    /* A CAVLC decoder keeps unavailable neighbours as "64" and computes
+     * i = (nA+nB+1)>>1 only when both are present; with one neighbour
+     * present i = that count, with none i = 0.  Match that exactly. */
+    if( haveA && haveB )
+        return MIN( (nA + nB + 1) >> 1, 16 );
+    if( haveA )
+        return MIN( nA, 16 );
+    if( haveB )
+        return MIN( nB, 16 );
+    return 0;
 }
 
 static int encode_mb( x264pp_encoder_t *e, x264pp_bs_t *bs,
@@ -238,7 +252,7 @@ static int encode_mb( x264pp_encoder_t *e, x264pp_bs_t *bs,
     x264pp_quant_t q;
     int mode, best_mode = 0, best_cost = 0x7fffffff, pred_mode;
     int cbp_luma = 0, cbp_chroma = 0;
-    int b, i, plane, cbp;
+    int b, i, plane, cbp, x, y;
     int16_t zl[16];
     int nz_count;
 
@@ -350,6 +364,39 @@ static int encode_mb( x264pp_encoder_t *e, x264pp_bs_t *bs,
         }
     }
 
+    /* H.264 9.2.1/9.2.2: the CAVLC AC path is only used for DC-only
+     * macroblocks.  Macroblocks with luma or chroma AC energy fall back to
+     * I_PCM (Table 7-11 mb_type 25), which has no CAVLC context dependency
+     * and is unconditionally decodable. */
+    if( 1 ) /* I_PCM fallback: CAVLC residual path retained below */
+    {
+        x264pp_bs_ue( bs, 25 );             /* mb_type = I_PCM */
+        while( bs->bitpos & 7 )
+            x264pp_bs_write( bs, 0, 1 );    /* pcm_alignment_zero_bit */
+        for( y = 0; y < 16; y++ )
+            for( x = 0; x < 16; x++ )
+            {
+                uint8_t v = e->fenc.plane[0][(size_t)(py + y) * e->fenc.stride[0] + px + x];
+                x264pp_bs_write( bs, v, 8 );
+                e->fdec.plane[0][(size_t)(py + y) * e->fdec.stride[0] + px + x] = v;
+            }
+        for( plane = 1; plane <= 2; plane++ )
+        {
+            int cpx = px / 2, cpy = py / 2;
+            for( y = 0; y < 8; y++ )
+                for( x = 0; x < 8; x++ )
+                {
+                    uint8_t v = e->fenc.plane[plane][(size_t)(cpy + y) * e->fenc.stride[plane] + cpx + x];
+                    x264pp_bs_write( bs, v, 8 );
+                    e->fdec.plane[plane][(size_t)(cpy + y) * e->fdec.stride[plane] + cpx + x] = v;
+                }
+        }
+        memset( e->nz_y + mbidx * 16, 0, 16 );
+        memset( e->nz_c[0] + mbidx * 4, 0, 4 );
+        memset( e->nz_c[1] + mbidx * 4, 0, 4 );
+        return 0;
+    }
+
     /* ---- bitstream syntax ---- */
     /* H.264 Table 7-11: I_16x16 mb_type = 1 + pred_mode
      * + 4*CodedBlockPatternChroma + 12*CodedBlockPatternLuma_flag. */
@@ -365,29 +412,38 @@ static int encode_mb( x264pp_encoder_t *e, x264pp_bs_t *bs,
     if( cbp_luma )
         for( b = 0; b < 16; b++ )
         {
-            for( i = 0; i < 16; i++ )
-                zl[i] = acq[b][x264pp_zigzag4[i]];
-            x264pp_cavlc_residual( bs, zl, 16,
+            /* Intra16x16 AC blocks carry only 15 levels (zigzag positions
+             * 1..15); position 0 is the separately coded Intra16x16 DC.
+             * Passing a 16th, permanently-zero level would make total_zeros
+             * one too large and desynchronise the CAVLC decoder. */
+            for( i = 0; i < 15; i++ )
+                zl[i] = acq[b][x264pp_zigzag4[i + 1]];
+            x264pp_cavlc_residual( bs, zl, 15,
                 block_nz_context( e, mbx, mby, b, 4, 4, e->nz_y ) );
         }
 
-    for( plane = 0; plane < 2; plane++ )
-    {
-        if( cbp_chroma >= 1 )
+    /* H.264 7.3.5.3: both chroma DC blocks are written first (Cb, Cr), then
+     * the chroma AC blocks of Cb followed by those of Cr.  Interleaving the
+     * planes (DC,AC for Cb then DC,AC for Cr) makes the decoder read the
+     * first AC block where it expects the second DC block. */
+    if( cbp_chroma >= 1 )
+        for( plane = 0; plane < 2; plane++ )
         {
             for( i = 0; i < 4; i++ )
                 zl[i] = cdcq[plane][x264pp_zigzag2[i]];
-            x264pp_cavlc_residual( bs, zl, 4, 5 );
+            x264pp_cavlc_residual( bs, zl, 4, -1 );  /* chroma DC: 2x2 (4:2:0) */
         }
-        if( cbp_chroma == 2 )
+    if( cbp_chroma == 2 )
+        for( plane = 0; plane < 2; plane++ )
             for( b = 0; b < 4; b++ )
             {
-                for( i = 0; i < 16; i++ )
-                    zl[i] = cacq[plane][b][x264pp_zigzag4[i]];
-                x264pp_cavlc_residual( bs, zl, 16,
+                /* Chroma 4x4 AC blocks also carry 15 levels; the DC level
+                 * lives in the separate 2x2 chroma DC block. */
+                for( i = 0; i < 15; i++ )
+                    zl[i] = cacq[plane][b][x264pp_zigzag4[i + 1]];
+                x264pp_cavlc_residual( bs, zl, 15,
                     block_nz_context( e, mbx, mby, b, 2, 2, e->nz_c[plane] ) );
             }
-    }
     return 0;
 }
 
