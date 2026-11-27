@@ -175,6 +175,6 @@ Concrete optimisation opportunities:
 ## 11. Open questions
 
 * The exact contents and derivation of `x264_level_token` and `x264_run_before` are defined in `tables.c`, outside the assigned files — UNKNOWN beyond the size/packing facts stated here.
-* `i_bits_encoded` is declared "RD only"; whether it is maintained by any of these inline helpers or solely by the CALAC/CABAC size functions is UNKNOWN from this header.
+* `i_bits_encoded` is declared "RD only"; whether it is maintained by any of these inline helpers or solely by the CAVLC/CABAC size functions is UNKNOWN from this header.
 * The precise numeric thresholds for choosing `bs_write_ue` versus `bs_write_ue_big` at call sites are caller decisions — UNKNOWN here.
 * Whether `bs_realign` is ever called on a pointer with offset 0 in practice (it is a no-op then) is caller-dependent — UNKNOWN.
