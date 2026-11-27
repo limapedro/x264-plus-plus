@@ -68,6 +68,22 @@ The macroblock writer assembles: optional MBAFF field-decoding flag (1 bit, writ
 
 When `RDO_SKIP_BS` is set, the bit writer counts bits instead of emitting bytes; CBP, chroma DC and reference indices are omitted because they do not vary among the candidates being priced; sub-partitions are written only for P_8x8 to support sub-8x8 decisions; I_PCM is not supported in this mode. Per-partition helpers reset the counter, write the varying elements, and return the count. Chroma-format handling: 4:4:4 uses three planes with no separate chroma pass; 4:2:0/4:2:2 use one luma plane plus chroma; monochrome uses one plane only.
 
+### 5.5 Per-element bit-layout walkthrough
+
+The following spells out the exact codes so a clean implementation can reproduce the stream:
+
+**Macroblock type in an I slice.** `I_16x16` is `ue(offset + 1 + mode + cbp_chroma*4 + (cbp_luma==0 ? 0 : 12))` with offset 0; this single code carries both the 16x16 prediction mode and the CBP, so no separate CBP field follows. `I_4x4`/`I_8x8` write `ue(offset)` (zero for I slices, 5 in P, 23 in B), then an optional 8x8-transform bit, then one entry per 4x4 (or 8x8) block: a single 1 when the mode equals the predictor, else a 4-bit value `mode - (mode > pred)`. Chroma prediction mode is `ue(fix(mode))` for 4:2:0/4:2:2 only.
+
+**P macroblock types.** 16x16 is a single 1 bit plus one reference index (truncated binary over `fref[0]-1` values) and one MVD; 16x8 is `ue(1)`, 8x16 is `ue(2)`, each with two refs/MVDs. P_8x8 is `ue(4)` when all four sub-block references are zero, else `ue(3)`; sub-partitions use the `{3,1,2,0}` table. MVDs are signed Exp-Golomb pairs of `MV - predictor`.
+
+**B macroblock types.** B_8x8 is `ue(22)` followed by four sub-partition codes from the 13-entry table, refs and MVDs per active list. The nine inter-B types use a 3x9 table indexed by partition (16x8/8x16/16x16) and type, with `-1` marking impossible combinations. B_DIRECT is a single 1 bit.
+
+**Coded block pattern.** For non-I_16x16 macroblocks, CBP is `ue(cbp_to_golomb[chroma][intra][(cbp_chroma<<4)|cbp_luma])`; the 400 and 4:2:0 families use different permutations, and intra/inter use different permutations. The transform-size flag follows when 8x8 transform is allowed and luma CBP is nonzero.
+
+**QP delta.** `dqp = qp - last_qp` is wrapped into `[-(QP_MAX_SPEC+1)/2, QP_MAX_SPEC/2]` by adding/subtracting `QP_MAX_SPEC+1`, then written as `se`. The empty-I_16x16 suppression (no CBP or DC coefficients, and QP would increase) sets dqp to zero and restores the previous QP in the real writer.
+
+**Coefficient syntax order.** `coeff_token` (selected by nC, total-1 and trailing count) is written first, followed by trailing signs, then levels for the non-trailing coefficients (adaptive suffix length with escape), then `total_zeros`, then `run_before` values. Chroma DC uses a 2x2 (4:2:0) or 2x4 (4:2:2) total-zeros table. A zero non-zero-count writes only `coeff0_token[nC]`.
+
 ---
 
 ## 6. Dependencies

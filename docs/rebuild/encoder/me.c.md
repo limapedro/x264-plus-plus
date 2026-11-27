@@ -146,6 +146,29 @@ When `subme >= 2`, the full-pel winner is refined with iteration counts taken fr
 
 The sub-pel path obtains samples through `h->mc.get_ref` / `mc_luma` / `mc_chroma`: luma uses the H.264 6-tap half-pel filter with quarter-pel values formed by averaging adjacent half-pel samples; chroma uses a 2-tap filter at half the luma resolution. Weighted prediction is applied either in `get_ref` or by a separate weight function after chroma MC. These primitives live in `common/mc.c` and its SIMD variants; this file only selects coordinates and strides.
 
+### 5.7 Cost and iteration arithmetic in detail
+
+To make an independent implementation bit-compatible, the following arithmetic details matter as much as the search patterns:
+
+- **Table re-basing.** If the MVP is `p` and a candidate is at quarter-pel coordinate `v`, the bit cost is read at index `v - p`, not `v`. The table for a given QP is allocated over roughly `±8*mv_range` entries and its base pointer advanced by half that span, so negative subscripts address real memory. Full-pel methods read `p_cost_mv[4*v]`; half-pel refinement reads the table at quarter-pel resolution directly; ESA/TESA use a separate table indexed by full-pel coordinate and phase `(−mvp) mod 4`.
+- **Tie tags as fractions.** The running best cost is temporarily held as `(cost << k) | tag` with `k = 4` for diamond/square steps and `k = 6` for half-pel steps. Comparing integers then implements "strictly cheaper, or equal cost with higher-priority direction". After the loop the low bits are cleared before the MV is advanced; a zero tag means the centre survived and the loop breaks.
+- **Direction decode.** The low bits are interpreted as a small index into a direction table: diamond tag 1 = up, 3 = down, 4 = left, 12 = right (the binary pattern encodes the sign bit at different positions); half-pel tags 2, 6, 16, 48 follow the same idea at half-pel scale. The movement is one full-pel step (or two quarter-pel units) in the indicated direction.
+- **Range check.** A candidate is legal when both packed comparisons `min - candidate` and `candidate - max` have no sign bit set in either 16-bit half; this is one 32-bit OR and one AND per candidate rather than four scalar comparisons.
+- **SAD threshold scaling.** UMH compares the current best against `v >> shift[block]`. For a 16x16 block `shift = 0` (threshold 2000 or 500 in raw SATD units); for 8x8 it is 1 (1000/250); for 4x8/8x4 it is 2; for 4x4 it is 3. The same shift divides the SAD context thresholds 1000/2000/4000.
+- **Refinement cost switch.** After the half-pel phase, if the SATD primitive differs from the SAD primitive or chroma ME is active, the best cost is reset to the sentinel and the current MV is re-measured with SATD. Without this step a SAD-derived cost would be compared against SATD-derived candidates.
+- **RD screening margin.** Both `SATD_THRESH` uses (`cost + cost>>4` in bidir refinement, `satd <= best + best>>4` in qpel RD) allow a candidate whose SATD is up to 6.25% worse to enter the expensive RD stage; the final decision still uses RD cost, so this is a pure speed filter.
+- **MVD cache clipping.** Bidir RD clips each component difference from the MVP to 33, qpel RD to 66. These values are larger than the usual CABAC MVD thresholds (2 and 32) so the cache remains usable for context prediction without saturating prematurely.
+- **Boundary guards.** Bidir refinement refuses to start within 8 quarter-pel units of any MV limit; qpel RD refuses to start within 3 units and stops its half-hexagon when the vertical coordinate approaches a limit. The guards exist because the patterns assume a full 3x3 neighbourhood of cached predictions.
+
+### 5.8 Interaction with reference-frame costs
+
+The search never adds `i_ref_cost` to `m->cost`; the analyser does so after the call. Consequences to preserve:
+
+1. When comparing across references, both distortion and ref cost must be included, otherwise older frames with cheap SAD but expensive ref flags win incorrectly.
+2. `x264_me_refine_qpel` subtracts `i_ref_cost` for blocks `<= 8x8` before refining, because the refinement only re-optimises the MV within an already chosen reference.
+3. The shared half-pel threshold passed between references is decremented by the ref cost before a search and restored afterwards, so the threshold compares like with like.
+4. Duplicate references are handled outside the normal search: the MV from the previous reference is reused and only a minimal qpel refinement is performed.
+
 ---
 
 ## 6. Dependencies

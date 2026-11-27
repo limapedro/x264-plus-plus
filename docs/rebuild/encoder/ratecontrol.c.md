@@ -117,6 +117,19 @@ Each macroblock adds its bits to `fdec->i_row_bits[y]`; at the last MB of a row 
 
 `x264_thread_sync_ratecontrol` copies "start-updated" fields (P-QP accumulators, last SATD/qscale, short-term complexity, B-frame counts, zone pointer, MB-tree buffer position, and reconfigurable VBV constants) from the most recently started frame context to the one about to start, and "end-updated" fields (complexity sums, expected/filler bits, ABR window, B-frame bits, HRD delays) from the most recently ended context to the one about to end. Slice threading distributes a frame's planned size among slices by row SATD via per-thread predictors, normalises the slice sizes to the frame plan, merges QP averages and updates predictors at frame end.
 
+### 5.14 Per-call state transitions
+
+The lifecycle a clean implementation must reproduce:
+
+1. `ratecontrol_new` allocates one context per thread and seeds ABR constants; thread i>0 receives a bytewise copy with its own `param`, `b_variable_qp` and `ip_offset`.
+2. `zone_init` applies a new zone's parameter set at its first frame via `x264_encoder_reconfig_apply`.
+3. `start` resets per-frame accumulators, computes VBV plan and MinCR cap, derives the frame QP (CQP/CRF/ABR/2pass) and stores `qp_novbv` before any VBV adjustment.
+4. During macroblock encoding, `mb` accumulates row bits and may invoke the VBV row re-encode loop; `mb_qp` adds AQ/MB-tree offsets.
+5. `end` writes stats, updates ABR/2-pass accumulators, computes filler through `update_vbv`, and records HRD arrival/removal times.
+6. `summary` logs the final rate factor for ABR; `delete` closes and renames stat files and frees all buffers.
+
+The VBV model uses two fill counters: `buffer_fill_final` (the true hypothetical decoder buffer) and `buffer_fill_final_min` (a conservative copy that accounts for frames still in flight). Lookahead reduces the conservative fill by each in-progress frame's planned size; `hrd_fullness` uses the true fill to derive the initial CPB removal delay. The distinction is what allows frame threading to remain VBV-compliant without serialising frames.
+
 ---
 
 ## 6. Dependencies

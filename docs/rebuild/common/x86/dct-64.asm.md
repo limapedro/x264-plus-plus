@@ -242,6 +242,37 @@ upper YMM bits) dirty, since the caller uses `TAIL_CALL` to chain the final call
 * **UNKNOWN:** exact cycle counts on modern CPUs; all variants are considered
   mature and dispatch picks the highest available ISA.
 
+### 8.1 Dispatch-level behaviour notes
+
+The ISA variants in this file are *behaviourally identical*; `sse2`, `sse4`,
+and `avx` instantiations of `SUB8x8_DCT8`/`ADD8x8_IDCT8` differ only in encoded
+instructions (VEX vs legacy, and the SSE4 alias set). The dispatcher chooses the
+highest available level, so a clean implementation may provide a single
+version of each kernel and expose multiple symbol aliases, provided the numeric
+results are bit-identical across levels. The `xop` instantiation of
+`DCT_SUB8` uses XOP-specific shuffles but the same arithmetic.
+
+One behavioural subtlety: the SSE2 `DCT_SUB8` block redefines `movdqa` to
+`movaps` and `punpcklqdq` to `movlhps`. These aliases are undefined afterwards,
+so later SSSE3/SSE4 blocks use the normal integer moves. The aliases are safe
+because the affected loads/stores operate on 16-byte-aligned coefficient data;
+a clean implementation using unaligned loads must not copy this alias without
+verifying alignment.
+
+### 8.2 Interaction with the 16x16 composition layer
+
+The `.skip_prologue` entries in this file are called with all pointer and stride
+arguments already set up by `SUB_NxN_DCT`/`ADD_NxN_IDCT` in `dct-a.asm`. Those
+macros pass tiling parameters (`%3` output offset, `%4-%5-%6*STRIDE` source
+stepping) that depend on whether the sub-kernel is 4x4 or 8x8 and on bit depth:
+* 8-bit 4x4 sub-kernel: output offset 128 bytes, source step 8 bytes.
+* 8-bit 8x8 sub-kernel: output offset 128 bytes, source step 8 rows.
+* High-bit-depth 4x4 sub-kernel: output offset 64 bytes, source step 8 bytes.
+* High-bit-depth 8x8 sub-kernel: output offset 256 bytes, source step 16 rows.
+The sub-kernel must leave `r0`, `r1`, `r2` advanced by exactly the amount the
+caller expects; the caller's `add`/`lea` instructions then position the next
+sub-block.
+
 ## 9. References
 
 * ITU-T H.264 integer 8x8 transform definition.

@@ -239,6 +239,37 @@ match the `dct` array layout and the number of registers available.
 * **UNKNOWN:** relative performance of the MMX vs SSE2 8-bit kernels on various
   x86-32 CPUs; dispatch heuristics in the source choose SSE2 where available.
 
+### 8.1 Dispatch-level behaviour notes
+
+All ISA instantiations in this file are numerically equivalent: SSE2, SSSE3,
+AVX and XOP forms of `DCT_SUB8`/`ADD8x8` produce the same coefficients and
+reconstructed samples; they differ only in which load/unpack instructions are
+used. The dispatcher therefore selects the highest available ISA. A clean
+implementation may share one algorithmic body across aliases, provided the
+bit-exact outputs match the baseline MMX/SSE2 implementation.
+
+Notable per-ISA differences that are behavioural only in terms of *inputs
+accepted*, not outputs:
+* The SSE2 block aliases `movdqa`→`movaps` and `punpcklqdq`→`movlhps`, which
+  requires 16-byte-aligned loads. The aliases are `%undef`ed before the SSSE3
+  block so later variants use unaligned-safe integer moves.
+* SSSE3 variants use `pmaddubsw` with `hsub_mul` to compute `a-b` from byte
+  pairs in one instruction, whereas SSE2 uses `punpcklbw` with a zero register
+  followed by `psubw`. Both produce identical signed word differences.
+* XOP uses `vpperm`-style shuffles where available; again identical results.
+
+### 8.2 Comparison with the x86-64 implementation
+
+The x86-64 file `dct-64.asm` implements the same 8-point transform without
+spilling, holding all eight rows plus temporaries in registers. The 32-bit
+kernels here are therefore approximately twice as memory-bound. When evaluating
+a clean implementation, prefer the 64-bit scheduling as the canonical
+description of the algorithm; treat this file's spill scheduling as an
+implementation detail needed only to reproduce 32-bit builds. The numeric
+equations in section 5.10 are identical to those in `dct-64.asm.md` section 5.9,
+so an implementation that passes the verification checklist of one file should
+pass the other, with the additional MMX-permutation checks listed above.
+
 ## 9. References
 
 * ITU-T H.264 integer transform definitions.

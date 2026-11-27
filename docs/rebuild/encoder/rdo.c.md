@@ -106,6 +106,62 @@ The source explicitly calls this a "gigantic hack": CAVLC has five coupled state
 - 4x4 AC: context category decides whether the DC coefficient is treated separately (`ctx_ac` masks); CAVLC and CABAC dispatch to the corresponding trellis engine.
 - 8x8 AC: CABAC uses one 64-coefficient trellis; CAVLC splits into four 4x4 trellis calls with `b_8x8 = 1` remapping and ORs the nonzero results.
 
+### 5.7 Fixed-point arithmetic summary
+
+All cost comparisons in this file use fixed-point integers. An independent implementation must reproduce the shifts exactly, because a one-bit difference can flip a mode decision:
+
+| Quantity | Units | Conversion into score |
+|---|---|---|
+| CAVLC bit count | whole bits | `bits * lambda2`, then `+128 >> 8` for MB/chroma; partition costs keep the product unshifted and are added to `SSD << 8`. |
+| CABAC bit count | 8 fractional bits (`f8_bits_encoded`) | `f8_bits * lambda2`, then `+32768 >> 16` for MB costs; `+128 >> 8` for partition/chroma costs. |
+| Trellis entropy cost | 8 fractional bits | `f8_bits * lambda2 >> (8 - 4)`, i.e. multiply by lambda2 and shift right four. Sign always costs exactly one whole bit (`1 << 8`). |
+| Plane SSD | sample-error squared | summed directly; chroma scaled by `i_chroma_lambda2_offset` with `+128 >> 8`. |
+| Psy-RD penalty | SATD/SA8D difference | `satd * psy_rd * psy_rd_lambda + 128 >> 8`, clamped to `COST_MAX`. |
+| Psy-trellis coefficient bias | source-DCT magnitude | `psy_trellis * |predicted_coef ± unquant_level| * coef_weight1`, subtracted from the squared-error term. |
+
+The `+128` / `+32768` constants are round-to-nearest offsets for an 8-bit or 16-bit right shift. `lambda2` is defined as roughly `0.9 * lambda^2 * 256`; the 256 factor compensates the 8 fractional bits used by CABAC and by partition costs.
+
+### 5.8 Trellis dynamic program in words
+
+The CABAC trellis is a shortest-path problem over coefficient positions. Each node records a partial score and a CABAC state; an edge corresponds to choosing a level for the current coefficient. The recurrence is:
+
+`score_next[state'] = min over (previous node, level) of score_prev[state] + distortion(coef, level) + lambda2 * bits(level, state -> state')`
+
+where `bits` includes the significance flag, last-flag where applicable, the level-1 decision and the unary/suffix cost of the magnitude. Only eight states are kept because only contexts 0, 4, 8 and 9 of the level coding evolve in ways that matter for the next coefficient. The two loop variants correspond to (a) states reachable before any magnitude above one has been seen, where the live set is contiguous from state zero, and (b) states after such a magnitude, where each group of four contexts must be scanned separately. Candidate levels are limited to the nearest integer quantisation and the one below it; that restriction is a deliberate speed/quality compromise.
+
+The level tree stores the chosen magnitude for each (position, state) pair. Because a level choice appends a tree node, the final path is recovered by walking `next` links from the winning node back to the root; signs are re-applied from the original DCT coefficients. A zero-level path is represented implicitly by the root's self-loop, which is why a zero-context winner can empty the block without touching the tree.
+
+For DC-only blocks the DP collapses to three candidate levels and a simpler cost: significance bit + last bit + unary level bits + sign, against a distortion computed with a round-to-multiple-of-16 reconstruction. This shortcut is asserted not to change output in the reference.
+
+### 5.9 Ordering and state discipline
+
+Several details are observable only indirectly but are required for equivalence:
+
+1. RD functions must restore `h->mb.i_type` and `h->mb.b_transform_8x8` after the trial encode; callers rely on their own values surviving.
+2. CABAC state snapshots copy only the bit counter plus the first 460 (or 1024+12) state bytes; the rest of `h->cabac` is untouched. Restoring a stale full state would change later context probabilities.
+3. Partition RD clears `i_cbp_luma` before encoding one 8x8 cell; otherwise a neighbouring cell's CBP leaks into the bit count.
+4. `rd_cost_i8x8` clears the current 8x8 CBP bit before encoding and forces the 8x8 transform; `rd_cost_i4x4` does not touch the transform flag.
+5. In chroma RD, setting `b_dct = 0` while counting a different prediction mode assumes the residual coefficients from the previous call are still in `p_fdec`/`h->dct`; this is why the caller performs chroma prediction before, not after, the call.
+6. Trellis writes NNZ cache entries even for CAVLC's four-way 8x8 split; the caller's later CAVLC pass uses those entries as context, so they must agree with the returned nonzero flag.
+7. Saturation: `rd_cost_mb` clamps the final sum to `COST_MAX`; partition functions use 64-bit arithmetic and do not clamp, since they are compared against `COST_MAX64`.
+
+### 5.10 Interactions with encoding settings
+
+- **Trellis level.** Trellis is active during RD trials only when `i_trellis > 1` and `i_mbrd` is nonzero; the final encode uses the configured trellis value. Therefore trial costs at trellis=1 are computed with deadzone quantisation even though the final residual will be trellis-quantised — an intentional approximation.
+- **Psy-RD zero.** With psy-RD disabled, chroma lambda scaling is exactly 256 and source complexity caches are never populated; `ssd_plane` reduces to plain SSD.
+- **Psy-trellis.** The source DCT arrays (`fenc_dct4`, `fenc_dct8`) are prepared by `analyse.c` once per MB when trellis=2 or when trellis=1 with psy-trellis enabled. Their absence makes the psy bias term zero, restoring ordinary trellis behaviour.
+- **Deblocking in RD.** At subme >= 9, `rd_cost_mb` deblocks the trial reconstruction before measuring SSD, so RD costs reflect what later frames will actually see. This changes the measured distortion but not the entropy count.
+- **8x8 transform.** RD trials can flip `b_transform_8x8`; the cost functions themselves do not decide the transform, but the CAVLC trellis path splits an 8x8 block into four interleaved 4x4 quantisations, so the reported nonzero flag is an OR.
+- **Lossless.** RD cost paths are not used for lossless blocks; `analyse.c` keeps `i_satd_pcm` at the sentinel and trellis is effectively bypassed.
+
+### 5.11 Numeric edge cases
+
+1. When `lambda2` reaches its capped value (134217727 at QP 70+), `lambda2 * bits` can approach 2^31; partition costs therefore use 64-bit arithmetic, and `rd_cost_mb` clamps to `COST_MAX`.
+2. `bs_size_ue_big` switches formula at value 255; this matters for very large MVDs in trellis suffix costs.
+3. The unary prefix is capped at 14: levels 15 and above share the same prefix but add an Exp-Golomb suffix, so the marginal bit cost of a large level grows logarithmically, not linearly.
+4. `TRELLIS_SCORE_BIAS = 1<<60` is large enough that even many negative psy contributions cannot make a valid score negative; scores near `1<<60` are compared with unsigned arithmetic, while zero-coefficient paths subtract cost from the zero node.
+5. Chroma QP offsets are not added inside this file except via `h->mb.i_chroma_qp` set by the analyser; a clean implementation must not recompute them here.
+
 ---
 
 ## 6. Dependencies

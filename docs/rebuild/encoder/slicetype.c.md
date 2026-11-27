@@ -82,6 +82,23 @@ B-adapt has three modes:
 
 `x264_rc_analyse_slice` maps the current frame type to a `(p0, p1, b)` triple (I: 0/0/0; P: 0/bframes+1/bframes+1; B: POC-midpoint derived), reads the cached cost (recomputing under MB-tree/AQ), publishes row SATDs into `fdec`, and, for intra refresh with VBV, adds the intra-minus-inter cost of refreshed columns (scaled by `ip_factor = 256*ip_factor` and AQ weights).
 
+### 5.6 Decision procedure in order
+
+For a clean implementation, the exact decision sequence of `x264_slicetype_analyse` is:
+
+1. Cap search length to `i_max_search = min(next.i_size, X264_LOOKAHEAD_MAX)` and, in deterministic mode, further to `slicetype_length + 1 - intra_minigop`. The anchor `frames[0]` is `lookahead->last_nonb`.
+2. If no frames follow, only run MB-tree (when enabled) and return.
+3. Compute `keyint_limit = keyint_max - frames[0].frame + last_keyframe - 1`; `num_frames = min(framecnt, keyint_limit)` unless intra refresh, psy+MB-tree, or VBV lookahead forces the full window; open GOP may add one frame; zero frames forces frame 1 to I.
+4. Run an early scenecut check on frame 1; a positive result sets it to I and returns.
+5. Replace forced KEYFRAME types by I/IDR depending on open GOP; force the predecessor of an IDR to P when it is B-like.
+6. Run B-adapt: none/fast/trellis as described; force the last frame of the window to P when auto/B.
+7. Check scenecuts within the first B run; if found in the first minigop, demote that frame to P and truncate the analysed window.
+8. Run MB-tree over at most `keyint_max` frames.
+9. Enforce keyint: any frame whose distance from the last keyframe reaches `keyint_max` becomes IDR (or I for open GOP), selecting the latest legal position; a keyframe at ≥ `keyint_min` becomes IDR if closed GOP; IDRs close the GOP by forcing a preceding B to P.
+10. Run VBV lookahead; then restore `i_forced_type` for all frames from `reset_start` onward.
+
+`x264_slicetype_decide` afterwards assigns `i_bframes` to the head frame, marks the last B of the minigop, inserts a middle B-ref when appropriate, precomputes the lowres costs used by rate control (including intra and per-B costs when VBV is active), analyses Weighted-P for the next P frame, and reorders frames into coded order (B-refs at the front, then B, then P) while assigning `i_coded` and CPB durations.
+
 ---
 
 ## 6. Dependencies

@@ -88,6 +88,24 @@ RD-mode residual coding merges significance and level coding: it emits the last 
 
 The RD-only tail of the file provides per-partition helpers (`partition_size_cabac`, `subpartition_size_cabac`, `partition_i8x8_size_cabac`, `partition_i4x4_size_cabac`, `chroma_size_cabac`) used by the analysis code to price individual candidate partition sizes; they write only the syntax elements that vary between candidates.
 
+### 5.7 Per-element decision walkthrough (bit-exact detail)
+
+The following enumerates the decisions in emission order for each macroblock category, so a clean implementation can reproduce context selection exactly:
+
+**Intra macroblock type, I slice.** The context offset is formed from neighbour types: add 1 when the left neighbour exists and is not I_4x4, add 1 when the top neighbour exists and is not I_4x4. The intra tree then emits, for I_16x16, a "16x16" one at `3+ctx`, a terminal, luma-CBP presence at context 6, chroma-CBP presence at 7 (with a second decision at 8 selecting DC+AC), and the prediction mode's high and low bits at 9 and 10. For I_4x4/I_8x8 a single zero at `3+ctx` selects the sub-block path.
+
+**Intra macroblock in a P slice.** A prefix one at context 14 selects intra, then the tree suffix reuses contexts 17,18,19,20,20 (note that the chroma-CBP pair collapses to a single context 19). In a B slice the prefix is the five-decision sequence at 30,31,32,32,32 with values 1,1,1,0,1, and the suffix uses contexts 32,33,34,34,35.
+
+**Intra prediction modes.** For each 4x4 block (or each of the four blocks of an 8x8 when 8x8 transform is active) the predictor is derived from left/top already-coded blocks; a one at context 68 means "predictor equals actual". Otherwise a zero at 68 is followed by three decisions at context 69 encoding the mode with a decrement when it exceeds the predictor. Chroma prediction uses context `64 + (#neighbours with nonzero chroma mode)`, then a second level at 67.
+
+**P macroblock types.** P_L0 begins with a zero at 14; the partition is encoded as context 15 zero for 16x16, or one followed by context 17 selecting 16x8 (one) vs 8x16 (zero). P_8x8 writes 14=0, 15=0, 16=1. Sub-partitions use the 21/22/23 tree. Reference indices are emitted only when more than one forward reference exists.
+
+**B macroblock types.** The base context is `27 + (#neighbours that are neither B_SKIP nor B_DIRECT)`. B_DIRECT emits a zero there and returns. B_8x8 emits the 1,1,1,1,1 prefix at 30/31/32. The nine inter-B types are expanded from a packed 27-byte table into at most five decisions at 30 and 32; the exact pattern depends on type and partition. Reference indices and MVDs are emitted per active list as indicated by the per-type list table.
+
+**MVD component coding.** Each component writes a leading decision at context 40 (x) or 47 (y) plus a component-specific offset from the neighbour MVD magnitudes. A nonzero component emits unary ones through contexts mapped by `{3,4,5,6,6,6,6,6}`; magnitudes ≥ 9 add an order-3 Exp-Golomb bypass of `abs-9`; sign is a bypass bit. The returned magnitude is capped at 66 for the 8-bit cache.
+
+**Residual coefficient levels.** The significance-map traversal is per block category; the level coder maintains an 8-state node FSM with two transition tables (after a level-1, after a level>1). Levels equal to 1 use contexts `{1,2,3,4,0,0,0,0}` plus the category offset; levels greater than 1 use `{5,5,5,5,6,7,8,9}` plus the offset. The unary prefix for level>1 stops at 15; beyond that an order-0 Exp-Golomb bypass carries the excess. Every coefficient is followed by a sign bypass.
+
 ---
 
 ## 6. Dependencies

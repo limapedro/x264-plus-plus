@@ -131,6 +131,51 @@ The SSD thresholds keep most chroma cases cheap: the source comments note that t
 
 For each coefficient category, if the accumulated count exceeds `1<<16` (8x8) or `1<<18` (4x4), the residual sums and count are halved to avoid overflow. Each offset is then computed as `NR_strength * count + residual_sum/2` divided by `residual_sum * weight/256 + 1`; the DC offset is forced to zero so DC is never denoised. Out-of-spec QPs use precomputed "emergency" offsets instead.
 
+### 5.8 Encoding equations and score accumulation
+
+The quantisation/reconstruction chain for a normal lossy coefficient is:
+
+1. Residual transform: `DCT(source_block − prediction)` → coefficients in natural order.
+2. Quantisation: `level = quantize(DCT, quant_mf[qp], bias[qp])`, where the bias implements the dead-zone and the quantiser factor includes `qp/6` scaling.
+3. Zigzag scan into the coefficient array used by the entropy coder.
+4. Reconstruction: `dequantize(level, dequant_mf[qp])` followed by the inverse transform, added to the prediction in `p_fdec`.
+
+In 16x16 intra, the DC coefficients are transformed a second time with a 4x4 Hadamard before quantisation; the quantiser factor is halved and the bias doubled. In chroma, the 2x2/2x4 DC Hadamard is applied across the four/eight 4x4 blocks, and the effective QP for 4:2:2 chroma DC is the chroma QP plus three.
+
+Decimation scores are accumulated, not averaged:
+
+- I16x16: each nonzero 4x4 AC block contributes `decimate_score15(scanned)`, but only while the running total is below 6; once it reaches 6 no further blocks are scored. Total < 6 discards all AC.
+- Inter 4x4 transform: each 8x8 quadrant starts at 0 (decimation enabled) or 6 (disabled) and accumulates `decimate_score16` while below 6; a quadrant with score < 4 is zeroed. The MB-level sum uses the per-quadrant scores and zeroes the whole plane if < 6.
+- Chroma AC: starts at 0 or 7, accumulates while < 7; threshold < 7 means AC is dropped.
+- Inter 8x8 transform: each block contributes `decimate_score64` and needs a score >= 4 to survive; with CABAC trellis this check is skipped because the trellis itself is an optimal decimation.
+
+These scores are not bit counts; they are heuristics approximating "how many significant coefficient bits would be written". Their exact cap behaviour matters because once the cap is reached, scoring stops and the reconstruction already written to `p_fdec` still includes the AC blocks that are about to be discarded — which is why decimation clears NNZ *before* the entropy pass rather than recomputing the residual.
+
+### 5.9 Skip-probe decision equations
+
+For the luma part of `x264_macroblock_probe_skip`, the decisive inequality is `sum(decimate_score16(block)) >= 6`, evaluated over quantised 4x4 blocks of each 8x8 quadrant. The probe uses ordinary deadzone quantisation even when the final encode would use trellis: a block that fails the probe is coded normally, while one that passes must be skip in both paths, so the conservative (deadzone) test is intentional.
+
+For chroma, with `thresh = (lambda2[chroma_qp] + 32) >> 6` (4:2:0) or `+16 >> 5` (4:2:2):
+
+- `SSD < thresh` → plane accepted with no coefficients;
+- else DC quantised and any nonzero DC → probe fails;
+- else `SSD < 4*thresh` → plane accepted with DC only;
+- else AC DCT computed and `sum(decimate_score15) >= 7` → probe fails.
+
+All planes must pass for the probe to return success; success sets `b_skip_mc = 1` so the later encode does not repeat interpolation.
+
+### 5.10 Lossless and I_PCM distinctions
+
+Lossless coding (`b_lossless`) is not the same as I_PCM: lossless still signals prediction modes, CBP and transform coefficients, but the "residual" is computed as `source − exact_prediction` in the scan domain with no transform or quantisation. The prediction must use source-frame neighbours (not reconstructed neighbours) for vertical/horizontal modes, which is what the `x264_predict_lossless_*` functions implement. I_PCM instead copies raw samples into the reconstruction and emits no coefficients at all; it is chosen in analysis when its fixed bit cost beats all other modes.
+
+### 5.11 Weighted prediction and edge interactions
+
+Luma P_SKIP and normal inter motion compensation pass the slice's per-reference weight descriptor directly to `mc_luma`. Chroma weights are applied after `mc_chroma` (or after a direct deinterleave for a zero MV) using the weight function indexed by the chroma block width. When weighted prediction is active, the P-skip probe and the final encode must apply the identical weight sequence, otherwise probe success does not imply a genuinely zero residual.
+
+At frame edges, MV clipping uses `mv_min`/`mv_max` (not the sub-pel limits) before motion compensation. Pixels outside the frame are supplied by the frame's padding; the reference planes are padded horizontally by `PADH` and vertically by `PADV` with the appropriate extension. For MBAFF, the vertical chroma MV is adjusted by a field offset when the reference is not ref 0; this affects both the probe and the encode.
+
+Intra MBs always encode chroma using the selected chroma prediction mode, regardless of whether luma used 16x16, 8x8 or 4x4 prediction. Inter MBs skip that prediction step and feed the motion-compensated chroma directly into `x264_mb_encode_chroma`. A 4:4:4 stream uses three luma-sized planes and no chroma sub-sampling, so the "chroma" flag passed to `macroblock_encode_internal` is false and all three planes go through the luma transform path.
+
 ---
 
 ## 6. Dependencies
@@ -190,6 +235,8 @@ For each coefficient category, if the accumulated count exceeds `1<<16` (8x8) or
 8. P_SKIP/B_SKIP re-detection at the end of encoding matches the probe decision.
 9. With `b_transform_8x8` toggled, the chosen transform does not change reconstruction outside quantisation differences.
 10. RD partial encoders clear and restore the correct CBP bit for their 8x8 cell and leave neighbouring NNZ untouched.
+11. Weighted prediction: with a non-identity weight, a successful skip probe implies the full encode produces zero coefficients; with a mismatched weight application this test fails.
+12. At frame/MBAFF edges, clipped MVs produce the same reconstruction with and without the skip path.
 
 ---
 
