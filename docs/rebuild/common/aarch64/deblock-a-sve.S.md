@@ -46,6 +46,39 @@ An internal macro `h264_loop_filter_chroma_sve` implements the filter body; it i
 
 Rounding: the delta uses a rounding right shift by 3 (half-up), followed by symmetric clipping to ±tc0. Saturation: byte results are clamped, not wrapped. Predication: lanes whose tc0 is zero or whose gradients exceed thresholds remain untouched in memory (their registers may be modified but are not stored).
 
+### Exact filter equation
+
+For each eligible byte lane:
+
+```
+d0 = p0 − q0 ;  d1 = p1 − p0 ;  d2 = q1 − q0
+eligible = (|d0| < alpha) && (|d1| < beta) && (|d2| < beta)
+delta_raw = (4*(q0 − p0) + (p1 − q1) + 4) >> 3   // rounded
+delta = clamp( delta_raw, −tc, +tc )
+p0' = Clip1( p0 + delta )
+q0' = Clip1( q0 − delta )
+```
+
+The assembly forms `4*(q0−p0) + (p1−q1)` with unsigned widening (`uxtl`, `usubw`, `uaddw`, `shl #2`) into 16-bit lanes, applies `rshrn #3` (rounding right shift by 3 while narrowing to bytes), and clips with `smin`/`smax` against the replicated tc0 word and its negation. The widening add/subtract before `sqxtun` implements `Clip1`.
+
+### Predicate construction and lane accounting
+
+- `p0.b, vl16`: all 16 byte lanes active.
+- `p1.b`: lanes where `alpha > |p0−q0|`, formed with `cmhi` (strict greater-than, so equality does not filter).
+- `p2.b`, `p3.b`: lanes where `beta > |p1−p0|` and `beta > |q1−q0|`.
+- `p1.b = p1 & p2 & p3`: the final write mask; lanes failing any condition are not stored.
+- `v24` is the tc0 word widened from bytes to halfwords and then shifted left by 8 and 16 bits (`sli`) so each 8-bit tc0 value lands in the correct 32-bit lane for the 16-lane byte comparison.
+
+### Threshold and tc0 semantics
+
+- `alpha` and `beta` are runtime QP-derived thresholds; larger values filter more edges.
+- `tc0` is four signed bytes, one per 4×4 edge segment; only negative entries request filtering, and the magnitude is the clipping limit. The shared start macro detects "all non-negative" and returns before any loads.
+- `p1` and `q1` are read but not written — chroma filtering touches only the two rows adjacent to the boundary.
+
+### Dispatch conditions
+
+Installed only when `HAVE_SVE` and `X264_CPU_SVE` are set, overriding the `deblock_chroma[1]` (vertical chroma) entry. All other deblock functions remain NEON. The SVE kernel must be bit-identical to `deblock_v_chroma_neon`; it is a pure optimization, not a semantic change.
+
 ## 6. Dependencies
 
 - Includes `asm.S` and `deblock-a-common.S`.

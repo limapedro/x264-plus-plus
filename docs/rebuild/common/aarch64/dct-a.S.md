@@ -95,6 +95,40 @@ Tables: `scan4x4_frame`/`scan4x4_field` map output index to byte-offset in the c
 
 Rounding/saturation summary: forward transforms have no shift or saturation; inverse transforms use `srshr #6` (rounding) followed by widening add and unsigned saturating narrow; DC-only paths use `uqadd`/`uqsub` for byte saturation; DC forward transforms use rounding halving adds with an explicit +1 adjustment.
 
+### Exact transform and inverse equations
+
+For a 4×4 residual `r[x][y]`, the forward transform computes an intermediate matrix `s[u][v]` with the H.264 4-point basis: even outputs use `a+d ± (b+c)`, odd outputs use the 1.5-weighted combinations `a−d` and `b−c`. The final 4×4 DCT is obtained by applying this 1-D transform along rows, transposing, and applying it again along columns. No division occurs in the forward direction; scaling is absorbed into the quantizer.
+
+The inverse 4×4 transform is the transpose of the forward basis. For each of the two 1-D passes, with inputs `(a, b, c, d)`:
+
+```
+e = a + c ;  f = a − c ;  g = (b >> 1) − d ;  h = (d >> 1) + b
+out = (e + h, f + g, f − g, e − h)
+```
+
+where `>>` is an arithmetic shift. After both passes the four outputs are scaled by `1/64` with rounding (`srshr #6`), added to the predictor as unsigned bytes, and clipped to `[0,255]`.
+
+For the 8×8 transform, `DCT8_1D` uses the symmetric decomposition: form sum/difference pairs `(s07,d07)`, `(s16,d16)`, `(s25,d25)`, `(s34,d34)`; combine even and odd groups into `a0..a7` with doublings and 1.5-weighted terms; then emit the eight outputs using shifts by 1 and 2 with the `SUMSUB_SHR`/`SUMSUB_SHR2` conventions (`sum = a + (b>>shift)`, `sub = (a>>shift) − b`). The inverse 8×8 path reconstructs the eight coefficients with the corresponding `SUMSUB_15` (1.5×) combinations and the mirrored shifts, then applies the same `1/64` rounding.
+
+### DC-only equations
+
+For a 4×4 block, the DC coefficient is `sum(r)/4` after the two 4-point passes and the final `srhadd`/`shsub` rounding; the `+1` vector accounts for the half-integer bias. The inverse DC path adds `(dc+32)>>6` to each of the four quadrants of an 8×8 block (or sixteen quadrants of a 16×16 block), with per-quadrant saturation via `uqadd`/`uqsub`.
+
+For `sub8x8_dct_dc_neon`, the eight row sums are reduced by three transpose/butterfly stages and two pairwise adds (`addp`) to four DC values; `sub8x16_dct_dc_neon` repeats this on two halves and produces eight values.
+
+### Zig-zag permutation semantics
+
+The `scan*` tables are permutation vectors: output coefficient `k` is loaded from input byte offset `2*index[k]` (and `2*index[k]+1` for the high byte) in the 4×4 case, or via four-register `tbl` lookups in the 8×8 case. The frame scan follows the standard zig-zag traversal of an 8×8 frequency matrix; the field scan traverses even and odd rows in interleaved groups, matching the field-coded scan defined by H.264.
+
+The `sub*` tables are also permutations, but of *pixel row positions*: they reorder loaded rows so that the subsequent `usubl` differences line up with the scan order, allowing the fused kernels to write the source pixels back to reconstruction and compute the level array in one pass.
+
+### Decision conditions in fused kernels
+
+- Fused `zigzag_sub_4x4*`: return value is `1` iff `max(|level[i]|) > 0`; computed by `umaxv` over the widened differences.
+- `zigzag_sub_4x4ac*`: the DC difference is stored through the `dc` pointer and the first level is zeroed before storing, so the returned flag reflects AC energy only.
+- Fused `zigzag_sub_8x8*`: the same flag is computed by nested `umax` reductions over 64 widened differences.
+- CAVLC interleave: each `nnz` flag is `1` iff the maximum magnitude over all 64 coefficients of that block is at least 1; the comparison is `cmhs` against a vector of ones, then masked.
+
 ## 6. Dependencies
 
 - Includes `asm.S` (symbol macros, strides, transposes) and `dct-a-common.S` (`DCT_1D`).

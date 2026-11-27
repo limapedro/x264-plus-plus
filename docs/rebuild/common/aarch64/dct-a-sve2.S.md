@@ -45,6 +45,37 @@ No persistent state; all values are register-resident.
 
 Rounding and saturation: exactly as specified by H.264 — round before adding the predictor (`srshr #6`), then clamp the sum to [0,255]. There is no additional rounding in the add.
 
+### Inverse-transform equations
+
+For each 1-D inverse pass with inputs `(a, b, c, d)`:
+
+```
+e = a + c ;  f = a − c
+g = (b >> 1) − d ;  h = (d >> 1) + b
+o0 = e + h ;  o1 = f + g ;  o2 = f − g ;  o3 = e − h
+```
+
+The first pass is performed at 8-halfword width (two 4×4 blocks' worth of data) using `sshr #1` for the halving; the high 64 bits are copied into the low half (`mov v.d[0], v.d[1]`) so the transposed 4-lane stage sees the right values. The second pass runs at the 4-lane predicate width after `transpose4x4.h`.
+
+After both passes:
+
+```
+contribution = srshr( transformed, 6 )     // round-to-nearest, arithmetic
+sample = Clip1( predictor + contribution ) // sqxtunb narrows and saturates to 0..255
+```
+
+`srshr` adds 32 before the right shift, so a value of exactly `+0.5` rounds away from zero; the H.264 inverse transform requires this rounding direction.
+
+### Predicate lane accounting
+
+- `p0.h, vl8`: predicated widening byte loads of the four predictor rows read four bytes each into eight halfword lanes; the upper four lanes are inactive/zero.
+- `p1.h, vl4`: the rounding shifts and byte stores operate on exactly four lanes per row. `st1b {z.h}, p1` stores the low byte of each halfword lane under the predicate.
+- The store order (rows 0, 1, 3, 2) reflects the register permutation after the transpose. A clean-room port that computes the transform in a different register order must still write the rows in the standard raster order; verify by output comparison, not by mimicking the store sequence literally.
+
+### Dispatch conditions
+
+Selected only when `HAVE_SVE2` and `X264_CPU_SVE2` are set; overrides `add4x4_idct`. CPUs with SVE but not SVE2 keep the NEON inverse transform even though the forward SVE kernel may be active — the two feature levels are independent.
+
 ## 6. Dependencies
 
 - Includes `asm.S` and `dct-a-common.S`.

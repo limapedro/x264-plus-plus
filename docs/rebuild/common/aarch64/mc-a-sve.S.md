@@ -56,6 +56,34 @@ Rounding: `sqrshrun #6` rounds half-up (adds 32 before shifting) and saturates t
 
 Ordering: rows processed in pairs; source pointers advance even for the last pair. Heights 2, 4, 8, 16 are all even, so the pair loop terminates exactly.
 
+### Arithmetic definitions
+
+All weighted kernels implement:
+
+```
+out = Clip1( (w1*s1 + w2*s2 + 32) >> 6 ),   w1 + w2 = 64
+```
+
+with three sign regimes handled by distinct instruction sequences:
+
+| Regime | Condition | Computation | Instruction idiom |
+| --- | --- | --- | --- |
+| add_add | `0 <= w1 <= 64` | `w1*s1 + w2*s2` | `mul` then `mla` |
+| add_sub | `w1 > 64` | `w1*s1 − (w1−64)*s2` | `mul` then `mls` |
+| sub_add | `w1 < 0` | `(64−w1)*s2 − (−w1)*s1` | `mul` then `mls` with swapped operands |
+
+The macros `weight_add_add_sve`, `weight_add_sub_sve`, and `weight_sub_add_sve` select the idiom; `load_weights_add_add`, `load_weights_add_sub`, and `load_weights_sub_add` (from `mc-a-common.S`) normalize the scalar weights before broadcasting. The `sqrshrun #6` instruction simultaneously rounds (adds 32), shifts right by 6, and saturates the signed 16-bit sum into an unsigned byte.
+
+### Lane and height accounting
+
+- `ptrue p0.b, vl8`: each predicated `ld1b {z.h}` loads four source bytes into the low four halfword lanes; the upper four are inactive. This is why the kernel processes four pixels per row despite using an 8-lane predicate.
+- The height counter `w9` is decremented by two per loop iteration; all instantiated heights (2, 4, 8, 16) are even, so the loop terminates exactly.
+- For `h = 2` the single iteration loads two rows and writes two rows; for larger heights the same body repeats.
+
+### Dispatch conditions
+
+`x264_mc_init_aarch64` overrides `pf->avg[PIXEL_4x2]`, `[4x4]`, `[4x8]`, and `[4x16]` with these SVE kernels only in 8-bit builds with `HAVE_SVE` and `X264_CPU_SVE`, and only after the NEON assignments. All other block sizes remain NEON. The `weight == 32` fast path branches to `pixel_avg_w4_neon`, so the SVE kernel is not used for the plain 50/50 average.
+
 ## 6. Dependencies
 
 - Includes `asm.S` and `mc-a-common.S`.

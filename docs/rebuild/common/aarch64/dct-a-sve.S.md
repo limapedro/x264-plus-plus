@@ -56,6 +56,35 @@ Comparison with NEON: the only difference is the load mechanism — SVE predicat
 
 Note the flag layout: the NEON version writes bytes at offsets 0, 7, 8, 12 (via scalar stores with a stride of 7); the SVE version writes at 0, 1 and then 8 (after adding 8), i.e. offsets 0, 1, 8, 9. UNKNOWN whether the SVE caller expects a different flag packing, or whether one of these readings is a misobservation; this is a verification priority because a wrong flag layout changes CAVLC decisions.
 
+### Exact arithmetic performed
+
+The 4×4 DCT is defined by applying the 4-point butterfly twice (once along rows, once along transposed columns) to the difference matrix `d[x][y] = pix1[x][y] − pix2[x][y]`. With inputs `(a,b,c,d)` the 1-D butterfly produces:
+
+```
+e = a + d ;  f = b + c ;  g = a − d ;  h = b − c
+o0 = e + f ;  o1 = 2*h + g ;  o2 = e − f ;  o3 = h − 2*g
+```
+
+(the exact register assignment is the one in `dct-a-common.S`; no shifts or rounding are involved). The output is sixteen signed halfwords, identical to the NEON kernel's result.
+
+The interleave kernel's magnitude reduction is a pairwise maximum tree:
+1. `umax` between corresponding coefficient positions of block 0 and block 2, and block 1 and block 3,
+2. `umaxp` horizontally within each pair,
+3. a final `umaxp` and `cmhs` against 1.
+
+Hence flag[k] = 1 iff any of the four blocks has a non-zero coefficient at position k, and the four flag bytes correspond to the four blocks. (See the UNKNOWN in section 5 about the exact destination offsets.)
+
+### Predicate and lane accounting
+
+- `ptrue p0.h, vl4`: only four halfword lanes participate in the DCT loads, regardless of the hardware's SVE vector length. The remaining lanes are inactive and their registers read as zero, which is harmless because the butterfly only combines active lanes.
+- `ptrue p2.s, vl2`: the flag store writes two 32-bit lanes; `st1b` stores the low byte of each selected word lane, giving two bytes per store.
+- `mov z31.s, #1`: an all-ones-per-word constant for the comparison; `and v16.16b, v16.16b, v31.16b` clears all bits except the compared lane bit.
+
+### Dispatch conditions
+
+- `sub4x4_dct_sve` is selected only when `HAVE_SVE` and `X264_CPU_SVE` are set; it overrides the NEON 4×4 forward DCT.
+- `zigzag_interleave_8x8_cavlc_sve` overrides the progressive CAVLC interleave. In interlaced/field coding the NEON or C version may remain selected (UNKNOWN whether the dispatcher distinguishes).
+
 ## 6. Dependencies
 
 - Includes `asm.S` and `dct-a-common.S`.

@@ -95,6 +95,49 @@ This implements the standard CABAC "if output == 0xff, postpone; otherwise flush
 
 This encodes the terminating bin with the special rule that the range contribution is `range - 2`; only one renormalization can be needed.
 
+### Explicit interval-update equations
+
+The three entry points implement the following mathematical state transitions (all values are kept in the reference's fixed-point representation):
+
+| Operation | New range | New low | State update |
+| --- | --- | --- | --- |
+| Decision, MPS taken | `range − rangeLPS` | unchanged | `transition[(b<<1) \| state]` |
+| Decision, LPS taken | `rangeLPS` | `low + range − rangeLPS` | `transition[(b<<1) \| state]` |
+| Bypass | unchanged | `(low << 1) + (b & range)` | none |
+| Terminate (early) | `range − 2` | unchanged | none |
+| Terminate (renorm path) | `(range − 2) << 1` | `low << 1` | none |
+
+LPS/MPS selection is decided by the parity of `b XOR (state & 1)`: when the bit differs from the state's MPS bit, the LPS branch is taken. `rangeLPS` is looked up as `cabac_range_lps[(state >> 1)][range >> 6]`; the index arithmetic uses the fact that valid ranges lie in a narrow band so a single 6-bit shift selects the right column.
+
+### Renormalization decision
+
+Let `s = clz(range) − 23`. For all valid CABAC ranges `s` is 0 or 1; larger values indicate a non-conforming state. The transition is:
+
+```
+low    <- low << s
+range  <- range << s
+queue  <- queue + s
+```
+
+A byte is emitted iff `queue >= 0` after the addition. The `clz`-based shift replaces a loop of conditional doublings and is exact because the reference range representation always has bit 8 or higher set before renormalization.
+
+### Byte-emission state machine
+
+The emission path can be understood as a small state machine over `(queue, bytes_outstanding)`:
+
+1. Compute candidate byte `out = low >> (queue + 10)`, then decrement `queue` by 8.
+2. If `out == 0xff`: increment `bytes_outstanding`, clear the bits of `low` above the emitted byte, and return without writing. (The `0xff` is remembered implicitly.)
+3. Otherwise: derive the carry from the high bit of `out`, patch the previously emitted byte with that carry, emit `bytes_outstanding` copies of the "carry-adjusted `0xff`" value, emit `out`, reset `bytes_outstanding` to zero, and advance `p`.
+
+The quantity `queue + 10` arises from the reference's 32-bit interval convention: the top output byte sits at bits 10..17 of `low`, with bits 8..9 and below carrying queued output bits. Negative `queue` values mean fewer than eight bits are ready, so no byte is emitted.
+
+### Constraint summary
+
+- `range` must be in the normalized band; otherwise `clz(range) − 23` can be negative and the shifts are undefined.
+- `p` must have at least one previously written byte when carry propagation occurs; the first byte of a NAL is written by the caller before CABAC starts.
+- `state` indices must be in `[0, 1023]`; the table is addressed without bounds checks.
+- `i_bytes_outstanding` can grow only while consecutive output bytes equal `0xff`; a single non-`0xff` byte flushes them all.
+
 ## 6. Dependencies
 
 - Includes `asm.S` (symbol macros) and `asm-offsets.h` (field offsets).

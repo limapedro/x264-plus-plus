@@ -98,6 +98,72 @@ Computes `bs[2][8][4]` for one macroblock from `nnz`, `ref`, and `mv`:
 
 Rounding/saturation: only in the filter deltas (`rshrn`/`uqrshrn`) and byte clamping (`sqxtun`). Boundary strength uses saturating arithmetic (`uqsub`) and max (`umax`) to avoid wraparound.
 
+### Boundary-strength and threshold equations
+
+Boundary strength `BS` for an edge between two 4×4 blocks is derived before this file runs:
+- intra block or non-reference edge → 3,
+- differing reference indices or motion-vector difference ≥ `mvy_limit` → 2,
+- non-zero residual coefficients on either side → 1,
+- otherwise → 0.
+
+`deblock_strength_neon` computes the 0/1/2 part by combining per-byte flags: `bs = max( ref_or_mv_flag, 2 × nnz_flag )`, with `ref_or_mv_flag` produced by ORing reference-index differences and saturating-subtracted MV differences, and `nnz_flag` by ORing adjacent block non-zero flags and clamping to 1.
+
+Alpha and beta are runtime QP-derived thresholds. For each sample pair the filter decision is a conjunction of strict comparisons:
+
+| Condition | Meaning |
+| --- | --- |
+| `abs(p0 − q0) < alpha` | edge is strong enough to filter |
+| `abs(p1 − p0) < beta` | p-side gradient is small |
+| `abs(q1 − q0) < beta` | q-side gradient is small |
+| `abs(p2 − p0) < beta` | enables strong filtering on p side |
+| `abs(q2 − q0) < beta` | enables strong filtering on q side |
+
+Eligible lanes are selected by ANDing the corresponding predicates; lanes outside the mask are not written back.
+
+### Weak (normal) filter equation
+
+For inter luma/chroma edges with `BS < 4`:
+
+```
+delta0 = (q0 − p0) << 2
+delta1 = p1 − q1
+delta  = (delta0 + delta1 + 4) >> 3
+delta  = clip( delta, −tc, +tc )
+p0' = Clip1( p0 + delta )
+q0' = Clip1( q0 − delta )
+```
+
+The assembly computes `delta0 + delta1` in widened 16-bit lanes and applies a rounding right shift by 3 (`rshrn #3`), then clips with `smin`/`smax` against the broadcast tc0 value and its negation. `Clip1` is implemented by unsigned saturating narrow (`sqxtun`) after the widening add/subtract.
+
+### Strong luma filter equations
+
+When the p-side (q-side) strong condition holds, up to three samples on that side are replaced by weighted averages of neighbouring samples, e.g.:
+
+```
+p0' = (p2 + 2*p1 + 2*p0 + q0 + q1 + 4) >> 3
+p1' = (p2 + p1 + p0 + q0 + 2) >> 2
+p2' = (2*p2 + p1 + p0 + q0 + q1 + 4) >> 3
+```
+
+with symmetric formulas on the q side. The implementation builds these with wide unsigned adds and `rshrn`/`uqrshrn` shifts by 2 or 3, then blends with the weak result using the strong-condition masks.
+
+### Intra filter equations
+
+For intra edges with fixed strength 3, the primary rule is:
+
+```
+p0' = (2*p1 + p0 + q1 + 2) >> 2
+q0' = (2*q1 + q0 + p1 + 2) >> 2
+```
+
+If `abs(p0 − q0) < (alpha >> 2) + 2` also holds (the stricter intra condition), the wider strong formulas for p0/p1/p2 and q0/q1/q2 apply, selected by `abs(p2 − p0) < beta` and `abs(q2 − q0) < beta`. The reference shortcuts the entire strong branch with a single `cbz` test on a narrowed mask word.
+
+For intra chroma there is no strong branch; only the two-tap formulas above are applied with a mask combining the three gradient conditions.
+
+### Transpose and lane selection
+
+Horizontal filters transpose 8×16 or 4×8 byte matrices into columns, run the same per-lane filter, transpose back, and store with `st2` (de-interleaving U/V) or with 4-byte scatter stores. The masks lane-align with the transposed layout, so a single predicate/byte-mask simultaneously controls all columns of an edge.
+
 ## 6. Dependencies
 
 - Includes `asm.S` and `deblock-a-common.S`; uses all transpose macros.
