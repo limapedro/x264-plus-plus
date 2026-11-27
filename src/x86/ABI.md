@@ -38,3 +38,38 @@ Developer agents may compile-check only. Kernel equivalence is established by th
 | Quant/dequant | `quant-a.asm.md`, `quant.h.md` | P1 |
 | Deblocking | `deblock-a.asm.md` | P2 |
 | Bitstream/CAVLC output | `bitstream-a.asm.md`, `cabac-a.asm.md` | P2 |
+
+## Implemented AVX2 kernels (this branch)
+
+Each group is an original NASM file, assembled with `-f win64` and linked by
+`src/Makefile` through `ASM_SOURCES`:
+
+| File | Exported symbols |
+| --- | --- |
+| `sad.asm` | `x264pp_sad4x4_avx2`, `x264pp_sad8x8_avx2`, `x264pp_sad16x16_avx2`, `x264pp_satd4x4_avx2`, `x264pp_satd8x8_avx2`, `x264pp_satd16x16_avx2` |
+| `dct.asm` | `x264pp_dct4x4_avx2`, `x264pp_idct4x4_avx2`, `x264pp_hadamard4x4_avx2` |
+| `predict.asm` | `x264pp_intra4x4_avx2`, `x264pp_intra16x16_avx2` |
+| `quant.asm` | `x264pp_quant4x4_avx2`, `x264pp_dequant4x4_avx2` |
+| `deblock.asm` | `x264pp_deblock_edge_avx2` |
+
+### Interpretation notes for the fixed prototypes
+
+* `sad*`: byte strides; `psadbw` lane sums are folded into a zero-extended EAX.
+* `satd*`: 4x4 Hadamard of the residual with the half-scale applied to each
+  8x4 group (two 4x4 tiles), following `docs/rebuild/common/pixel.c.md` §5.3.
+* `dct4x4`/`idct4x4`/`hadamard4x4`: pure 16-word transforms (raster order,
+  no pixel add or clipping), matching `src/core/dct.c`.
+* `intra*`: `above[0]`/`left[0]` are the top-left corner, `above[1+k]` = T[k],
+  `left[1+k]` = L[k].  H.264 mode numbering is used.
+* `quant4x4`/`dequant4x4`: `qp_table[qp]` is a Q16 multiplier; the dead-zone
+  bias is half of it.  `zigzag[i]` is the natural index of scan position i;
+  `qcoef` is scan-ordered, `dqcoef` natural-ordered.  Dequantisation uses the
+  H.264 levelScale vector and shift `qp/6-4`.
+* `deblock_edge`: `bS[i] <= 0` skips sample i; bS 1..3 use the normal filter,
+  bS 4 the strong intra filter (luma only).  Since this prototype carries no
+  `tc0` vector, the clipping bound is `(alpha*bS)>>3`.
+
+`x264pp_x86_init` / `x264pp_x86_flags` are declared in `kernels.h` as the C
+CPU-shim entry points and are intentionally not defined by these objects.
+The unsuffixed dispatch wrappers belong to the separate dispatch layer and are
+not part of this AVX2 kernel delivery.

@@ -8,8 +8,9 @@
 #   make -f src/Makefile BUILD_DIR=build
 #   make -f /e/__PROJECTS__/x264++/src/Makefile BUILD_DIR=/tmp/x264pp-build
 #
-# Toolchain: MSYS2 MinGW-w64 GCC 16 (C11) and NASM (reserved for the SIMD
-# increments; I0 has no assembly sources yet).
+# Toolchain: MSYS2 MinGW-w64 GCC 16 (C11) and NASM 2.16 (win64 objects).
+# The AVX2 kernels in src/x86/ are original hand-written NASM; each group is
+# assembled into $(BUILD_DIR)/x86/<group>.o and linked with the C core.
 
 SRC_DIR  := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 ROOT_DIR := $(patsubst %/,%,$(dir $(SRC_DIR)))
@@ -38,9 +39,14 @@ SOURCES := \
 	$(SRC_DIR)/core/cavlc.c \
 	$(SRC_DIR)/core/encode.c
 
-# Future increments add hand-written SIMD here; the rule below is already in
-# place so adding a .asm file does not require changing the build again.
-ASM_SOURCES :=
+# Original hand-written AVX2 kernels (Win64).  Add object files only for
+# kernel groups that actually exist; the generic NASM rule below builds them.
+ASM_SOURCES := \
+	$(SRC_DIR)/x86/sad.asm \
+	$(SRC_DIR)/x86/dct.asm \
+	$(SRC_DIR)/x86/predict.asm \
+	$(SRC_DIR)/x86/quant.asm \
+	$(SRC_DIR)/x86/deblock.asm
 
 OBJECTS := $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SOURCES)) \
            $(patsubst $(SRC_DIR)/%.asm,$(BUILD_DIR)/%.o,$(ASM_SOURCES))
