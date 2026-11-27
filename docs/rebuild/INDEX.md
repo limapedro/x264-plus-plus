@@ -146,7 +146,7 @@ One document per source file, same tree, `.md` appended. Regenerate with `pwsh d
 | `common/win32thread.h` | common/win32thread.h.md | pending | 0 |
 | `common/x86/bitstream.h` | common/x86/bitstream.h.md | pending | 0 |
 | `common/x86/bitstream-a.asm` | common/x86/bitstream-a.asm.md | pending | 0 |
-| `common/x86/cabac-a.asm` | common/x86/cabac-a.asm.md | pending | 0 |
+| `common/x86/cabac-a.asm` | [common/x86/cabac-a.asm.md](common/x86/cabac-a.asm.md) | done | 228 |
 | `common/x86/const-a.asm` | [common/x86/const-a.asm.md](common/x86/const-a.asm.md) | done | 74 |
 | `common/x86/cpu-a.asm` | [common/x86/cpu-a.asm.md](common/x86/cpu-a.asm.md) | done | 83 |
 | `common/x86/dct.h` | [common/x86/dct.h.md](common/x86/dct.h.md) | done | 194 |
@@ -161,7 +161,7 @@ One document per source file, same tree, `.md` appended. Regenerate with `pwsh d
 | `common/x86/mc-c.c` | common/x86/mc-c.c.md | pending | 0 |
 | `common/x86/pixel.h` | common/x86/pixel.h.md | pending | 0 |
 | `common/x86/pixel-32.asm` | common/x86/pixel-32.asm.md | pending | 0 |
-| `common/x86/pixel-a.asm` | common/x86/pixel-a.asm.md | pending | 0 |
+| `common/x86/pixel-a.asm` | [common/x86/pixel-a.asm.md](common/x86/pixel-a.asm.md) | done | 279 |
 | `common/x86/predict.h` | common/x86/predict.h.md | pending | 0 |
 | `common/x86/predict-a.asm` | common/x86/predict-a.asm.md | pending | 0 |
 | `common/x86/predict-c.c` | common/x86/predict-c.c.md | pending | 0 |
@@ -234,7 +234,7 @@ One document per source file, same tree, `.md` appended. Regenerate with `pwsh d
 | `output/flv_bytestream.c` | [output/flv_bytestream.c.md](output/flv_bytestream.c.md) | thin | 46 |
 | `output/flv_bytestream.h` | [output/flv_bytestream.h.md](output/flv_bytestream.h.md) | done | 60 |
 | `output/matroska.c` | output/matroska.c.md | pending | 0 |
-| `output/matroska_ebml.c` | output/matroska_ebml.c.md | pending | 0 |
+| `output/matroska_ebml.c` | [output/matroska_ebml.c.md](output/matroska_ebml.c.md) | thin | 59 |
 | `output/matroska_ebml.h` | [output/matroska_ebml.h.md](output/matroska_ebml.h.md) | thin | 49 |
 | `output/mp4.c` | output/mp4.c.md | pending | 0 |
 | `output/mp4_lsmash.c` | output/mp4_lsmash.c.md | pending | 0 |
@@ -266,4 +266,4 @@ One document per source file, same tree, `.md` appended. Regenerate with `pwsh d
 | `x264cli.h` | [x264cli.h.md](x264cli.h.md) | done | 83 |
 | `x264dll.c` | [x264dll.c.md](x264dll.c.md) | done | 64 |
 
-**Progress: 69 / 261 documents complete (thin docs need expansion).**
+**Progress: 71 / 261 documents complete (thin docs need expansion).**
