@@ -229,3 +229,54 @@ Failures are returned to the implementation team as specification/verification
 defects via `src/verification/questions.md` (written by that team, not here).
 Certification records the failing case parameters, command line shape, ffmpeg
 diagnostic and hashes so the defect is reproducible.
+
+## Bitstream diagnostic (`bitstream_diag.py`)
+
+`cert/bitstream_diag.py` is an independent, stdlib-only Annex-B H.264 syntax
+reader for diagnosing candidate output bit-by-bit. It does **not** decode
+samples, compare against a reference encoder, or use any encoder source: the
+VLC tables are transcribed from the published ITU-T H.264 clause 9.2
+(Tables 9-4, 9-5, 9-7…9-10) and checked prefix-free at generation time.
+
+```powershell
+python cert\bitstream_diag.py FILE.264 [--max-mbs N]
+```
+
+It prints, with RBSP bit offsets **and absolute file byte/bit numbers**:
+
+* NAL boundaries, start-code offsets, header fields and emulation-prevention
+  byte removal (with a per-byte RBSP→file mapping);
+* every SPS / PPS / slice-header syntax element, including VUI and the
+  derived `QPY`, in normative parse order;
+* macroblock-layer syntax for I slices: `mb_type` (I_16x16 / I_NxN / I_PCM),
+  the 16 `prev_intra4x4_pred_mode_flag` / `rem_intra4x4_pred_mode` fields,
+  `intra_chroma_pred_mode`, `coded_block_pattern` (me), `mb_qp_delta`, and
+  every CAVLC residual block (`coeff_token`, trailing-one signs,
+  `level_prefix`/`level_suffix`, `total_zeros`, `run_before`) with its own bit
+  range;
+* the **first** invalid VLC, impossible `mb_type`, or residual block failure,
+  with byte, bit and file offsets. Exit status is 1 when any syntax error was
+  reported, 0 otherwise.
+
+`--max-mbs N` stops after N macroblocks (handy for a focused first-MB
+diagnosis, e.g. `--max-mbs 1`). CABAC slices and P/B macroblock layers are
+reported as out of scope rather than guessed.
+
+Validation already performed (see the PR evidence for full output):
+
+```powershell
+# Build the candidate and encode one I_PCM frame.
+make -f src/Makefile BUILD_DIR=build
+.\build\x264pp.exe --demuxer raw --input-res 64x64 --input-csp i420 --frames 1 -o tiny.264 tiny.yuv
+python cert\bitstream_diag.py tiny.264 --max-mbs 2
+# -> SPS/PPS/IDR header, two I_PCM macroblocks, errors=0, exit 0
+
+# Cross-check header field values against ffmpeg's parser.
+ffmpeg -loglevel trace -bsf:v trace_headers -i tiny.264 -f null NUL
+# SPS/PPS/slice-header values match (ffmpeg offsets include the NAL header byte;
+# this tool reports RBSP-relative bit offsets).
+
+# I_4x4 CAVLC residual path on a tiny ffmpeg/x264 stream.
+python cert\bitstream_diag.py x264_cavlc.264 --max-mbs 1
+# -> I_16x16 residual blocks decoded block-by-block, errors=0
+```
