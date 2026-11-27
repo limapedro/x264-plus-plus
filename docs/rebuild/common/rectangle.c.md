@@ -30,6 +30,18 @@ The file uses two macro layers: one generates a single named wrapper for a given
 
 The wrapper's `val` parameter is always `uint32_t` even for 8- and 16-bit families; the inline cache writer truncates to the needed width when constructing its replication patterns. Callers must therefore avoid setting high bits that are not meaningful for the family, though the writer naturally ignores them.
 
+### Additional behavioural detail
+
+**Index formula derivation.** The caller computes `width + (height<<1) - 3`. Substituting the seven legal pairs gives: (1,1) -> 0, (2,1) -> 1, (1,2) -> 2, (2,2) -> 3, (4,1) -> 3 (collides with 2x2, so 4x1 is not used), (4,2) -> 5, (2,4) -> 7, (4,4) -> 9. The generator's table order is chosen to match exactly these values; indices 4, 6 and 8 correspond to shapes the encoder never produces, so they are left null. A clean implementation should either reproduce the same sparse table or replace it with a dense mapping, but must never call a null slot.
+
+**Generated function shape.** Each wrapper is a single call to the inline rectangle writer with compile-time constant arguments. This is intentional: it lets the compiler fully unroll the store sequence inside the wrapper while presenting a uniform two-argument function pointer to the caller. The value passed in is already packed by the caller (`M32` of an MV, a 16-bit MVD, or a cast reference index), so the wrapper performs no conversion beyond what the inline writer does.
+
+**Element widths and replication.** For the MV family, four bytes are written per cell and the 32-bit value is replicated into the required store pattern; for MVD, two bytes; for reference indices, one byte. The inline writer builds its patterns by multiplying the value with byte-lane broadcast constants (`0x0101`, `0x01010101`, or a 64-bit duplicate), which is why negative reference indices appear as their unsigned byte value. The store width never exceeds the destination cache array's declared alignment.
+
+**Why the file is separate.** Putting the table definitions in a separate translation unit avoids duplicating seven functions per family in every module that includes `rectangle.h`. It also keeps the always-inline constant path in the header available without emitting out-of-line copies for shapes that never need runtime dispatch. The trade-off is that the header and this file must agree on the index formula and element sizes; they are coupled by convention rather than by a shared macro.
+
+**Testing implications.** Because the table entries are function pointers with no metadata, a test cannot ask a slot what shape it writes; it must call it with a guarded buffer and infer the shape from the bytes changed. Guard bands around the buffer are therefore essential. Comparing against the inline path for each legal shape gives an independent oracle.
+
 ## 6. Dependencies
 
 Includes `common.h`, hence `rectangle.h`, `base.h` and the Scan8 layout. Provides the symbols declared as `extern` in `rectangle.h`. Used only by the cache helper macros in `rectangle.h` when `x264_nonconstant_p(width)` or `x264_nonconstant_p(height)` is true.

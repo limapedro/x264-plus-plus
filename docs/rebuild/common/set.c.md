@@ -40,6 +40,20 @@ There are four 4x4 sets always, and zero/two/four 8x8 sets depending on configur
 
 **File parsing.** The file is slurped; every `#`-to-end-of-line span is blanked. `cqm_parse_jmlist` searches for a variable name, skips an optional `U` or `V` suffix after it, finds the next `INT` token as a stop marker, and scans decimal numbers separated by whitespace or commas. If the first coefficient is zero it copies the provided JVT default; otherwise it requires exactly `length` coefficients in 1..255. A missing name fills 16. Parsed names: `INTRA4X4_LUMA`, `INTER4X4_LUMA`, both `INTRA4X4_CHROMA` and `INTER4X4_CHROMA` (applied to both chroma lists), `INTRA8X8_LUMA`, `INTER8X8_LUMA`, plus `INTRA8X8_CHROMA`/`INTER8X8_CHROMA` in 4:4:4 mode.
 
+### Additional behavioural detail
+
+**Why the matrices are shaped this way.** The four 4x4 lists correspond to luma intra, luma inter, chroma intra and chroma inter. The four 8x8 lists are allocated only for 4:4:4 or when 8x8 transforms are enabled, because other configurations never consult them. The scaling-list pointer array in the SPS uses indices 0..3 for 4x4 and 4..7 for 8x8, which is why the generator adds an offset of four when indexing 8x8 lists. Sharing decisions compare the raw list bytes, so two lists that have equal contents but different owners are still aliased; this is safe because the derived tables are read-only afterwards.
+
+**Precision budget.** The unquant reciprocal uses a 64-bit numerator with an extra eight fractional bits, ensuring that trellis RD can compute fractional reconstruction errors without floating point. The quant multiplier is deliberately cast to 16 bits because the SIMD quantisation kernels load it as a word. A factor too large for the target bit depth is recorded as an error QP rather than clamped silently: the QP-range repair pass then raises the minimum QP so no unusable QP can be selected. Conversely, a factor that rounds to zero makes rate control lower the maximum QP.
+
+**Bias semantics.** `quant*_bias` is the deadzone term used for ordinary quantisation; it is capped so the effective deadzone cannot become negative when the quant factor is large. `quant*_bias0` is the maximum bias `(1<<15)/factor` and is used by the alternative rounding path (notably trellis and lossless-adjacent paths). Their sharing rule is stricter than the other tables because a list with a different deadzone must keep a different bias even if its scaling coefficients match.
+
+**Emergency denoise ramp.** The extra 18 QPs above `QP_MAX_SPEC` are a safety valve for rate-control overshoot. The last slot removes all coefficients, guaranteeing that arbitrarily low bitrates remain achievable. Earlier slots ramp the noise threshold from zero separately for DC, luma AC and chroma AC, with chroma first because H.264's chroma QP mapping effectively raises chroma QP relative to luma. The exponential scale is tuned empirically, so a clean implementation only needs to preserve monotonicity, the per-category ordering and the final saturation value to be behaviourally equivalent for rate-control purposes; bitstreams at extreme QPs may differ.
+
+**JM parsing details.** The parser blanks comment spans rather than removing them, preserving token positions and line structure. A variable name match skips one following `U` or `V` so that JM's separate chroma declarations map onto x264's shared chroma lists. The next `INT` token acts as a stop marker: if the scan has advanced past it, the list is declared short. A first coefficient of zero selects the corresponding JVT default, which is how JM expresses "use the default matrix". Because errors accumulate, a malformed file can produce a mix of valid and default lists; the return value is nonzero but the object is left in a defined state.
+
+**Failure and cleanup.** On allocation failure the generator calls its own delete function, which walks all lists and compares pointers to avoid double frees. Since the pointer arrays are zero-initialised as part of the encoder context, freeing a null pointer is harmless. `nr_offset_emergency` is freed separately and unconditionally; a clean implementation should set it to null after freeing to make repeated cleanup safe.
+
 ## 6. Dependencies
 
 Includes `common.h`. Uses `tables.h` JVT arrays, `base.h` allocation/error macros, `x264_slurp_file`, `x264_log`, `x264_emms` before SIMD-read tables, `x264_free`, and the chroma-QP table. Called by encoder open after SPS setup and by parameter handling of custom matrices.
@@ -73,6 +87,18 @@ Reference dequant 4x4 rows (QP mod 6) use triples such as (10,13,16), (11,14,18)
 - Verify QP-bound repair with a deliberately extreme matrix: the resulting min/max must respect all documented constraints or an error must be returned.
 - Parse a JM file with comments, a missing list, a zero-first-coefficient list, and an invalid coefficient; verify each documented outcome.
 - Verify 8x8 emergency categories are skipped when `b_transform_8x8` is off and present when on.
+
+Additional black-box checks:
+
+- Verify that a custom matrix with a value of 1 and one with a value of 255 produce legal quant factors and no division by zero across all QPs.
+- Verify that `quant*_bias0[q][i] * quant*_mf[q][i] == 1<<15` within integer division error for every nonzero factor and QP.
+- Verify that the per-QP unquant factors are monotone non-decreasing in QP for fixed coefficient position (they should double every six QPs).
+- Verify that with lossless enabled the QP-range repair pass does not modify `i_qp_min`/`i_qp_max` at all.
+- Feed a JM file with CRLF line endings and verify the blanking of comment spans still works (the newline terminator is `\n`, so CR remains as whitespace).
+- Feed a JM file with a variable name appearing twice and verify the first occurrence wins.
+- Feed a file whose first list coefficient is zero but whose remaining coefficients are garbage; verify the JVT default is used and no error is reported for that list.
+- Verify that `x264_cqm_delete` can be called twice on the same encoder without a crash or double free.
+- Verify that enabling 8x8 transforms in a 4:2:0 build allocates exactly two 8x8 sets and that disabling them frees them.
 
 ## 11. Open questions
 

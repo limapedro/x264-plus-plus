@@ -24,6 +24,20 @@ The function evaluates a single guard: logging proceeds if the context pointer i
 
 The bit-depth templating means the exported name differs per build; code inside the encoder calls the macro-shortened `x264_log`, so callers do not need to know the depth. This is part of the link-failure strategy described in `common.h.md`.
 
+### Additional behavioural detail
+
+**Filter semantics at each level.** With `i_log_level = X264_LOG_NONE` (-1) every normal level is filtered because all are greater than -1. At `X264_LOG_ERROR` only error messages pass; at `X264_LOG_INFO` errors, warnings and info pass; at `X264_LOG_DEBUG` everything passes. The comparison is numeric, so an out-of-range level such as 7 is filtered at every normal threshold. A negative level other than NONE would pass at all normal thresholds, which is UNKNOWN as an intended use case.
+
+**Null-context path.** The null path exists because several utilities in `base.c` emit warnings before an encoder is created. It deliberately bypasses the user's callback: there is no parameter object from which to obtain one. The default sink prepends a severity word to stderr, so even callers that never install a callback get recognisable diagnostics. On Windows the sink's console branch converts UTF-8 to UTF-16 and uses `WriteConsoleW`, falling back to byte output when redirected or when the formatted line is too long.
+
+**Variadic forwarding rules.** The callback receives a `va_list` created from the last named parameter before `format`. It must not copy and retain the list beyond the call, because the underlying argument storage may be on the caller's stack. A callback that needs to defer formatting must copy arguments explicitly with `va_copy` and consume them during the call. `va_end` is invoked by this function after the callback returns, regardless of whether the callback consumed any arguments.
+
+**Templating consequences.** Because the symbol is renamed per bit depth, a process linking both 8-bit and 10-bit libraries can hold callbacks for both without symbol collisions. A callback that wants to know which bit depth produced a message cannot do so from the callback signature alone; it must infer this from the private pointer or from message content.
+
+**Threading behaviour.** There is no internal lock. If several encoder threads log concurrently, the user callback may be entered concurrently and interleaved output is possible. The public API leaves serialization to the callback. This matters for the reference sink writing to stderr: individual `fprintf`-style calls are usually atomic for short lines, but no ordering guarantee exists.
+
+**Error-path suitability.** The function performs no allocation and takes no locks, so it is safe to call from allocation-failure handlers, from signal-adjacent contexts in C terms, and during encoder teardown. The only requirement is that `h` either be null or point to an object whose `param` is still alive.
+
 ## 6. Dependencies
 
 Includes only `common.h`, which transitively supplies `x264_t`, `base.h`, the log-level constants and `x264_log_default`'s declaration. Calls `x264_log_default` (implemented in `base.c`) in the null-context case; otherwise calls through the function pointer in `x264_param_t`. Called from virtually every encoder module for diagnostics, warnings and debug traces.
@@ -53,6 +67,15 @@ No constants or tables are defined here. The relevant numeric values are the pub
 - Verify that a message whose level is above the threshold does not invoke the callback even once (counter unchanged).
 - Set `pf_log` to a callback that inspects its `p_log_private` argument; verify the exact private pointer is forwarded.
 - In a multi-threaded encode with a thread-safe counting callback, verify no messages are lost or duplicated for a single known trigger (e.g. enabling debug-level headers); ordering across threads is not guaranteed.
+
+Additional black-box checks:
+
+- Install a callback that deliberately calls `x264_param_parse` on the same parameter object while logging; verify no internal state of the logging function is corrupted (the function holds no state across the call).
+- Verify that a callback returning normally does not change the return value or side effects of the function that emitted the log (logging is observationally transparent).
+- Set the threshold to `X264_LOG_DEBUG` and emit a message with a format containing `%%` and escaped quotes; verify the callback receives the exact format string rather than a pre-expanded one.
+- Emit 10000 filtered debug messages in a tight loop and verify the callback counter remains zero and no measurable allocation occurs.
+- Emit messages from several encoder threads with a callback that appends to a thread-safe list; verify the multiset of delivered messages equals the multiset emitted, allowing arbitrary order.
+- In a build linking both bit depths, open one encoder of each depth, install distinct callbacks via their parameter objects, and verify each callback sees messages only from its own encoder.
 
 ## 11. Open questions
 

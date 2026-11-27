@@ -29,6 +29,20 @@ Lifetime: initialisation happens at the first thread-pool creation (or explicit 
 
 On POSIX builds and WinRT-free non-Win32 builds, `x264_threading_init` is a macro expanding to `0`, so no code is emitted here.
 
+### Additional behavioural detail
+
+**Clock precision and risk of overflow.** All three clock branches cast to `int64_t` before multiplying seconds by one million, so timestamps remain valid past 2038 on 32-bit platforms. The Windows `ftime` path has one-millisecond granularity but is scaled to microseconds, so successive calls frequently return identical values; rate-control code must not assume distinct timestamps. The `clock_gettime` path truncates nanoseconds rather than rounding, giving at most one microsecond of error. On `gettimeofday` platforms the wall clock may jump backwards; only the monotonic branch is stable under system-clock changes.
+
+**Tri-state init rationale.** A simple boolean would allow two threads to observe "uninitialised" simultaneously and both attach the threading library. Using `InterlockedCompareExchange` to claim the value -1 turns the guard into a mutex-free state machine: a claimer owns the transition, other callers spin until the value becomes positive or returns to zero, and a failure resets to zero so a later attempt can retry. The loop does not sleep, but the critical section of the initialiser is short.
+
+**Backend selection detail.** With `PTW32_STATIC_LIB`, the library's own `ptw32_processInitialized` variable is consulted. If it is already nonzero, `threading_init` returns success without calling attach, but `x264_threading_init` still advances the guard to 1 and registers the cleanup. The cleanup then detaches the static library at exit. Without that macro, the shim's own init/destroy functions are used and the guard is solely owned here.
+
+**Registration timing.** `atexit(threading_destroy)` is called from `threading_init`, not from `x264_threading_init`, so it is registered exactly once even if many threads call the public function. If the backend init fails, no cleanup is registered and the guard is reset. If the process exits while a thread still uses the shim, the ordering of `atexit` handlers matters; the source does not coordinate with other libraries.
+
+**No-op configurations.** When neither Win32 threading nor static pthread-win32 is selected, the entire initialisation block is excluded by the preprocessor and the public name is a macro returning zero in `osdep.h`. Consequently a POSIX build has no symbol to call, and a no-thread build pays nothing. This is important for direct consumers of the public API who call `x264_threading_init` unconditionally.
+
+**Interaction with the thread pool.** `x264_threadpool_init` calls `x264_threading_init` before creating any workers. This guarantees that the global guard critical section exists before the first static mutex is locked by a worker. A clean implementation must preserve this ordering; creating threads first would allow a race on lazy mutex initialisation on Windows.
+
 ## 6. Dependencies
 
 Includes `osdep.h`, then `sys/types.h`/`sys/timeb.h` on Windows or `sys/time.h` elsewhere, plus `time.h`. Calls `x264_win32_threading_init`/`destroy` (Win32 shim) or the pthread-win32 attach/detach API. Called by `threadpool.c` at pool creation and indirectly by any user of the public threading-init function.
@@ -60,6 +74,16 @@ No tables. Sentinel values of `threading_is_init`: 0, -1, 1. The Windows clock m
 - Force an init failure (e.g. by stubbing `x264_win32_threading_init` to fail) and verify the guard returns to 0 and a subsequent call can succeed.
 - On POSIX builds, verify the symbol is absent/macro-expanded: no linker dependency on Win32 libraries.
 - Verify that creating and deleting two thread pools in sequence does not detach the threading library until process exit (a second pool creation still succeeds).
+
+Additional black-box checks:
+
+- Capture 100 consecutive `x264_mdate()` values with no intervening work on each platform; verify non-decreasing order (allowing equality) and that the maximum observed jitter is consistent with the clock's documented granularity.
+- Verify that calling the clock from multiple threads yields values in a common time base, i.e. no thread sees a value wildly outside the range of the others.
+- Verify that `x264_threading_init` is re-entrant: call it from a callback of itself in a harness and confirm the nested call returns immediately without recursion.
+- Verify that after a successful init, calling the function from a newly created thread returns success without taking the slow path (observable by instrumenting the backend init count).
+- Simulate a failed attach followed by a successful one and verify a second `atexit` registration is not made.
+- Verify that a POSIX build exposes no `x264_threading_init` symbol in the object files when the macro path is active.
+- Verify that a process which calls init, creates a pool, deletes the pool and exits cleanly produces no shutdown errors from the threading backend.
 
 ## 11. Open questions
 

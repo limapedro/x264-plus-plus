@@ -46,6 +46,18 @@ Extended leaf 0x80000000 gives the maximum extended leaf. If at least 0x80000001
 
 **Processor count.** If threading is compiled out, return 1. Windows delegates to `x264_pthread_num_processors_np` (Win32 affinity-aware) or to pthread-win32. Cygwin/Solaris/OpenBSD use `sysconf(_SC_NPROCESSORS_ONLN)`. Linux uses `sched_getaffinity(0, ...)`, failing to 1; Android uses `_SC_NPROCESSORS_CONF` because the NDK lacks the affinity call. BeOS queries `system_info.cpu_count`; macOS/FreeBSD use `sysctlbyname("hw.ncpu")`, falling back to 1. Unknown platforms return 1.
 
+### Additional behavioural detail
+
+**Why the quirks matter.** The flags SSE2_IS_FAST, SSE2_IS_SLOW, SLOW_SHUFFLE, SLOW_ATOM, SLOW_PSHUFB and SLOW_PALIGNR do not correspond to instruction availability. They are hints used by the function-table dispatcher in `common.h.md` to pick a different implementation of the same operation. For example, a pshufb-based routine can be slower than a sequence of scalar shuffles on Atom, and a palignr-based routine is exceptionally slow on Bobcat. A clean implementation that ignores these flags will still produce identical bitstreams but may be substantially slower on those CPUs; conversely, setting them spuriously can cost speed without changing output.
+
+**Detection ordering constraints.** The x86 detector queries leaf 1 before leaf 7 and requires the XGETBV check to succeed before interpreting leaf 7 bits for AVX2/AVX-512, because those registers are only usable when the OS has enabled the corresponding state. The extended leaf query happens after the basic leaf queries, and the vendor string comparison must use the exact strings `GenuineIntel`, `AuthenticAMD` and `CyrixInstead`. Family/model arithmetic uses the extended-family and extended-model fields as documented by Intel and AMD: family is the sum of bits 8-11 and bits 20-27 of leaf-1 EAX; model is bits 4-7 plus bits 12-15 shifted by four.
+
+**Cache-line inference fallback.** When the CLFLUSH-derived size is zero, the detector tries extended leaf 0x80000006 and then leaf 2. Leaf 2 is iterated up to the count in its first byte; each of the four register values is inspected byte by byte while the most-significant bit is clear, and descriptor IDs are matched against two static lists. If no descriptor matches, a single warning is emitted. Because the result affects stride alignment, a clean implementation should prefer the same priority order rather than substituting a fixed 64-byte assumption.
+
+**Signal-based probing.** The SIGILL approach on PowerPC and ARM requires the probed instruction to be genuinely illegal on unsupported hardware and must not execute any other code between arming the jump buffer and restoring the handler that could be interrupted. The handler resets `canjump` before jumping so a second signal re-raises the original fault instead of looping. On ARM, FAST_NEON_MRC detection relies on user access to a cycle counter and is skipped entirely on Mach-O platforms; the source notes both a race with other programs and possible permanent counter enablement as known limitations.
+
+**Processor count semantics.** The returned number is used to choose default thread counts, so an affinity-restricted process must not spawn more workers than CPUs available to it. Failure of `sched_getaffinity` returns 1 rather than 0, and all other failure paths also return at least 1. The Win32 path is deliberately limited to 64 CPUs per processor group; systems with more processors may report only the current group's count.
+
 ## 6. Dependencies
 
 Includes `base.h` (which supplies `cpu.h`, `osdep.h` and the log functions). Platform includes are conditional: `unistd.h`, `sched.h`, `kernel/OS.h`, `sys/sysctl.h`, `machine/cpu.h`, `signal.h`, `setjmp.h`, `sys/auxv.h`. It calls `x264_log_internal` to report an indeterminate cache line, and is called by `base.c` and by encoder function-table initialisation.
@@ -78,6 +90,18 @@ CPUID bit masks used: 0x00800000 (MMX), 0x02000000 (SSE/MMX2), 0x04000000 (SSE2)
 - Case-insensitively pass each name in `x264_cpu_names` to `x264_param_parse` with `asm=` and verify the resulting mask equals the table's flags (plus the documented SSSE3 implication).
 - Verify that on a 32-bit build without CPUID support the detector returns 0 without executing an illegal instruction (emulate via a stub `cpuid_test` in a harness).
 - Verify that a cache-line size that cannot be determined emits exactly one warning and leaves both cacheline flags clear.
+
+Additional black-box checks:
+
+- Run the detector in a loop 1000 times and verify identical results; any time-based or counter-based heuristic (ARM fast MRC) must be stable within one process.
+- On x86, use a stubbed CPUID returning leaf 0 with maximum basic capability 0 and verify the detector returns zero without querying further leaves.
+- Stub CPUID so MMX is absent and verify an immediate zero return with no AVX bits set.
+- Stub leaf 1 with XSAVE present but XCR0 lacking YMM state, plus AVX CPUID bits set, and verify AVX is not reported.
+- Stub leaf 7 with AVX2 present but XCR0 lacking opmask/ZMM state and verify AVX512 is not reported while AVX2 may be.
+- Stub an AMD family 0x14 CPUID and verify SSE2_IS_FAST is cleared while SSE2_IS_SLOW and SLOW_PALIGNR are set.
+- Stub an Intel model 28 CPUID and verify SLOW_ATOM and SLOW_PSHUFB are set.
+- Verify the cache-line warning is emitted exactly once when all three sources report zero, and that neither cacheline flag is set.
+- Verify that on a build with threading disabled the processor-count function returns 1 even if the OS would report more.
 
 ## 11. Open questions
 

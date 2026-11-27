@@ -47,6 +47,36 @@ The picture-allocation table is indexed by `csp & X264_CSP_MASK`; each entry sto
 
 **Serialisation.** `x264_param2string` emits a stable, space-separated `key=value` string in a fixed order: optional resolution/fps/timebase/bitdepth prefix, then CABAC, refs, deblock, analysis masks in hex, ME name, subme, psy settings, mixed refs, ME range, chroma ME, trellis, 8x8dct, CQM preset, deadzones, fast pskip, chroma QP offset, thread counts, slice settings, nr/decimate, interlacing mode, bluray/stitchable/constrained-intra, B-frame settings, weightp, keyint/scenecut/intra-refresh, conditional rc-lookahead, rate-control mode and parameters, conditional NAL HRD/filler, crop rect, HDR metadata, frame packing, and IP/AQ/zones (omitted entirely for lossless CQP). Some fields are emitted only when active, so the string is a human-readable summary rather than a lossless round-trip encoding. UNKNOWN: whether any consumer reparses this string; it is intended for SEI user data and logs.
 
+### Additional behavioural detail
+
+The following cross-cutting observations are part of the contract even though they are not obvious from the individual function descriptions:
+
+1. Defaults are a pure function of the build configuration (bit depth, fixed chroma format, threading support). A clean implementation must not read environment variables, configuration files or the clock while establishing them.
+2. Preset and tune functions mutate in place and never allocate. A caller that wants to keep a pristine template must copy the struct first.
+3. Parser errors are accumulated rather than short-circuited within a single option: an integer option that fails `atoi_internal` sets `b_error` but still writes the (partial) parsed value, so a caller must check the return code and discard the object on failure. Multiple `sscanf` alternatives in one option (e.g. `sar`, `deblock`, `psy-rd`) are tried in order and the first success clears the error flag.
+4. String-valued options are duplicated into the parameter object's `opaque` list. This is why `x264_param_default` must be called before `x264_param_parse` on any object that will later be cleaned up: it zeroes `opaque`, so a stale list cannot be leaked.
+5. `x264_param2string` writes into a fixed 2000-byte buffer plus room for zones. The writer does not track remaining space, so an implementation preserving this design must keep the format string set bounded; a clean implementation may instead use a growable buffer while preserving the emitted text.
+6. `x264_picture_alloc` accepts high-depth flags only by doubling strides; it does not convert pixel values. `x264_picture_clean` zeroes the structure so a reused picture cannot retain stale plane pointers.
+7. `x264_slurp_file` always appends a newline when the file's last byte is not one. This matters for the JM matrix parser, which relies on newline-delimited numbers.
+8. `x264_reduce_fraction` and its 64-bit twin are purely numeric; a zero denominator is left untouched rather than normalised to 1/0.
+
+Preset deltas repeat here in compact form for implementers:
+
+| Preset | Profile of changes relative to defaults |
+| --- | --- |
+| ultrafast | ref 1, no B, no CABAC, no deblock, DIA, subme 0, no AQ, no mixed refs, no trellis, no weightp/weightb, no mb-tree, lookahead 0, no intra/inter analysis, no 8x8dct |
+| superfast | intra analysis only, DIA, subme 1, ref 1, no mixed refs, no trellis, no mb-tree, simple weightp, lookahead 0 |
+| veryfast | subme 2, ref 1, no mixed refs, no trellis, simple weightp, lookahead 10 |
+| faster | ref 2, subme 4, no mixed refs, simple weightp, lookahead 20 |
+| fast | ref 2, subme 6, simple weightp, lookahead 30 |
+| medium | defaults |
+| slow | subme 8, ref 5, direct auto, trellis 2, lookahead 50 |
+| slower | UMH, subme 9, ref 8, B-adapt trellis, P8x8, trellis 2, lookahead 60 |
+| veryslow | UMH, subme 10, me-range 24, ref 16, 8 B-frames, lookahead 60 |
+| placebo | TESA, subme 11, me-range 24, ref 16, no fast-pskip, 16 B-frames, lookahead 60 |
+
+Tune interactions: the psy counter is incremented only by film/animation/grain/stillimage/psnr/ssim/touhou; fastdecode and zerolatency are orthogonal and may be combined. `animation` and `touhou` double the reference count only when it is already above one; otherwise they leave it at one. All numeric effects stack in the order the tokens appear, so `film,grain` applies film's deltas then grain's overrides (grain is then ignored as a second psy tune).
+
 ## 6. Dependencies
 
 Depends on `base.h` (macros, enums, Scan8), `osdep.h` (file/console wrappers, `REALIGN_STACK`), `cpu.h` (detection), public `x264.h` (option name arrays, error codes, parameter structures), and libc (`ctype`, `malloc`, `stdio`). Called by the CLI and by the encoder during option application and SEI generation. Does not depend on bit-depth-templated modules.

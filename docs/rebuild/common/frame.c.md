@@ -41,6 +41,22 @@ Plane pointers are then established: for NV12/NV16, `plane[1] = buffer[1] + stri
 
 **Synchronisation and lists.** See `frame.h.md` section 5 for the exact contracts. Notable detail: `x264_sync_frame_list_pop` broadcasts `cv_empty` while still holding the list mutex, whereas `push` broadcasts `cv_fill` after unlocking; both satisfy the same predicate-protected wait pattern.
 
+### Additional behavioural detail
+
+**Geometry invariants, expanded.** For NV12 and NV16 the chroma plane has the same stride as luma but only half the luma height in the 4:2:0 case; for NV16 it has full height. The chroma vertical padding is therefore `PADV` for 4:2:0 and `PADV*2` for interlaced 4:2:2. For 4:4:4 all three planes have identical width/height/stride and each gets its own allocation slot. For 4:0:0 only one plane exists. All plane sizes are computed from the macroblock-padded dimensions, not from `param.i_width/i_height`, so a 1920x1080 source is internally 1920x1088.
+
+**Initialisation semantics on reuse.** When a frame is taken from the unused pool, only a small set of fields is reset; the large per-frame arrays are left as they were. This is safe because every consumer must write a field before reading it. `pop_unused` does, however, zero the weighting tables and the weighted-cost deltas, because those may be read before being fully rewritten. It also seeds `i_slice_count` to the number of slice threads (or 1), so that the first `x264_frame_new_slice` call sees a value that already accounts for the master thread.
+
+**Copy-picture edge conditions.** A vertical flip is expressed by a negative stride; `get_plane_ptr` validates `width <= abs(stride)` after the flip adjustment, so a source whose declared stride is smaller than its width is rejected regardless of flip state. Interleaved formats (YUYV/UYVY, v210, BGR family) bypass the planar path entirely, which is why their chroma placement is decided by the deinterleave helper rather than by `CHROMA_H_SHIFT`. `X264_CSP_V210` is only accepted in a 10-bit build. `i_forced_type` is clamped to the public type range; an out-of-range forced type becomes AUTO and a warning is logged once per occurrence.
+
+**Border expansion details.** The left and right bands are filled with a repeated pixel value using `pixel_memset`, which first aligns its destination pointer to the machine word size and then uses 64/32/16-bit stores; this is why padding spans are not merely `memset`-compatible. The top and bottom bands copy whole rows including the padding, so the corner regions are filled by the row copies after the vertical bands. For MBAFF, the frame and two field planes are expanded separately, each with its own row stride doubling. At a slice end the expanded height is extended by four rows to accommodate deblocking reading across the slice boundary, but only when the band is not also the slice start.
+
+**Wait/predicate nuances.** `x264_frame_cond_wait` returns the observed completed-line count even when it did not need to wait; callers use this to learn how much work is already available. Its loop condition includes `i_lines_completed >= 0`, so a negative target returns immediately with the current value. `x264_threadslice_cond_broadcast` suppresses the broadcast for pass 0 because no waiter can exist before the first pass starts, while `x264_threadslice_cond_wait` uses a `>=` predicate rather than equality, allowing a waiter to skip passes that have already completed.
+
+**Synchronised list ordering.** The lists are stack-like from the consumer side (pop takes the last element) and queue-like from the producer side (push appends at the current size). This LIFO consumption is intentional for lookahead frame reuse: the most recently produced frame is the most likely to be reused soon, improving cache locality. The broadcast on `cv_fill` in `push` happens after unlocking, while the broadcast on `cv_empty` in `pop` happens before unlocking; both are legal because the shared predicate is protected by the mutex.
+
+**Failure handling.** `frame_new` has a single failure label that frees the struct but not the PREALLOC arena pointer (there is nothing to free yet on early failures, and `frame->base` is zero-initialised). Mutex/condition creation failures occur after the arena allocation and therefore leak it in the reference implementation; a clean implementation should call `x264_frame_delete` on the partially built object after assigning `base`.
+
 ## 6. Dependencies
 
 Includes `common.h`. Calls `frame_new`'s PREALLOC macros from `base.h`, motion-compensation copy/deinterleave functions from `h->mc`, CPU feature flags from `h->param.cpu`, OpenCL frame deletion when enabled, and pthread primitives from `osdep.h`. Called by encoder open/close, lookahead, rate control and frame threads.
@@ -75,6 +91,18 @@ Includes `common.h`. Calls `frame_new`'s PREALLOC macros from `base.h`, motion-c
 - Stress the frame pool with thousands of frames at fixed geometry and verify stable allocation counts and no leaks.
 - Stress synchronised lists with two producers and two consumers; verify no deadlock, no loss, and capacity is never exceeded.
 - Verify `x264_weight_scale_plane` against a scalar reference for several widths/heights and weight values.
+
+Additional black-box checks:
+
+- Encode a sequence whose dimensions are not multiples of 16 (e.g. 641x361) and verify no pixel outside the visible area leaks into the decoded output via border replication.
+- Encode with `PADH`/`PADV` deliberately reduced in a test build and confirm the failure mode is a visible artifact at motion-vector extremes, proving the padding is actually used.
+- Verify that a frame returned to the unused pool has `i_lines_completed` reset by its next consumer rather than retaining a stale completion value.
+- Attach a reference frame to two frame threads and verify it is not recycled until both have called `push_unused` (instrument `i_reference_count`).
+- Verify that blank duplicate frames never attempt to free `base`, `param` or SEI payloads of the original frame.
+- Stress border expansion with a one-row frame and verify that top and bottom padding both replicate the single valid row without overlapping writes.
+- For 4:2:2 input, verify that chroma vertical padding differs from 4:2:0 and that the filtered chroma planes are not allocated when not needed.
+- Verify that `x264_frame_new_slice` with slice threads returns -1 on the call that would exceed `i_slice_count_max`, and that the non-threaded increment path never wraps.
+- Verify that a synchronised list with capacity zero blocks both producers and consumers until deleted (documented edge case of the zero-capacity init path).
 
 ## 11. Open questions
 

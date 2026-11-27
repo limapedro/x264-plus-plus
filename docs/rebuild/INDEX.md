@@ -39,7 +39,7 @@ One document per source file, same tree, `.md` appended. Regenerate with `pwsh d
 | `common/arm/bitstream-a.S` | [common/arm/bitstream-a.S.md](common/arm/bitstream-a.S.md) | thin | 42 |
 | `common/arm/cpu-a.S` | [common/arm/cpu-a.S.md](common/arm/cpu-a.S.md) | thin | 41 |
 | `common/arm/dct.h` | [common/arm/dct.h.md](common/arm/dct.h.md) | thin | 51 |
-| `common/arm/dct-a.S` | [common/arm/dct-a.S.md](common/arm/dct-a.S.md) | thin | 51 |
+| `common/arm/dct-a.S` | [common/arm/dct-a.S.md](common/arm/dct-a.S.md) | done | 99 |
 | `common/arm/deblock.h` | [common/arm/deblock.h.md](common/arm/deblock.h.md) | thin | 53 |
 | `common/arm/deblock-a.S` | [common/arm/deblock-a.S.md](common/arm/deblock-a.S.md) | thin | 46 |
 | `common/arm/mc.h` | [common/arm/mc.h.md](common/arm/mc.h.md) | thin | 48 |
@@ -71,8 +71,8 @@ One document per source file, same tree, `.md` appended. Regenerate with `pwsh d
 | `common/loongarch/dct-a.S` | common/loongarch/dct-a.S.md | pending | 0 |
 | `common/loongarch/deblock.h` | [common/loongarch/deblock.h.md](common/loongarch/deblock.h.md) | thin | 39 |
 | `common/loongarch/deblock-a.S` | common/loongarch/deblock-a.S.md | pending | 0 |
-| `common/loongarch/loongson_asm.S` | common/loongarch/loongson_asm.S.md | pending | 0 |
-| `common/loongarch/loongson_util.S` | common/loongarch/loongson_util.S.md | pending | 0 |
+| `common/loongarch/loongson_asm.S` | [common/loongarch/loongson_asm.S.md](common/loongarch/loongson_asm.S.md) | done | 62 |
+| `common/loongarch/loongson_util.S` | [common/loongarch/loongson_util.S.md](common/loongarch/loongson_util.S.md) | thin | 35 |
 | `common/loongarch/mc.h` | [common/loongarch/mc.h.md](common/loongarch/mc.h.md) | thin | 56 |
 | `common/loongarch/mc-a.S` | common/loongarch/mc-a.S.md | pending | 0 |
 | `common/loongarch/mc-c.c` | [common/loongarch/mc-c.c.md](common/loongarch/mc-c.c.md) | thin | 52 |
@@ -103,7 +103,7 @@ One document per source file, same tree, `.md` appended. Regenerate with `pwsh d
 | `common/mips/quant.h` | [common/mips/quant.h.md](common/mips/quant.h.md) | thin | 43 |
 | `common/mips/quant-c.c` | [common/mips/quant-c.c.md](common/mips/quant-c.c.md) | done | 76 |
 | `common/mvpred.c` | [common/mvpred.c.md](common/mvpred.c.md) | done | 186 |
-| `common/opencl.c` | [common/opencl.c.md](common/opencl.c.md) | thin | 57 |
+| `common/opencl.c` | [common/opencl.c.md](common/opencl.c.md) | done | 67 |
 | `common/opencl.h` | [common/opencl.h.md](common/opencl.h.md) | thin | 45 |
 | `common/opencl/bidir.cl` | [common/opencl/bidir.cl.md](common/opencl/bidir.cl.md) | done | 119 |
 | `common/opencl/downscale.cl` | [common/opencl/downscale.cl.md](common/opencl/downscale.cl.md) | done | 109 |
@@ -139,7 +139,7 @@ One document per source file, same tree, `.md` appended. Regenerate with `pwsh d
 | `common/set.h` | [common/set.h.md](common/set.h.md) | thin | 54 |
 | `common/tables.c` | [common/tables.c.md](common/tables.c.md) | done | 81 |
 | `common/tables.h` | [common/tables.h.md](common/tables.h.md) | thin | 49 |
-| `common/threadpool.c` | [common/threadpool.c.md](common/threadpool.c.md) | done | 73 |
+| `common/threadpool.c` | [common/threadpool.c.md](common/threadpool.c.md) | done | 61 |
 | `common/threadpool.h` | [common/threadpool.h.md](common/threadpool.h.md) | thin | 50 |
 | `common/vlc.c` | [common/vlc.c.md](common/vlc.c.md) | done | 75 |
 | `common/win32thread.c` | [common/win32thread.c.md](common/win32thread.c.md) | done | 66 |
@@ -266,4 +266,4 @@ One document per source file, same tree, `.md` appended. Regenerate with `pwsh d
 | `x264cli.h` | [x264cli.h.md](x264cli.h.md) | done | 83 |
 | `x264dll.c` | [x264dll.c.md](x264dll.c.md) | done | 64 |
 
-**Progress: 152 / 261 documents complete (thin docs need expansion).**
+**Progress: 155 / 261 documents complete (thin docs need expansion).**
