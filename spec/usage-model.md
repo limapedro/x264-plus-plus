@@ -51,7 +51,8 @@ The six dimensions transition independently conditional on `S_t`. This is a legi
 | 320×180 | 0.35 | 1 | 0.10 | ultrafast | 0.08 | 18 | 0.10 | 1 | 0.25 | synthetic | 0.25 |
 | 640×360 | 0.45 | 10 | 0.25 | veryfast | 0.17 | 23 | 0.40 | 2 | 0.35 | natural-like | 0.35 |
 | 1280×720 | 0.20 | 30 | 0.40 | fast | 0.20 | 28 | 0.35 | 4 | 0.30 | noisy | 0.25 |
-| — | — | 120 | 0.25 | medium | 0.40 | 32 | 0.15 | 8 | 0.10 | static | 0.15 |
+| - | - | 120 | 0.25 | medium | 0.40 | 32 | 0.15 | 8 | 0.10 | static | 0.15 |
+| - | - | - | - | slow | 0.15 | - | - | - | - | - | - |
 
 ### 2.2 Stickiness `λ_d`
 

@@ -1,0 +1,177 @@
+{
+  "schema_version": 1,
+  "generated_at_utc": "2026-11-27T21:24:24+00:00",
+  "run_id": "20261127T212424Z-20261127",
+  "mode": "certification",
+  "status": "blocked",
+  "certified": false,
+  "blocked_reason": "candidate binary missing: E:\\__PROJECTS__\\x264++\\build\\x264pp.exe",
+  "publication": {
+    "publish_speeds": false,
+    "reason": "not certified yet \u2014 candidate binary missing: E:\\__PROJECTS__\\x264++\\build\\x264pp.exe"
+  },
+  "machine": {
+    "platform": "Windows-10-10.0.26300-SP0",
+    "processor": "Intel64 Family 6 Model 151 Stepping 5, GenuineIntel",
+    "cpu_count": 12,
+    "python": "3.10.11"
+  },
+  "binaries": {
+    "oracle": {
+      "path": "E:\\__PROJECTS__\\x264++\\oracle\\x264.exe",
+      "exists": true,
+      "version": "x264 0.164.x",
+      "sha256": "d6c2528d9e2ce928e6b4dc9a5ab13938c2fe6e40fee725336f5949a937bdf8c5"
+    },
+    "candidate": {
+      "path": "E:\\__PROJECTS__\\x264++\\build\\x264pp.exe",
+      "exists": false,
+      "version": null,
+      "sha256": null
+    }
+  },
+  "usage_model": {
+    "path": "E:\\__PROJECTS__\\x264++\\spec\\usage-model.md",
+    "source": "E:\\__PROJECTS__\\x264++\\spec\\usage-model.md",
+    "fallback_used": false,
+    "partial": false,
+    "sha256": "7f1c94a8c5671fb3b00226b18e2cec82752d197c2ae42fbbe225f99e368de580",
+    "warnings": [
+      "preset: value(s) ['slow'] appear in the transition matrix but not the w_d row; assigned the remaining stationary weight"
+    ],
+    "parsed_elements": [
+      "lavfi source natural-like",
+      "lavfi source noisy",
+      "lavfi source static",
+      "lavfi source synthetic",
+      "state symbols and value codes",
+      "stationary weights w_d",
+      "stickiness content",
+      "stickiness crf",
+      "stickiness frames",
+      "stickiness preset",
+      "stickiness resolution",
+      "stickiness threads",
+      "transition matrix content",
+      "transition matrix crf",
+      "transition matrix frames",
+      "transition matrix preset",
+      "transition matrix resolution",
+      "transition matrix threads"
+    ],
+    "model_kind": "factored first-order Markov chain (spec \u00a72)",
+    "states": [
+      "resolution: 3 values",
+      "frames: 4 values",
+      "preset: 5 values",
+      "crf: 4 values",
+      "threads: 4 values",
+      "content: 4 values"
+    ],
+    "initial": {
+      "resolution": [
+        0.35,
+        0.45,
+        0.2
+      ],
+      "frames": [
+        0.1,
+        0.25,
+        0.4,
+        0.25
+      ],
+      "preset": [
+        0.08,
+        0.17,
+        0.2,
+        0.4,
+        0.15
+      ],
+      "crf": [
+        0.1,
+        0.4,
+        0.35,
+        0.15
+      ],
+      "threads": [
+        0.25,
+        0.35,
+        0.3,
+        0.1
+      ],
+      "content": [
+        0.25,
+        0.35,
+        0.25,
+        0.15
+      ]
+    },
+    "transitions": {
+      "resolution": 3,
+      "frames": 4,
+      "preset": 5,
+      "crf": 4,
+      "threads": 4,
+      "content": 4
+    },
+    "content_sources": {
+      "synthetic": "testsrc2=size=WxH:rate=30",
+      "natural-like": "mandelbrot=size=WxH:rate=30:maxiter=256:end_pts=10",
+      "noisy": "testsrc2=size=WxH:rate=30,noise=alls=25:allf=t+u",
+      "static": "color=c=0x303030:s=WxH:r=30,drawbox=x=0:y=0:w=iw/2:h=ih/2:color=0x808080:t=fill"
+    }
+  },
+  "quality_envelope": {
+    "path": "E:\\__PROJECTS__\\x264++\\spec\\quality-envelope.md",
+    "status": "relative bands",
+    "psnr_db_min": null,
+    "ssim_min": null,
+    "bands": {
+      "psnr_lower_db": 0.75,
+      "psnr_upper_db": 1.5,
+      "ssim_lower": 0.01,
+      "ssim_upper": 0.02,
+      "size_lower_ratio": 0.7,
+      "size_upper_ratio": 1.4
+    },
+    "warnings": []
+  },
+  "settings": {
+    "cases_requested": 3,
+    "reps": 1,
+    "warmups": 1,
+    "sampling_seed": 20261127,
+    "presets_filter": null,
+    "frames_cap": null,
+    "timeout_s": 600.0,
+    "extra_args": [],
+    "mingw_path_prepended": [
+      "C:\\msys64\\mingw64\\bin",
+      "C:\\msys64\\usr\\bin"
+    ],
+    "timing": "wall clock incl. startup + file write; warm-up discarded; A/B interleaved with alternating order per repetition",
+    "cli_shape": "x264-compatible; identical argv for both encoders except -o"
+  },
+  "cases": [],
+  "summary": {
+    "total_cases": 0,
+    "passing_cases": 0,
+    "median_speedup": null,
+    "geomean_speedup": null
+  },
+  "warnings": [
+    "preset: value(s) ['slow'] appear in the transition matrix but not the w_d row; assigned the remaining stationary weight",
+    "Only 3 case(s) requested; spec \u00a74 suggests >=100 for an initial certification batch. Treat this as a smoke run."
+  ],
+  "notes": [],
+  "reliability": {
+    "status": "no certification samples yet",
+    "cases": 0,
+    "failures": 0,
+    "exposure_s": 0.0,
+    "confidence": 0.95,
+    "mttf_point_estimate_s": null,
+    "interval_s": null,
+    "interpretation": "MTTF intent only: no certification sample has been logged; no reliability claim is made."
+  }
+}

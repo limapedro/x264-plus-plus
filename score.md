@@ -9,16 +9,16 @@ This scoreboard is owned by the independent certification team (`cert/`) and is 
 _No certified implementation increments yet._
 
 | Preset | Reference (fps) | x264++ (fps) | Speedup | Valid H.264 | Size delta | Notes |
-| --- | ---: | ---: | ---: | --- | ---: | --- |
-| ultrafast | — | — | — | — | — | — |
-| superfast | — | — | — | — | — | — |
-| veryfast | — | — | — | — | — | — |
-| faster | — | — | — | — | — | — |
-| fast | — | — | — | — | — | — |
-| medium | — | — | — | — | — | — |
-| slow | — | — | — | — | — | — |
-| slower | — | — | — | — | — | — |
-| veryslow | — | — | — | — | — | — |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| ultrafast | — | — | — | — | — | Not certified yet — no candidate binary |
+| superfast | — | — | — | — | — | Not certified yet — no candidate binary |
+| veryfast | — | — | — | — | — | Not certified yet — no candidate binary |
+| faster | — | — | — | — | — | Not certified yet — no candidate binary |
+| fast | — | — | — | — | — | Not certified yet — no candidate binary |
+| medium | — | — | — | — | — | Not certified yet — no candidate binary |
+| slow | — | — | — | — | — | Not certified yet — no candidate binary |
+| slower | — | — | — | — | — | Not certified yet — no candidate binary |
+| veryslow | — | — | — | — | — | Not certified yet — no candidate binary |
 
 ## Methodology (summary)
 
