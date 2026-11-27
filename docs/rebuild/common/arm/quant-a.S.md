@@ -1,12 +1,17 @@
 # `common/arm/quant-a.S` — ARM/NEON quantization kernels
 
-**Dirty-side behavioural specification.** Source path: `common/arm/quant-a.S`. Role: NEON implementations of quantization, dequantization, coefficient scanning, decimation scoring, and DCT denoising.
+## 1. Header
 
-## 1. Purpose
+- **Source path:** `common/arm/quant-a.S`.
+- **Role in one sentence:** NEON implementations of quantization, dequantization, coefficient scanning, decimation scoring, and DCT denoising.
+- **Marker:** Dirty-side behavioural specification; all descriptions are behavioural and written independently of the reference source.
+
+
+## 2. Purpose
 
 This file implements the fixed-point arithmetic and coefficient analysis that follow the forward transform. These routines are invoked for every residual block, so they are among the most performance-sensitive kernels in the encoder. The assembly uses widening multiplies, bit masks, and leading-zero instructions to replace scalar branches.
 
-## 2. Public interface
+## 3. Public interface
 
 Exported symbols (declared in `arm/quant.h`):
 
@@ -18,14 +23,14 @@ Exported symbols (declared in `arm/quant.h`):
 
 ABI: first argument is the coefficient buffer in `r0`; subsequent pointers and scalars follow the EABI order, and the function returns an integer in `r0`. `r1`..`r3` and `ip` are used freely as scratch within the routines.
 
-## 3. State and data structures
+## 4. State and data structures
 
 Constant tables are stored in read-only sections:
 - `pmovmskb_byte` maps byte lanes to bits, used by the 64-coefficient last-index routine.
 - `mask_2bit` and `mask_1bit` select run-length positions for 16- and 64-coefficient decimation.
 - The decimation score tables `x264_decimate_table4` and `x264_decimate_table8` live in `common/tables.c` and are accessed via PIC-aware relocations.
 
-## 4. Algorithm / behaviour
+## 5. Algorithm / behaviour
 
 **Quantization.** The `QUANT_TWO` macro processes 16 coefficients per iteration. It takes absolute values, adds the bias, multiplies by the multiplier with widening unsigned multiplies, shifts right by 16, then restores the sign with an XOR/subtract pair derived from the original sign bit. The OR of all resulting coefficients forms the nonzero flag. The 4x4x4 variant repeats this for four blocks and returns a 4-bit mask; the 8x8 variant loops four times over 16 coefficients.
 
@@ -37,31 +42,31 @@ Constant tables are stored in read-only sections:
 
 **Denoising.** The routine accumulates magnitudes into the caller's sum array, subtracts per-coefficient offsets, and writes the sign-restored result, or zero when the adjusted magnitude is negative.
 
-## 5. Dependencies
+## 6. Dependencies
 
 - Includes `common/arm/asm.S`.
 - Declared in `arm/quant.h` and installed by `x264_quant_init` in `common/quant.c`.
 - Uses decimation tables from `common/tables.c` and typedefs from `common/common.h`.
 
-## 6. Constants and tables
+## 7. Constants and tables
 
 - Fixed-point shift 16 for quantization.
 - Dequantization base offsets 4 (4x4) and 6 (8x8 and DC-only).
 - Decimation table values: 4-wide `{3,2,2,1,1,1,0,...}`, 8-wide `{3,3,3,3,2,...,1,...,0,...}`.
 - Early-exit decimation score 9.
 
-## 7. Performance notes
+## 8. Performance notes
 
 All quantization paths use 16-bit vector lanes with widening 32-bit intermediates, avoiding overflow for typical coefficient ranges. Sign restoration via XOR/subtract is cheaper than branching per coefficient. The decimation and last-index routines replace scalar loops with CLZ scans over bit masks, which is the key speedup. Cache pressure is minimal because blocks are 32 to 128 bytes. A clean implementation should reproduce the exact fixed-point equations first; the SIMD formulation can be layered on afterward.
 
-## 8. References
+## 9. References
 
 - `common/quant.c` for canonical quantization and decimation semantics.
 - `common/tables.c` for decimation table contents.
 - JVT-B118 for the purpose of coefficient decimation.
 - ARM NEON Programmer's Guide for `vmull`, `vmlal`, `vqmovn`, and `vclz`.
 
-## 9. Verification checklist
+## 10. Verification checklist
 
 - Quantized coefficients match the reference equation for all sign combinations and zero.
 - Returned nonzero flags/masks are correct for all four sub-blocks.
@@ -70,7 +75,7 @@ All quantization paths use 16-bit vector lanes with widening 32-bit intermediate
 - Last-index routines return -1 for all-zero input and the correct index otherwise.
 - Denoising accumulates original magnitudes and preserves signs correctly.
 
-## 10. Open questions
+## 11. Open questions
 
 - `UNKNOWN`: exact overflow behaviour when dequantization factors and coefficients combine to exceed 16 bits.
 - `UNKNOWN`: whether the 2x2 DC ARMv6 routine is still installed on NEON-only cores where the NEON version supersedes it.

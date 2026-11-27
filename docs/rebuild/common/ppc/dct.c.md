@@ -1,12 +1,17 @@
 # `common/ppc/dct.c` — PowerPC transform and zigzag implementation
 
-**Dirty-side behavioural specification.** Source path: `common/ppc/dct.c`. Role: AltiVec implementations of the 4x4/8x8 forward and inverse transforms, DC transforms, frame/field zigzag scans, and CAVLC coefficient interleaving.
+## 1. Header
 
-## 1. Purpose
+- **Source path:** `common/ppc/dct.c`.
+- **Role in one sentence:** AltiVec implementations of the 4x4/8x8 forward and inverse transforms, DC transforms, frame/field zigzag scans, and CAVLC coefficient interleaving.
+- **Marker:** Dirty-side behavioural specification; all descriptions are behavioural and written independently of the reference source.
+
+
+## 2. Purpose
 
 This file contains the PowerPC transform kernels. All routines are compiled only for 8-bit builds and use 16-bit vector lanes to operate on blocks of coefficients in parallel. The code is structured around two one-dimensional transform macros that are applied along rows and then along columns after a vector transpose.
 
-## 2. Public interface
+## 3. Public interface
 
 All functions are declared in `common/ppc/dct.h` and described there in detail. The exported set covers:
 
@@ -17,11 +22,11 @@ All functions are declared in `common/ppc/dct.h` and described there in detail. 
 
 ABI: arguments follow the C signatures in the header, with `r3`-style PowerPC register conventions handled by the compiler because these are ordinary C functions with AltiVec intrinsics.
 
-## 3. State and data structures
+## 4. State and data structures
 
 All transforms are stateless. The only persistent data are constant vector selectors embedded in the functions, such as the byte-permutation masks `permHigh` and `permLow` used to repack 16-bit transform results into coefficient arrays, the 14-element mask array used by the 8x8 frame scan, the three mask vectors used by the CAVLC interleave, and the `inverse_bridge_shuffle` masks used by related code in `mc.c`. Intermediate coefficients are held in `vec_s16_t` variables.
 
-## 4. Algorithm / behaviour
+## 5. Algorithm / behaviour
 
 **4x4 forward transform.** `VEC_DCT` implements a one-dimensional butterfly: it forms sums and differences of the four source lanes, then produces four outputs where the odd coefficients have an extra factor of two. `x264_sub4x4_dct_altivec` loads four 8-byte rows using the 8-byte-aligned difference macro, widens them to signed 16-bit, applies `VEC_DCT` along rows, transposes the 4x4 matrix with `VEC_TRANSPOSE_4`, then applies `VEC_DCT` along columns. Two byte-permutes select the high or low halves of the 16-bit lanes and store the 16 coefficients in raster order. The 8x8 and 16x16 variants call the 4x4 routine on four or sixteen sub-blocks.
 
@@ -35,30 +40,30 @@ All transforms are stateless. The only persistent data are constant vector selec
 
 **CAVLC interleave.** The routine loads eight 16-bit vectors, merges adjacent pairs, permutes them into interleaved order, and writes eight output vectors. It also ORs all source vectors, packs the result to bytes, compares against zero, and updates the eight-byte `nnz` bitmap using a selector mask.
 
-## 5. Dependencies
+## 6. Dependencies
 
 - Includes `common/common.h`, `common/ppc/ppccommon.h`, and local `dct.h`.
 - Installed through `common/dct.c` and `common/zigzag` dispatch.
 - Uses vector helpers and transpose macros from `ppccommon.h`.
 
-## 6. Constants and tables
+## 7. Constants and tables
 
 - `FENC_STRIDE = 16`, `FDEC_STRIDE = 32`.
 - Inverse rounding constant 32, final shift 6.
 - 8x8 transform constants 1.5 (`d + (d>>1)`), shifts 1 and 2.
 - Two byte-permutation vectors for 4x4 output repacking, fourteen masks for the 8x8 zigzag, three masks for CAVLC interleave.
 
-## 7. Performance notes
+## 8. Performance notes
 
 All kernels keep intermediates in vector registers and use `VEC_TRANSPOSE_8`/`VEC_TRANSPOSE_4` instead of memory transposes. The 8x8 path processes eight columns per vector, which is a natural fit for AltiVec. The zigzag routines are permutation-heavy and benefit from few loads. Clean implementations should pay special attention to endian-dependent packs and permutes: `vec_mergeh`/`vec_mergel` and `vec_perm` lane ordering differ between big- and little-endian PowerPC, and `ppccommon.h` provides explicit helpers for the common widening cases.
 
-## 8. References
+## 9. References
 
 - ITU-T H.264 integer transform and scanning specification.
 - `common/dct.c` for reference arithmetic.
 - AltiVec Technology Programming Interface Manual.
 
-## 9. Verification checklist
+## 10. Verification checklist
 
 - Every transform matches the generic C implementation on randomized inputs.
 - Frame and field 4x4 zigzag orders match the standard tables.
@@ -67,7 +72,7 @@ All kernels keep intermediates in vector registers and use `VEC_TRANSPOSE_8`/`VE
 - Reconstructed pixels are saturated to 0..255.
 - Big- and little-endian builds produce identical logical results.
 
-## 10. Open questions
+## 11. Open questions
 
 - `UNKNOWN`: whether all declared functions are installed on VSX builds where different intrinsics might be preferable.
 - `UNKNOWN`: exact overflow behaviour of the 8x8 transform on extreme coefficient values.

@@ -1,8 +1,13 @@
 # `common/arm/dct-a.S` — ARM/NEON transform kernels
 
-**Dirty-side behavioural specification.** Source path: `common/arm/dct-a.S`. Role: NEON implementations of the H.264 4x4 and 8x8 forward/inverse transforms, DC-block transforms, and the 4x4 frame zigzag scan.
+## 1. Header
 
-## 1. Purpose
+- **Source path:** `common/arm/dct-a.S`.
+- **Role in one sentence:** NEON implementations of the H.264 4x4 and 8x8 forward/inverse transforms, DC-block transforms, and the 4x4 frame zigzag scan.
+- **Marker:** Dirty-side behavioural specification; all descriptions are behavioural and written independently of the reference source.
+
+
+## 2. Purpose
 
 This file contains the arithmetic-intensive transform kernels used by the encoder. It is written entirely in NEON assembly because the transforms operate on small 16-bit matrices where instruction ordering and register allocation dominate performance. All routines operate on 8-bit samples; the file is compiled only for 8-bit ARM builds.
 
@@ -12,7 +17,7 @@ The file complements `common/arm/dct.h`, which declares the symbols, and `common
 - A 4x4 block of 16-bit coefficients fits exactly in four NEON `d` registers, enabling register-only butterflies.
 - Widening byte-difference instructions and saturating narrowing instructions let the kernels avoid explicit clamping code.
 
-## 2. Public interface
+## 3. Public interface
 
 Exported symbols, all mangled through `asm.S` and declared in `arm/dct.h`:
 
@@ -43,7 +48,7 @@ ABI details:
 - All coefficients are 16-bit signed values; all pixel samples are unsigned bytes.
 - `pix1` rows are `FENC_STRIDE = 16` bytes apart; `pix2` and `p_dst` rows are `FDEC_STRIDE = 32` bytes apart.
 
-## 3. State and data structures
+## 4. State and data structures
 
 Every function is stateless: all intermediate values live in NEON registers (`d0..d31` / `q0..q15`) and no stack frames are used except for saving `lr` in the tiled variants.
 
@@ -51,7 +56,7 @@ The only data object is the read-only constant `scan4x4_frame`, a 16-byte permut
 
 The 8x4 helpers produce coefficient sub-blocks in raster order: the first helper call fills the top-left and top-right 4x4 blocks, the second fills the bottom pair. Pointer adjustments of eight rows and eight columns select the four quadrants of a macroblock.
 
-## 4. Algorithm / behaviour
+## 5. Algorithm / behaviour
 
 ### 4.1 Forward 4x4 transform
 
@@ -94,14 +99,14 @@ The 8-point inverse uses a 5/20 factor structure with intermediate arithmetic sh
 
 The 4x4 frame scan loads two 64-bit halves and uses `vtbl.8` with the stored permutation to reorder coefficients in one step.
 
-## 5. Dependencies
+## 6. Dependencies
 
 - Includes `common/arm/asm.S` for `function`, `const`, `movrel`, stride constants, and SIMD helper macros.
 - Installed through `x264_dct_init` and the zigzag dispatcher in `common/dct.c`.
 - Declared in `common/arm/dct.h`.
 - Uses `FENC_STRIDE = 16` and `FDEC_STRIDE = 32`.
 
-## 6. Constants and tables
+## 7. Constants and tables
 
 - `FENC_STRIDE = 16`, `FDEC_STRIDE = 32`.
 - Inverse transform final shift: 6, with a rounding constant of 32.
@@ -109,7 +114,7 @@ The 4x4 frame scan loads two 64-bit halves and uses `vtbl.8` with the stored per
 - 8x8 butterflies use shifts of 1 and 2 and the weights 5 and 20.
 - One 16-byte zigzag permutation table.
 
-## 7. Performance notes
+## 8. Performance notes
 
 - Forward transforms dominate residual computation; inverse transforms dominate reconstruction.
 - The 8x4 helper doubles throughput by processing two 4x4 blocks per call.
@@ -118,13 +123,13 @@ The 4x4 frame scan loads two 64-bit halves and uses `vtbl.8` with the stored per
 - Critical correctness points: arithmetic right shifts on negative intermediates and exact saturation on reconstruction.
 - Relevant public material: Hadamard/integer-transform papers, SIMD butterfly network literature, and the ARM NEON Programmer's Guide.
 
-## 8. References
+## 9. References
 
 - ITU-T H.264, integer transform and scanning clauses.
 - `common/dct.c` for canonical reference arithmetic.
 - ARM NEON Programmer's Guide for widening differences, `vtrn`, `vswp`, and saturating narrowing.
 
-## 9. Verification checklist
+## 10. Verification checklist
 
 - Forward transforms produce coefficients identical to the generic C code for random and extreme inputs.
 - All-zero input gives all-zero coefficients.
@@ -135,7 +140,7 @@ The 4x4 frame scan loads two 64-bit halves and uses `vtbl.8` with the stored per
 - Rows outside the addressed block are never written.
 - Callee-saved registers are preserved.
 
-## 10. Open questions
+## 11. Open questions
 
 - `UNKNOWN`: whether `x264_dct4x4dc_neon` and `x264_idct4x4dc_neon` are installed in all ARM build configurations.
 - `UNKNOWN`: exact overflow behaviour of the 8x8 butterfly near the 16-bit limit.

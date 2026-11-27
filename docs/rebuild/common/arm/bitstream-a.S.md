@@ -1,22 +1,27 @@
 # `common/arm/bitstream-a.S` — NEON NAL escaping
 
-**Dirty-side behavioural specification.** Source path: `common/arm/bitstream-a.S`. Role: ARM/NEON implementation of H.264 emulation-prevention byte insertion.
+## 1. Header
 
-## 1. Purpose
+- **Source path:** `common/arm/bitstream-a.S`.
+- **Role in one sentence:** ARM/NEON implementation of H.264 emulation-prevention byte insertion.
+- **Marker:** Dirty-side behavioural specification; all descriptions are behavioural and written independently of the reference source.
+
+
+## 2. Purpose
 
 This file implements the `x264_nal_escape_neon` routine declared in `arm/bitstream.h`. Its job is to scan a NAL payload and insert `0x03` bytes where the byte sequence would otherwise resemble a start code, while preserving all original bytes.
 
-## 2. Public interface
+## 3. Public interface
 
 - `uint8_t *x264_nal_escape_neon( uint8_t *dst, uint8_t *src, uint8_t *end )`
 
 ARM EABI argument mapping: `r0 = dst`, `r1 = src`, `r2 = end`; the returned pointer is in `r0`. The routine pushes `r4-r5` and `lr`, and uses NEON registers `q0`..`q3`, `q8`..`q11`, and `d22` for candidate detection.
 
-## 3. State and data structures
+## 4. State and data structures
 
 The routine maintains a rolling two-byte history of recently written destination bytes. In the fast loop this history is kept in bytes 6 and 7 of `d1`; in the scalar recovery loop it is held in a 32-bit register `r5`. The history is initialized from the first two source bytes, which are always copied without testing.
 
-## 4. Algorithm / behaviour
+## 5. Algorithm / behaviour
 
 1. The routine computes the remaining count `src - end` (negative while work remains) in `lr`. If it is zero, it returns immediately.
 2. It sets up constant vectors: `q0` filled with `0xFF`, `q8` filled with 4, and `r3 = 3` for the inserted byte.
@@ -28,29 +33,29 @@ The routine maintains a rolling two-byte history of recently written destination
 
 The critical semantic detail is that the history is taken from the destination stream, including inserted bytes, exactly as in the generic scalar implementation.
 
-## 5. Dependencies
+## 6. Dependencies
 
 - Includes `common/arm/asm.S` for symbol and macro definitions.
 - Declared by `common/arm/bitstream.h` and called by `common/bitstream.c`.
 - Must match the behaviour of `nal_escape_c` in the same file.
 
-## 6. Constants and tables
+## 7. Constants and tables
 
 - Inserted byte `0x03`, comparison threshold `4`.
 - Vector constants: `0xFF` fill and `4` fill.
 - `vext` offsets 14 and 15 encode the two predecessor positions.
 
-## 7. Performance notes
+## 8. Performance notes
 
 The fast path processes 16 bytes per iteration with two shifted vector views and a single narrowed mask, so the common case of no candidates is very cheap. The scalar recovery loop is entered only when a candidate exists; it handles a handful of bytes and then re-enters vector processing. Cache behaviour is purely streaming. For a clean implementation, a byte-at-a-time version is correct and simple; vectorization should be added only after exhaustive equivalence testing because an off-by-one in the predecessor window corrupts the output.
 
-## 8. References
+## 9. References
 
 - ITU-T H.264, start-code emulation prevention rule.
 - `common/bitstream.c` for the canonical algorithm.
 - ARM NEON Programmer's Guide for `vext`, `vcgt`, `vceq`, and `vshrn`.
 
-## 9. Verification checklist
+## 10. Verification checklist
 
 - Empty, one-byte, and two-byte inputs are copied verbatim.
 - The sequences `00 00 00`, `00 00 01`, `00 00 02`, `00 00 03` each cause an insertion before the third byte.
@@ -59,7 +64,7 @@ The fast path processes 16 bytes per iteration with two shifted vector views and
 - The returned pointer equals `dst` plus the number of bytes written.
 - Callee-saved registers are preserved.
 
-## 10. Open questions
+## 11. Open questions
 
 - `UNKNOWN`: whether the routine is ever called with `dst` overlapping `src`; no overlap contract is documented.
 - `UNKNOWN`: behaviour for extremely large payloads beyond the signed-loop range implied by the 32-bit counter.

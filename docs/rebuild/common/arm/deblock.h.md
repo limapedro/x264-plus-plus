@@ -1,12 +1,17 @@
 # `common/arm/deblock.h` — ARM deblocking declarations
 
-**Dirty-side behavioural specification.** Source path: `common/arm/deblock.h`. Role: declares NEON-accelerated deblocking-filter entry points for luma and chroma edges plus boundary-strength computation.
+## 1. Header
 
-## 1. Purpose
+- **Source path:** `common/arm/deblock.h`.
+- **Role in one sentence:** declares NEON-accelerated deblocking-filter entry points for luma and chroma edges plus boundary-strength computation.
+- **Marker:** Dirty-side behavioural specification; all descriptions are behavioural and written independently of the reference source.
+
+
+## 2. Purpose
 
 The deblocking filter is applied to every decoded macroblock edge and is both hot and highly branchy in the scalar reference. This header exposes the ARM-optimized routines so the generic dispatcher can replace the scalar edge filters and the strength estimator when NEON is available.
 
-## 2. Public interface
+## 3. Public interface
 
 The declared functions fall into three groups.
 
@@ -25,11 +30,11 @@ Strength computation:
 
 Contracts: `pix` points at the edge's `q0` sample; `stride` is the picture stride in bytes; `alpha`/`beta` are the already-looked-up threshold values; `tc0` holds four per-4x4-block clipping thresholds, with a negative value meaning "skip this block". The strength routine writes `bs[dir][edge][i]` for both vertical (`dir=1`) and horizontal (`dir=0`) edges of a macroblock.
 
-## 3. State and data structures
+## 4. State and data structures
 
 `nnz` is a scan-order map of nonzero flags for a macroblock; `ref` holds reference indices for both lists; `mv` holds motion vectors in quarter-pel units; `bs` is the 2x8x4 output byte array. The `X264_SCAN8_*` constants describe the scan-buffer geometry. No function allocates memory; all output buffers are caller-owned.
 
-## 4. Algorithm / behaviour
+## 5. Algorithm / behaviour
 
 The algorithms follow the H.264 deblocking specification as implemented in `common/deblock.c`:
 
@@ -41,31 +46,31 @@ The algorithms follow the H.264 deblocking specification as implemented in `comm
 
 The NEON versions compute all four or eight edge positions in parallel using byte vectors, transposing where needed for horizontal edges.
 
-## 5. Dependencies
+## 6. Dependencies
 
 - Installed by `x264_deblock_init` in `common/deblock.c` when NEON is detected.
 - Implemented in `common/arm/deblock-a.S`.
 - Needs `x264_clip_pixel` semantics (saturate to 0..255) and the shared alpha/beta/tc0 tables in `common/deblock.c` for parameter derivation (the caller supplies the derived values).
 
-## 6. Constants and tables
+## 7. Constants and tables
 
 - The clipping limit for the delta is `tc`, incremented to `tc+1` or `tc+2` when the outer-sample tests pass.
 - Strong intra filtering uses the threshold `alpha >> 2 + 2`; final averages divide by 4 or 8 with a rounding constant of 2 or 4 respectively.
 - Strength thresholds: 4 for horizontal MV components, `mvy_limit` for vertical components.
 - Tables `i_alpha_table`, `i_beta_table`, `i_tc0_table` live in the generic file and are indexed by `qp + offset + 24`.
 
-## 7. Performance notes
+## 8. Performance notes
 
 Deblocking runs on every macroblock in every decoded frame and is therefore extremely hot. The scalar implementation has unpredictable branches per 4-pixel group; the NEON version removes them by computing masks and selecting results with bitwise operations. Cache usage is a few rows around the edge, so locality is good. For a clean rebuild, implement the mask-based formulation in scalar form first, validate against the reference, then map it to SIMD. Public references on the H.264 loop filter and FFmpeg's deblocking implementations are useful.
 
-## 8. References
+## 9. References
 
 - ITU-T H.264, clause on the adaptive deblocking filter.
 - JVT-B118 (decimation reference used elsewhere in x264; not needed for filtering itself).
 - `common/deblock.c` as the canonical behavioural reference.
 - ARM NEON Programmer's Guide for byte-mask selection.
 
-## 9. Verification checklist
+## 10. Verification checklist
 
 - All-zero boundary strength leaves pixels unchanged.
 - `alpha == 0` or `beta == 0` leaves pixels unchanged.
@@ -74,7 +79,7 @@ Deblocking runs on every macroblock in every decoded frame and is therefore extr
 - Vertical and horizontal variants produce identical results on transposed input.
 - Strength computation matches the scalar reference for randomized `nnz`/`ref`/`mv` arrays, including B-frame mode.
 
-## 10. Open questions
+## 11. Open questions
 
 - `UNKNOWN`: exact treatment of chroma edges with `tc0 == 0` in the NEON variants; the generic code skips them, and the assembly appears to rely on a sign test.
 - `UNKNOWN`: whether all declared functions are installed in high-bit-depth builds; the header is unconditional but the implementation may be 8-bit-only.

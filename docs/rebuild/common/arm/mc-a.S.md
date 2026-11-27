@@ -1,12 +1,17 @@
 # `common/arm/mc-a.S` — ARM/NEON motion-compensation primitives
 
-**Dirty-side behavioural specification.** Source path: `common/arm/mc-a.S`. Role: assembly primitives for prefetching, aligned memory operations, block averaging, weighted prediction, block copy, chroma interpolation, half-pel filters, plane conversion, integral-image preparation, and MB-tree propagation.
+## 1. Header
 
-## 1. Purpose
+- **Source path:** `common/arm/mc-a.S`.
+- **Role in one sentence:** assembly primitives for prefetching, aligned memory operations, block averaging, weighted prediction, block copy, chroma interpolation, half-pel filters, plane conversion, integral-image preparation, and MB-tree propagation.
+- **Marker:** Dirty-side behavioural specification; all descriptions are behavioural and written independently of the reference source.
+
+
+## 2. Purpose
 
 This file contains the low-level assembly routines orchestrated by `common/arm/mc-c.c`. It covers a wide range of memory-moving and interpolation operations, all of which benefit from NEON's wide loads/stores and integer multiply-accumulate instructions.
 
-## 2. Public interface
+## 3. Public interface
 
 Exported symbols (declared in `mc-c.c` or headers):
 
@@ -21,11 +26,11 @@ Exported symbols (declared in `mc-c.c` or headers):
 
 Internal helpers include `mbtree_propagate_list_internal_neon` and the dispatch tables for aligned memcpy variants.
 
-## 3. State and data structures
+## 4. State and data structures
 
 Constants include `pw_0to15` (16-bit indices 0..15), `memcpy_table` (jump table of four aligned-copy variants), and various shuffle masks embedded as immediate vectors. Weighted prediction reads `x264_weight_t` fields at fixed offsets: denominator at 32, scale at 36, offset at 40.
 
-## 4. Algorithm / behaviour
+## 5. Algorithm / behaviour
 
 **Prefetch.** The reference prefetch routine assumes a 64-byte cache line and issues eight `pld` instructions covering rows around the predicted block; the parity argument selects an offset. The source prefetch routine similarly prefetches luma and chroma rows based on the macroblock column.
 
@@ -47,13 +52,13 @@ Constants include `pw_0to15` (16-bit indices 0..15), `memcpy_table` (jump table 
 
 **Integral and MB-tree.** The integral helpers compute horizontal and vertical prefix sums of 16-bit values using shifted vector adds and subtracts. MB-tree propagation converts integer cost values to float, multiplies by propagation factors, and converts back with saturation. The fix8 pack/unpack helpers convert between float values and 8-bit fixed-point integers with byte swapping.
 
-## 5. Dependencies
+## 6. Dependencies
 
 - Includes `common/arm/asm.S`.
 - Called from `common/arm/mc-c.c` and through function-pointer tables in `common/mc.c`.
 - Uses `x264_weight_t` layout from `common/mc.h` and pixel-size enum from `common/pixel.h`.
 
-## 6. Constants and tables
+## 7. Constants and tables
 
 - `pw_0to15` index vector; `memcpy_table` jump table.
 - Weighted averaging denominator 64 with rounding 32.
@@ -61,17 +66,17 @@ Constants include `pw_0to15` (16-bit indices 0..15), `memcpy_table` (jump table 
 - Chroma interpolation denominator 64 with rounding 32.
 - MB-tree fix8 scale: 256 (`vcvt` with 8 fractional bits).
 
-## 7. Performance notes
+## 8. Performance notes
 
 This file is dominated by memory throughput. The key optimizations are aligned wide loads/stores, jump-table dispatch for alignment cases, and processing multiple rows per loop to hide latency. Weighted prediction caching in `mc-c.c` converts common cases into simple saturating byte operations. For a clean rebuild, implement the high-level operations exactly and use SIMD only where measurements justify it; correctness of rounding and saturation is more important than instruction count.
 
-## 8. References
+## 9. References
 
 - `common/mc.c` and `common/mc.h` for canonical semantics and function-pointer contracts.
 - ITU-T H.264, fractional-pel interpolation and weighted prediction clauses.
 - ARM NEON Programmer's Guide for `vld2`, `vst2`, `vext`, `vmull`, and saturating narrowing.
 
-## 9. Verification checklist
+## 10. Verification checklist
 
 - All averaging and weighted-prediction variants match generic results for every supported width.
 - Chroma interpolation matches the generic bilinear formula for all 64 fractional offsets.
@@ -81,7 +86,7 @@ This file is dominated by memory throughput. The key optimizations are aligned w
 - MB-tree fix8 pack/unpack round-trips values within the representable range.
 - Callee-saved registers are preserved across all routines.
 
-## 10. Open questions
+## 11. Open questions
 
 - `UNKNOWN`: exact cache-line assumption (64 bytes) on non-Cortex-A8 cores.
 - `UNKNOWN`: whether the RGB deinterleave routine is installed on all NEON builds or only those with specific feature flags.

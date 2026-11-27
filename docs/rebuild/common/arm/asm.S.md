@@ -1,12 +1,17 @@
 # `common/arm/asm.S` — ARM assembly utility macros
 
-**Dirty-side behavioural specification.** Source path: `common/arm/asm.S`. Role: supplies the symbol-naming, section-layout, relocation, and SIMD-helper macros used by every ARM assembly file in the back end.
+## 1. Header
 
-## 1. Purpose
+- **Source path:** `common/arm/asm.S`.
+- **Role in one sentence:** supplies the symbol-naming, section-layout, relocation, and SIMD-helper macros used by every ARM assembly file in the back end.
+- **Marker:** Dirty-side behavioural specification; all descriptions are behavioural and written independently of the reference source.
+
+
+## 2. Purpose
 
 ARM assembly in x264 must build for ELF and Mach-O, for 32-bit ARMv6/v7 and for high bit-depth variants, with or without position-independent code and with several assembler dialects. This file centralizes those differences behind a small set of macros so the individual kernel files contain only algorithm code.
 
-## 2. Public interface
+## 3. Public interface
 
 The file exports no runtime symbols. It defines assembly-time macros:
 
@@ -18,11 +23,11 @@ The file exports no runtime symbols. It defines assembly-time macros:
 - SIMD helpers: `HORIZ_ADD`, `SUMSUB_AB`, `SUMSUB_ABCD`, `ABS2`, `HADAMARD`, `TRANSPOSE8x8`, `TRANSPOSE4x4`, `TRANSPOSE4x4_16`.
 - Constants: `FENC_STRIDE = 16`, `FDEC_STRIDE = 32`.
 
-## 3. State and data structures
+## 4. State and data structures
 
 All state is in the assembler's macro namespace. The naming layer computes an external symbol prefix: with `PREFIX` defined, exported names gain a leading underscore and the internal base is `_x264_`; otherwise the base is `x264_`. For high-bit-depth builds the bit depth is inserted into the external name. Internal `X264(...)` references always use the unqualified `x264_` base.
 
-## 4. Algorithm / behaviour
+## 5. Algorithm / behaviour
 
 **Function declaration.** `function name` switches to `.text`, aligns to 4 bytes, declares the symbol global and hidden (for exported functions), emits ELF function type and `.func` annotations when supported, and defines a nested `endfunc` macro that emits the matching size annotation and cleans itself up. Nonexported functions are local but still get type/size metadata.
 
@@ -34,27 +39,27 @@ All state is in the assembler's macro namespace. The naming layer computes an ex
 
 **SIMD helpers.** `HORIZ_ADD` reduces a vector of 16-bit lanes to a scalar by pairwise widening adds. `SUMSUB_AB` computes element-wise sum and difference of two 16-bit vectors. `HADAMARD` performs one butterfly stage: with distance 0 it transposes 32-bit lanes, with distance 1 it transposes 16-bit lanes; the `sumsub` variant computes sum/difference, and the `amax` variant computes maxima of absolute values. The transpose macros implement 8x8 and 4x4 byte/halfword/word transposes using sequences of `vtrn` instructions.
 
-## 5. Dependencies
+## 6. Dependencies
 
 Included at the top of every ARM `.S` file. Depends on `config.h` for feature macros such as `HAVE_AS_FUNC`, `HAVE_ARMV6T2`, `PIC`, `SYS_LINUX`, `SYS_OPENBSD`, `SYS_MACOSX`, `BIT_DEPTH`, and `PREFIX`.
 
-## 6. Constants and tables
+## 7. Constants and tables
 
 - `FENC_STRIDE = 16` and `FDEC_STRIDE = 32` are the fixed strides for source and reconstructed pixel buffers.
 - EABI attribute numbers 24 (required stack alignment) and 25 (preserved stack alignment).
 - `HAVE_SECTION_DATA_REL_RO` is 1 on Linux and OpenBSD, 0 elsewhere.
 
-## 7. Performance notes
+## 8. Performance notes
 
 This file generates no executed code beyond the macros it expands. The transpose macros matter for performance: an 8x8 transpose is implemented with three stages of `vtrn` at 32-, 16-, and 8-bit granularity, which is substantially cheaper than scalar transposition. The `HADAMARD` macro's `amax` variant is the key trick used by the SATD code to compute sums of absolute values with reductions. Rebuilders should preserve these identities even if they use different instruction sequences.
 
-## 8. References
+## 9. References
 
 - ARM Architecture Reference Manual and ARM EABI documentation.
 - GNU assembler manual for `.func`, `.size`, `.eabi_attribute`, and Mach-O section directives.
 - ARM NEON Programmer's Guide for `vtrn`, `vpaddl`, and widening arithmetic.
 
-## 9. Verification checklist
+## 10. Verification checklist
 
 - Every kernel file assembles for ELF and Mach-O targets with and without PIC.
 - Exported symbols have exactly the names expected by the C headers in 8-bit and high-bit-depth builds.
@@ -62,7 +67,7 @@ This file generates no executed code beyond the macros it expands. The transpose
 - `movconst` handles constants that fit in 16 bits and constants that need 32 bits.
 - SIMD helper macros produce the documented arithmetic identities for representative 16-bit inputs.
 
-## 10. Open questions
+## 11. Open questions
 
 - `UNKNOWN`: exact behaviour on Thumb-only targets, where the reference source contains a `FIXME: thumb` comment for PIC literal loading.
 - `UNKNOWN`: whether all listed feature macros are defined in every supported build system.

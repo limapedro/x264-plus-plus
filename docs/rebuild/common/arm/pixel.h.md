@@ -1,12 +1,17 @@
 # `common/arm/pixel.h` — ARM pixel-metric declarations
 
-**Dirty-side behavioural specification.** Source path: `common/arm/pixel.h`. Role: declares the ARM/NEON pixel-distance, variance, Hadamard, and SSIM kernels and the helper macros used to declare them.
+## 1. Header
 
-## 1. Purpose
+- **Source path:** `common/arm/pixel.h`.
+- **Role in one sentence:** declares the ARM/NEON pixel-distance, variance, Hadamard, and SSIM kernels and the helper macros used to declare them.
+- **Marker:** Dirty-side behavioural specification; all descriptions are behavioural and written independently of the reference source.
+
+
+## 2. Purpose
 
 Pixel comparison functions are called millions of times per encode during motion estimation and mode decision. This header lists the ARM-optimized implementations and provides declaration macros that expand to the full family of block sizes, keeping the source list compact and consistent.
 
-## 2. Public interface
+## 3. Public interface
 
 The header declares four groups of functions:
 
@@ -25,13 +30,13 @@ Typical signatures:
 - Hadamard-AC: `uint64_t f( uint8_t *pix, intptr_t stride )`, packing two sums into 32-bit halves.
 - SSIM core: `void f( const uint8_t *, intptr_t, const uint8_t *, intptr_t, int sums[2][4] )`.
 
-## 3. State and data structures
+## 4. State and data structures
 
 All metrics are stateless. The `pixel_size` enum from `common/pixel.h` supplies array indices: `PIXEL_16x16 = 0` through `PIXEL_4x4 = 6`, plus subsampled-only sizes. The `x264_pixel_function_t` table in the generic code holds pointers to each routine.
 
 The 64-bit variance return value packs the sum of samples in the low 32 bits and the sum of squared samples in the high 32 bits. The Hadamard-AC return packs two intermediate sums in the two halves and applies a final scaling in the wrapper.
 
-## 4. Algorithm / behaviour
+## 5. Algorithm / behaviour
 
 Definitions that the ARM implementations must match:
 
@@ -46,30 +51,30 @@ Definitions that the ARM implementations must match:
 
 The x3/x4 variants compute several candidate scores in one pass, reusing the encoded source block from `FENC_STRIDE = 16`.
 
-## 5. Dependencies
+## 6. Dependencies
 
 - Installed by `x264_pixel_init_altivec`-style dispatchers in the generic pixel initialization code when NEON is detected.
 - Implemented in `common/arm/pixel-a.S`.
 - Depends on `x264_pixel_cmp_t` typedefs and `x264_pixel_function_t` from `common/pixel.h`.
 
-## 6. Constants and tables
+## 7. Constants and tables
 
 - `FENC_STRIDE = 16`, `FDEC_STRIDE = 32`.
 - SATD final shift: divide by 2. SA8D final shift: divide by 4 with rounding.
 - Weighted average denominator: 64, with rounding constant 32 and saturation.
 - Masks `mask_ac4` and `mask_ac8` select AC versus DC positions in Hadamard-AC computation.
 
-## 7. Performance notes
+## 8. Performance notes
 
 These are the hottest functions in the encoder. The ARM implementations use `vabdl.u8`/`vabal.u8` accumulating absolute differences directly in 16-bit lanes, avoiding separate widening and absolute-value steps. SATD uses a clever `abs + max` formulation to compute sums of absolute Hadamard coefficients with vector max operations. The `*_dual` SAD variants use two accumulators to hide VABAL latency on cores capable of dual issue. Compile-time unrolling by block height is used throughout. A clean rebuild should prefer correctness and then focus on reducing dependency chains in the accumulator.
 
-## 8. References
+## 9. References
 
 - `common/pixel.c` for canonical metric definitions.
 - ITU-T H.264 reference software documentation for SATD/Hadamard metrics.
 - ARM NEON Programmer's Guide for widening absolute-difference and pairwise-add instructions.
 
-## 9. Verification checklist
+## 10. Verification checklist
 
 - SAD/SATD/SSD match the generic C functions for all seven block sizes on randomized inputs.
 - x3/x4 variants produce the same scores as three/four separate single-reference calls.
@@ -78,7 +83,7 @@ These are the hottest functions in the encoder. The ARM implementations use `vab
 - SSIM core sums match scalar accumulation.
 - Averaging functions saturate correctly at 0 and 255 for extreme weights.
 
-## 10. Open questions
+## 11. Open questions
 
 - `UNKNOWN`: precise index layout of `edge[36]` consumers is irrelevant here but the 8x8 chroma intra-metric helpers in the PPC counterpart use it; confirm no ARM equivalent needs it.
 - `UNKNOWN`: whether all declared `_neon_dual` functions are actually installed on all NEON cores, given the dual-issue comment in the assembly.

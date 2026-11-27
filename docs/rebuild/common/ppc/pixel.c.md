@@ -1,12 +1,17 @@
 # `common/ppc/pixel.c` — PowerPC pixel-metric implementation
 
-**Dirty-side behavioural specification.** Source path: `common/ppc/pixel.c`. Role: AltiVec implementations of SAD, multi-reference SAD, SATD, SA8D, SSD, variance, Hadamard-AC, SSIM core, intra mode-comparison helpers, and the pixel function-table initializer.
+## 1. Header
 
-## 1. Purpose
+- **Source path:** `common/ppc/pixel.c`.
+- **Role in one sentence:** AltiVec implementations of SAD, multi-reference SAD, SATD, SA8D, SSD, variance, Hadamard-AC, SSIM core, intra mode-comparison helpers, and the pixel function-table initializer.
+- **Marker:** Dirty-side behavioural specification; all descriptions are behavioural and written independently of the reference source.
+
+
+## 2. Purpose
 
 This file provides the PowerPC pixel comparison kernels used by motion estimation and mode decision. It is compiled only for 8-bit builds and uses 16-byte AltiVec vectors with 16-bit or 32-bit lanes depending on the metric.
 
-## 2. Public interface
+## 3. Public interface
 
 The only exported symbol is:
 
@@ -23,11 +28,11 @@ declared in `ppc/pixel.h`. All metric routines are file-local and installed thro
 - SSIM 4x4x2 core.
 - Intra mode-comparison helpers: `intra_sad_x3_8x8`, `intra_sad_x3_8x8c`, `intra_sad_x3_16x16`, `intra_satd_x3_4x4`, `intra_satd_x3_8x8c`, `intra_satd_x3_16x16`, `intra_sa8d_x3_8x8`.
 
-## 3. State and data structures
+## 4. State and data structures
 
 Constant tables include `hadamard_permtab` with two byte-selector vectors for 16-bit widening depending on pointer alignment, and a `perm_tab` array used by the 8x8 variance routine. The `xxpermdi` helper from `ppccommon.h` is used to assemble 8-column data from two 16-byte loads for the narrower blocks.
 
-## 4. Algorithm / behaviour
+## 5. Algorithm / behaviour
 
 **SAD.** `PIXEL_SAD_ALTIVEC` loads one row from each block, computes absolute byte differences with `vec_absd`, and accumulates into 32-bit lanes with `vec_sum4s`. A final `vec_sums` reduces to a scalar; different splat indices (3 or 1) are used depending on how many 32-bit lanes contain meaningful data. The x3/x4 routines load the encoded block once per iteration and accumulate separate sums for each candidate, reusing `FENC_STRIDE = 16`.
 
@@ -43,30 +48,30 @@ Constant tables include `hadamard_permtab` with two byte-selector vectors for 16
 
 **Intra helpers.** These call one of the generic intra prediction routines to fill a temporary block, then run the corresponding metric against the encoded source. The 8x8 luma variants use the filtered edge array; the chroma and 16x16 variants use the reconstructed-buffer prediction functions.
 
-## 5. Dependencies
+## 6. Dependencies
 
 - Includes `common/common.h`, `ppccommon.h`, local `pixel.h`, and `common/predict.h` for intra prediction helpers.
 - Installed by the generic pixel-initialization path.
 - Uses pixel-size enums and function-table typedefs from `common/pixel.h`.
 
-## 6. Constants and tables
+## 7. Constants and tables
 
 - SATD final divide by 2; SA8D final `(sum+2)>>2`.
 - Hadamard-AC final shifts 1 and 2 on the two packed sums.
 - `FENC_STRIDE = 16`, `FDEC_STRIDE = 32`.
 - Alignment-dependent permutation tables for 8x8 variance and Hadamard-AC.
 
-## 7. Performance notes
+## 8. Performance notes
 
 The x3/x4 variants are the most important because they amortize encoded-block loads across several candidates. AltiVec's `vec_sum4s` and `vec_msum` provide cheap horizontal reduction. The SATD reduction uses saturation-safe 16-bit intermediates followed by widening accumulation. A clean implementation should first match the scalar metrics, then optimize the reduction chains; lane-order mistakes on little-endian PowerPC are common.
 
-## 8. References
+## 9. References
 
 - `common/pixel.c` for canonical metric definitions.
 - `common/predict.c` for intra prediction helpers.
 - AltiVec Programming Interface Manual.
 
-## 9. Verification checklist
+## 10. Verification checklist
 
 - All metrics match generic C results on randomized inputs for their supported sizes.
 - x3/x4 variants agree with repeated single-reference calls.
@@ -75,7 +80,7 @@ The x3/x4 variants are the most important because they amortize encoded-block lo
 - SSIM core sums match scalar accumulation.
 - Intra helpers produce the same three scores as predict-then-metric in the generic path.
 
-## 10. Open questions
+## 11. Open questions
 
 - `UNKNOWN`: exact lane assignments in `hadamard_permtab` for little-endian builds.
 - `UNKNOWN`: whether the x3/x4 SATD wrappers are installed for all seven block sizes in all build configurations.

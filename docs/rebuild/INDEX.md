@@ -34,24 +34,24 @@ One document per source file, same tree, `.md` appended. Regenerate with `pwsh d
 | `common/aarch64/predict-c.c` | [common/aarch64/predict-c.c.md](common/aarch64/predict-c.c.md) | done | 61 |
 | `common/aarch64/quant.h` | [common/aarch64/quant.h.md](common/aarch64/quant.h.md) | done | 62 |
 | `common/aarch64/quant-a.S` | [common/aarch64/quant-a.S.md](common/aarch64/quant-a.S.md) | done | 133 |
-| `common/arm/asm.S` | [common/arm/asm.S.md](common/arm/asm.S.md) | thin | 42 |
-| `common/arm/bitstream.h` | [common/arm/bitstream.h.md](common/arm/bitstream.h.md) | thin | 47 |
-| `common/arm/bitstream-a.S` | [common/arm/bitstream-a.S.md](common/arm/bitstream-a.S.md) | thin | 42 |
-| `common/arm/cpu-a.S` | [common/arm/cpu-a.S.md](common/arm/cpu-a.S.md) | thin | 41 |
-| `common/arm/dct.h` | [common/arm/dct.h.md](common/arm/dct.h.md) | thin | 51 |
-| `common/arm/dct-a.S` | [common/arm/dct-a.S.md](common/arm/dct-a.S.md) | done | 99 |
-| `common/arm/deblock.h` | [common/arm/deblock.h.md](common/arm/deblock.h.md) | thin | 53 |
-| `common/arm/deblock-a.S` | [common/arm/deblock-a.S.md](common/arm/deblock-a.S.md) | thin | 46 |
-| `common/arm/mc.h` | [common/arm/mc.h.md](common/arm/mc.h.md) | thin | 48 |
-| `common/arm/mc-a.S` | [common/arm/mc-a.S.md](common/arm/mc-a.S.md) | thin | 55 |
-| `common/arm/mc-c.c` | [common/arm/mc-c.c.md](common/arm/mc-c.c.md) | thin | 50 |
-| `common/arm/pixel.h` | [common/arm/pixel.h.md](common/arm/pixel.h.md) | thin | 57 |
-| `common/arm/pixel-a.S` | [common/arm/pixel-a.S.md](common/arm/pixel-a.S.md) | thin | 54 |
-| `common/arm/predict.h` | [common/arm/predict.h.md](common/arm/predict.h.md) | thin | 54 |
-| `common/arm/predict-a.S` | [common/arm/predict-a.S.md](common/arm/predict-a.S.md) | thin | 48 |
-| `common/arm/predict-c.c` | [common/arm/predict-c.c.md](common/arm/predict-c.c.md) | thin | 44 |
-| `common/arm/quant.h` | [common/arm/quant.h.md](common/arm/quant.h.md) | thin | 54 |
-| `common/arm/quant-a.S` | [common/arm/quant-a.S.md](common/arm/quant-a.S.md) | thin | 49 |
+| `common/arm/asm.S` | [common/arm/asm.S.md](common/arm/asm.S.md) | thin | 45 |
+| `common/arm/bitstream.h` | [common/arm/bitstream.h.md](common/arm/bitstream.h.md) | thin | 50 |
+| `common/arm/bitstream-a.S` | [common/arm/bitstream-a.S.md](common/arm/bitstream-a.S.md) | thin | 45 |
+| `common/arm/cpu-a.S` | [common/arm/cpu-a.S.md](common/arm/cpu-a.S.md) | thin | 44 |
+| `common/arm/dct.h` | [common/arm/dct.h.md](common/arm/dct.h.md) | thin | 54 |
+| `common/arm/dct-a.S` | [common/arm/dct-a.S.md](common/arm/dct-a.S.md) | done | 102 |
+| `common/arm/deblock.h` | [common/arm/deblock.h.md](common/arm/deblock.h.md) | thin | 56 |
+| `common/arm/deblock-a.S` | [common/arm/deblock-a.S.md](common/arm/deblock-a.S.md) | thin | 49 |
+| `common/arm/mc.h` | [common/arm/mc.h.md](common/arm/mc.h.md) | thin | 51 |
+| `common/arm/mc-a.S` | [common/arm/mc-a.S.md](common/arm/mc-a.S.md) | thin | 58 |
+| `common/arm/mc-c.c` | [common/arm/mc-c.c.md](common/arm/mc-c.c.md) | thin | 53 |
+| `common/arm/pixel.h` | [common/arm/pixel.h.md](common/arm/pixel.h.md) | done | 60 |
+| `common/arm/pixel-a.S` | [common/arm/pixel-a.S.md](common/arm/pixel-a.S.md) | thin | 57 |
+| `common/arm/predict.h` | [common/arm/predict.h.md](common/arm/predict.h.md) | thin | 57 |
+| `common/arm/predict-a.S` | [common/arm/predict-a.S.md](common/arm/predict-a.S.md) | thin | 51 |
+| `common/arm/predict-c.c` | [common/arm/predict-c.c.md](common/arm/predict-c.c.md) | thin | 47 |
+| `common/arm/quant.h` | [common/arm/quant.h.md](common/arm/quant.h.md) | thin | 57 |
+| `common/arm/quant-a.S` | [common/arm/quant-a.S.md](common/arm/quant-a.S.md) | thin | 52 |
 | `common/base.c` | [common/base.c.md](common/base.c.md) | done | 83 |
 | `common/base.h` | [common/base.h.md](common/base.h.md) | done | 63 |
 | `common/bitstream.c` | [common/bitstream.c.md](common/bitstream.c.md) | done | 169 |
@@ -68,19 +68,19 @@ One document per source file, same tree, `.md` appended. Regenerate with `pwsh d
 | `common/frame.c` | [common/frame.c.md](common/frame.c.md) | done | 71 |
 | `common/frame.h` | [common/frame.h.md](common/frame.h.md) | thin | 54 |
 | `common/loongarch/dct.h` | [common/loongarch/dct.h.md](common/loongarch/dct.h.md) | thin | 54 |
-| `common/loongarch/dct-a.S` | common/loongarch/dct-a.S.md | pending | 0 |
+| `common/loongarch/dct-a.S` | [common/loongarch/dct-a.S.md](common/loongarch/dct-a.S.md) | done | 62 |
 | `common/loongarch/deblock.h` | [common/loongarch/deblock.h.md](common/loongarch/deblock.h.md) | thin | 39 |
-| `common/loongarch/deblock-a.S` | common/loongarch/deblock-a.S.md | pending | 0 |
+| `common/loongarch/deblock-a.S` | [common/loongarch/deblock-a.S.md](common/loongarch/deblock-a.S.md) | done | 60 |
 | `common/loongarch/loongson_asm.S` | [common/loongarch/loongson_asm.S.md](common/loongarch/loongson_asm.S.md) | done | 62 |
 | `common/loongarch/loongson_util.S` | [common/loongarch/loongson_util.S.md](common/loongarch/loongson_util.S.md) | thin | 35 |
 | `common/loongarch/mc.h` | [common/loongarch/mc.h.md](common/loongarch/mc.h.md) | thin | 56 |
-| `common/loongarch/mc-a.S` | common/loongarch/mc-a.S.md | pending | 0 |
+| `common/loongarch/mc-a.S` | [common/loongarch/mc-a.S.md](common/loongarch/mc-a.S.md) | done | 69 |
 | `common/loongarch/mc-c.c` | [common/loongarch/mc-c.c.md](common/loongarch/mc-c.c.md) | thin | 52 |
 | `common/loongarch/pixel.h` | [common/loongarch/pixel.h.md](common/loongarch/pixel.h.md) | thin | 42 |
-| `common/loongarch/pixel-a.S` | common/loongarch/pixel-a.S.md | pending | 0 |
+| `common/loongarch/pixel-a.S` | [common/loongarch/pixel-a.S.md](common/loongarch/pixel-a.S.md) | done | 60 |
 | `common/loongarch/pixel-c.c` | [common/loongarch/pixel-c.c.md](common/loongarch/pixel-c.c.md) | thin | 51 |
 | `common/loongarch/predict.h` | [common/loongarch/predict.h.md](common/loongarch/predict.h.md) | thin | 48 |
-| `common/loongarch/predict-a.S` | common/loongarch/predict-a.S.md | pending | 0 |
+| `common/loongarch/predict-a.S` | [common/loongarch/predict-a.S.md](common/loongarch/predict-a.S.md) | done | 62 |
 | `common/loongarch/predict-c.c` | [common/loongarch/predict-c.c.md](common/loongarch/predict-c.c.md) | thin | 36 |
 | `common/loongarch/quant.h` | [common/loongarch/quant.h.md](common/loongarch/quant.h.md) | thin | 47 |
 | `common/loongarch/quant-a.S` | common/loongarch/quant-a.S.md | pending | 0 |
@@ -116,19 +116,19 @@ One document per source file, same tree, `.md` appended. Regenerate with `pwsh d
 | `common/osdep.h` | [common/osdep.h.md](common/osdep.h.md) | thin | 47 |
 | `common/pixel.c` | [common/pixel.c.md](common/pixel.c.md) | done | 197 |
 | `common/pixel.h` | [common/pixel.h.md](common/pixel.h.md) | done | 116 |
-| `common/ppc/dct.c` | [common/ppc/dct.c.md](common/ppc/dct.c.md) | thin | 45 |
-| `common/ppc/dct.h` | [common/ppc/dct.h.md](common/ppc/dct.h.md) | thin | 41 |
-| `common/ppc/deblock.c` | [common/ppc/deblock.c.md](common/ppc/deblock.c.md) | thin | 39 |
-| `common/ppc/deblock.h` | [common/ppc/deblock.h.md](common/ppc/deblock.h.md) | thin | 39 |
-| `common/ppc/mc.c` | [common/ppc/mc.c.md](common/ppc/mc.c.md) | thin | 54 |
-| `common/ppc/mc.h` | [common/ppc/mc.h.md](common/ppc/mc.h.md) | thin | 37 |
-| `common/ppc/pixel.c` | [common/ppc/pixel.c.md](common/ppc/pixel.c.md) | thin | 51 |
-| `common/ppc/pixel.h` | [common/ppc/pixel.h.md](common/ppc/pixel.h.md) | thin | 30 |
-| `common/ppc/ppccommon.h` | [common/ppc/ppccommon.h.md](common/ppc/ppccommon.h.md) | thin | 44 |
-| `common/ppc/predict.c` | [common/ppc/predict.c.md](common/ppc/predict.c.md) | thin | 42 |
-| `common/ppc/predict.h` | [common/ppc/predict.h.md](common/ppc/predict.h.md) | thin | 33 |
-| `common/ppc/quant.c` | [common/ppc/quant.c.md](common/ppc/quant.c.md) | thin | 39 |
-| `common/ppc/quant.h` | [common/ppc/quant.h.md](common/ppc/quant.h.md) | thin | 39 |
+| `common/ppc/dct.c` | [common/ppc/dct.c.md](common/ppc/dct.c.md) | thin | 48 |
+| `common/ppc/dct.h` | [common/ppc/dct.h.md](common/ppc/dct.h.md) | thin | 44 |
+| `common/ppc/deblock.c` | [common/ppc/deblock.c.md](common/ppc/deblock.c.md) | thin | 42 |
+| `common/ppc/deblock.h` | [common/ppc/deblock.h.md](common/ppc/deblock.h.md) | thin | 42 |
+| `common/ppc/mc.c` | [common/ppc/mc.c.md](common/ppc/mc.c.md) | thin | 57 |
+| `common/ppc/mc.h` | [common/ppc/mc.h.md](common/ppc/mc.h.md) | thin | 40 |
+| `common/ppc/pixel.c` | [common/ppc/pixel.c.md](common/ppc/pixel.c.md) | thin | 54 |
+| `common/ppc/pixel.h` | [common/ppc/pixel.h.md](common/ppc/pixel.h.md) | thin | 33 |
+| `common/ppc/ppccommon.h` | [common/ppc/ppccommon.h.md](common/ppc/ppccommon.h.md) | thin | 47 |
+| `common/ppc/predict.c` | [common/ppc/predict.c.md](common/ppc/predict.c.md) | thin | 45 |
+| `common/ppc/predict.h` | [common/ppc/predict.h.md](common/ppc/predict.h.md) | thin | 36 |
+| `common/ppc/quant.c` | [common/ppc/quant.c.md](common/ppc/quant.c.md) | thin | 42 |
+| `common/ppc/quant.h` | [common/ppc/quant.h.md](common/ppc/quant.h.md) | thin | 42 |
 | `common/predict.c` | [common/predict.c.md](common/predict.c.md) | done | 243 |
 | `common/predict.h` | [common/predict.h.md](common/predict.h.md) | done | 117 |
 | `common/quant.c` | [common/quant.c.md](common/quant.c.md) | done | 238 |
@@ -266,8 +266,4 @@ One document per source file, same tree, `.md` appended. Regenerate with `pwsh d
 | `x264cli.h` | [x264cli.h.md](x264cli.h.md) | done | 83 |
 | `x264dll.c` | [x264dll.c.md](x264dll.c.md) | done | 64 |
 
-**Progress: 155 / 261 documents complete (thin docs need expansion).**
-
-## Additional documentation
-
-- `common/x86/cabac.h.md` documents `common/cabac.h` (the CABAC dispatch header referenced by the x86 kernels). It has no same-named source file in `common/x86/`, so it is not generated by update-index.ps1.
+**Progress: 161 / 261 documents complete (thin docs need expansion).**

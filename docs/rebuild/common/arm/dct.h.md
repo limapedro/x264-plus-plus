@@ -1,12 +1,17 @@
 # `common/arm/dct.h` — ARM transform and zigzag declarations
 
-**Dirty-side behavioural specification.** Source path: `common/arm/dct.h`. Role: declares the 8-bit ARM/NEON implementations of the H.264 transforms and the 4x4 frame zigzag scan.
+## 1. Header
 
-## 1. Purpose
+- **Source path:** `common/arm/dct.h`.
+- **Role in one sentence:** declares the 8-bit ARM/NEON implementations of the H.264 transforms and the 4x4 frame zigzag scan.
+- **Marker:** Dirty-side behavioural specification; all descriptions are behavioural and written independently of the reference source.
+
+
+## 2. Purpose
 
 This header collects the prototypes for the NEON transform kernels used by the encoder's transform-and-quantization pipeline. It lets the generic `x264_dct_init` dispatcher install optimized routines via function pointers without including architecture-specific code in the generic path.
 
-## 2. Public interface
+## 3. Public interface
 
 All functions use `dctcoef` (`int16_t` in 8-bit builds) and `uint8_t` sample pointers. Source strides are fixed: `pix1` uses `FENC_STRIDE` (16), `pix2` and `p_dst` use `FDEC_STRIDE` (32). The declared routines are:
 
@@ -23,11 +28,11 @@ All functions use `dctcoef` (`int16_t` in 8-bit builds) and `uint8_t` sample poi
 
 All prototypes are mangled with `x264_template` and are only meaningful in builds where 8-bit NEON transforms are compiled.
 
-## 3. State and data structures
+## 4. State and data structures
 
 Every function is stateless apart from its explicit input/output buffers. The 4x4 transform operates on a 4x4 array stored in raster order. The 8x8 DC-only routines operate on a 2x2 (or 2x4) array of per-4x4 DC coefficients that has already been Hadamard-transformed. The destination pixel buffer is always assumed to be at least `FDEC_STRIDE` rows tall; the routine writes exactly the block dimensions requested.
 
-## 4. Algorithm / behaviour
+## 5. Algorithm / behaviour
 
 The mathematical semantics match the generic C implementations in `common/dct.c`:
 
@@ -39,29 +44,29 @@ The mathematical semantics match the generic C implementations in `common/dct.c`
 
 The NEON implementations compute these results with 16-bit vector lanes, using widening byte differences on input and saturating narrowing instructions on output.
 
-## 5. Dependencies
+## 6. Dependencies
 
 - Consumed by `common/dct.c` through `x264_dct_init` and `x264_zigzag_init`.
 - Implemented in `common/arm/dct-a.S`.
 - Requires `FENC_STRIDE`/`FDEC_STRIDE` from `common/common.h` and the `x264_template` macro from the build configuration.
 
-## 6. Constants and tables
+## 7. Constants and tables
 
 - `FENC_STRIDE = 16`, `FDEC_STRIDE = 32`.
 - Transform scaling: final inverse shift of 6 with a rounding constant of 32; 8x8 inverse also adds 32 to the DC coefficient before transformation.
 - The 4x4 frame zigzag table is a 16-byte permutation stored in the assembly file. It is an implementation detail; rebuilders should generate it from the standard scan order.
 
-## 7. Performance notes
+## 8. Performance notes
 
 Transforms are among the most heavily used kernels in all presets. The 4x4 path typically operates on 16 coefficients per call, so vectorization amortizes poorly unless multiple blocks are processed together; the NEON code uses 8x4 helpers to double throughput. Cache pressure is low because operands are small and reused across blocks. When rebuilding, prioritize (1) exact arithmetic equivalence on extreme coefficient values, (2) saturating output conversion, and (3) minimizing load/store instructions by processing two or four blocks per call. Public optimization literature on Hadamard transforms and SIMD butterfly networks applies directly.
 
-## 8. References
+## 9. References
 
 - ITU-T H.264, integer transform and scanning specifications.
 - `common/dct.c` for the canonical reference behaviour.
 - ARM NEON Programmer's Guide for widening differences and saturating arithmetic.
 
-## 9. Verification checklist
+## 10. Verification checklist
 
 - Forward/inverse round-trip on a block of constant input yields the same block after inverse transform within the documented rounding tolerance.
 - All-zero input produces all-zero coefficients.
@@ -70,7 +75,7 @@ Transforms are among the most heavily used kernels in all presets. The 4x4 path 
 - Output matches the generic C implementation for randomized inputs over many trials.
 - Destination rows outside the block are untouched.
 
-## 10. Open questions
+## 11. Open questions
 
 - `UNKNOWN`: whether all declared routines are actually installed by `x264_dct_init` in every ARM build; the generic dispatcher wraps them in compile-time feature guards.
 - `UNKNOWN`: whether high-bit-depth builds expose any of these symbols at all; the declarations are unconditional but the assembly is guarded by 8-bit-only compilation.

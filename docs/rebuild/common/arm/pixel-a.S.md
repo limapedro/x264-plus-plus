@@ -1,12 +1,17 @@
 # `common/arm/pixel-a.S` — ARM/NEON pixel-metric kernels
 
-**Dirty-side behavioural specification.** Source path: `common/arm/pixel-a.S`. Role: assembly implementations of SAD, SATD, SA8D, SSD, variance, Hadamard-AC, SSIM, and related pixel comparisons.
+## 1. Header
 
-## 1. Purpose
+- **Source path:** `common/arm/pixel-a.S`.
+- **Role in one sentence:** assembly implementations of SAD, SATD, SA8D, SSD, variance, Hadamard-AC, SSIM, and related pixel comparisons.
+- **Marker:** Dirty-side behavioural specification; all descriptions are behavioural and written independently of the reference source.
+
+
+## 2. Purpose
 
 Pixel comparison kernels are the innermost loops of motion estimation and mode decision. This file contains the hand-optimized ARM implementations, including an ARMv6-only 4-wide SAD routine and a large family of NEON routines for all standard block sizes and for multiple reference candidates at once.
 
-## 2. Public interface
+## 3. Public interface
 
 Exported symbols are listed in `arm/pixel.h`. Major families:
 
@@ -21,7 +26,7 @@ Exported symbols are listed in `arm/pixel.h`. Major families:
 
 ABI follows the generic typedefs: single-reference metrics take two pointers and two strides in `r0..r3`; x3/x4 variants take the encoded block pointer in `r0`, candidate pointers in `r1..r4`, a stride, and a score array on the stack.
 
-## 3. State and data structures
+## 4. State and data structures
 
 Constant tables in read-only sections:
 - `mask_array` provides 16 bytes of `0xFF` followed by 16 zero bytes for SSIM/averaging masks.
@@ -30,7 +35,7 @@ Constant tables in read-only sections:
 
 Internal helpers such as `satd_8x8_neon`, `sa8d_8x8_neon`, `hadamard_ac_8x8_neon`, and the `*_end_neon` tail routines are not exported but are shared by multiple public kernels.
 
-## 4. Algorithm / behaviour
+## 5. Algorithm / behaviour
 
 **SAD.** ARMv6 4-wide SAD uses `usad8`/`usada8` to accumulate four byte pairs per word with no vector setup. NEON SAD uses `vabdl.u8` for the first row and `vabal.u8` for subsequent rows, accumulating absolute differences into 16-bit lanes. Results are reduced with pairwise adds (`vpadd`) to a 32-bit integer. Aligned variants use aligned load hints; `_dual` variants use two independent accumulators to hide dependency latency.
 
@@ -48,29 +53,29 @@ Internal helpers such as `satd_8x8_neon`, `sa8d_8x8_neon`, `hadamard_ac_8x8_neon
 
 **SSIM.** The core routine accumulates four sums per 4x4 window (first image, second image, squares of both, and cross-product) for two windows at once. The end helper combines accumulated sums from multiple windows into the final SSIM value.
 
-## 5. Dependencies
+## 6. Dependencies
 
 - Includes `common/arm/asm.S`.
 - Declared in `arm/pixel.h` and installed by the generic pixel-initialization path.
 - Uses typedefs and the pixel-size enum from `common/pixel.h`.
 
-## 6. Constants and tables
+## 7. Constants and tables
 
 - SATD final divide by 2; SA8D final `(sum+2)>>2`.
 - Weighted-average denominator 64 with rounding 32 (used by helper routines in `mc-a.S`, not by the metrics here).
 - Mask tables for AC/DC separation in Hadamard-AC.
 
-## 7. Performance notes
+## 8. Performance notes
 
 The kernels rely on three key ideas: widening absolute-difference instructions, multi-accumulator scheduling to hide VABAL latency, and the `abs`/`max` trick for Hadamard reduction. The 4x4 ARMv6 SAD demonstrates that vector setup is not always worthwhile for small blocks. For a clean implementation, start with scalar definitions of every metric and verify them; then optimize the hottest SAD/SATD paths. Cache behaviour is streaming with good locality across rows.
 
-## 8. References
+## 9. References
 
 - `common/pixel.c` for canonical metric definitions.
 - ITU-T H.264 reference documentation for Hadamard-based distortion measures.
 - ARM NEON Programmer's Guide for `vabdl`, `vabal`, `vpadd`, `vmlal`, and pairwise widening.
 
-## 9. Verification checklist
+## 10. Verification checklist
 
 - All metrics match the generic C implementations on randomized inputs for every block size.
 - x3/x4 variants agree with repeated single-reference calls.
@@ -79,7 +84,7 @@ The kernels rely on three key ideas: widening absolute-difference instructions, 
 - SSIM core sums match scalar accumulation.
 - Extreme pixel values (0 and 255) do not overflow accumulators.
 
-## 10. Open questions
+## 11. Open questions
 
 - `UNKNOWN`: which `_neon_dual` routines are actually selected on a given core, since the dual-issue comment implies core-dependent dispatch.
 - `UNKNOWN`: exact behaviour of `pixel_ssim_end4_neon` for non-standard width arguments.
