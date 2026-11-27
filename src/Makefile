@@ -28,7 +28,15 @@ SOURCES := \
 	$(SRC_DIR)/cli/cli.c \
 	$(SRC_DIR)/cli/input.c \
 	$(SRC_DIR)/cli/output.c \
-	$(SRC_DIR)/core/api_stub.c
+	$(SRC_DIR)/core/api.c \
+	$(SRC_DIR)/core/params.c \
+	$(SRC_DIR)/core/frame.c \
+	$(SRC_DIR)/core/bs.c \
+	$(SRC_DIR)/core/dct.c \
+	$(SRC_DIR)/core/quant.c \
+	$(SRC_DIR)/core/predict.c \
+	$(SRC_DIR)/core/cavlc.c \
+	$(SRC_DIR)/core/encode.c
 
 # Future increments add hand-written SIMD here; the rule below is already in
 # place so adding a .asm file does not require changing the build again.
