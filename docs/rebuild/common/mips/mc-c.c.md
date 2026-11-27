@@ -2,11 +2,15 @@
 
 **Dirty-side behavioural specification.** Source path: `E:\_x264_dirty_stash\x264-source\common\mips\mc-c.c`. Role: MSA-128 implementations of luma/chroma motion-compensated interpolation, weighted prediction, block averaging/copying, half-pel filter generation, plane interleave/deinterleave, low-resolution frame generation and aligned memory helpers; also the architecture dispatcher `x264_mc_init_mips`. Compiled only for 8-bit builds.
 
-## 1. Purpose
+## 1. Header
+
+The title line above gives the source path and the file's role in one sentence; the adjacent bold marker identifies this document as a **dirty-side behavioural specification** written from the reference source and public literature. No reference source or near-verbatim pseudocode is reproduced.
+
+## 2. Purpose
 
 Motion compensation (MC) is the single most bandwidth-heavy stage for inter frames: every macroblock fetches reference samples, interpolates to quarter-pel luma / eighth-pel chroma precision, and averages up to two predictions with optional weighted prediction. This file replaces all of those paths with MSA vector code, plus the plane-copy and memory utilities that surround them. It is the largest MIPS source file because it covers nine block sizes and both "normal" and "no-denominator" weighted-prediction variants.
 
-## 2. Public interface
+## 3. Public interface
 
 Only one symbol is exported: `void x264_mc_init_mips(uint32_t cpu, x264_mc_functions_t *pf)`. It installs the following implementations into `pf` when `cpu & X264_CPU_MSA`:
 
@@ -20,14 +24,14 @@ Only one symbol is exported: `void x264_mc_init_mips(uint32_t cpu, x264_mc_funct
 
 All internal helpers are `static`; their signatures follow the generic `x264_mc_functions_t` typedefs. `weight_fn_t` is `void(*)(uint8_t*, intptr_t, uint8_t*, intptr_t, const x264_weight_t*, int)`.
 
-## 3. State and data structures
+## 4. State and data structures
 
 - **Half-pel reference planes:** four pointers `src[0..3]` (luma) selected by `x264_hpel_ref0`/`x264_hpel_ref1` tables indexed by `qpel_idx = ((mvy&3)<<2) + (mvx&3)`. Integer part is `offset = (mvy>>2)*stride + (mvx>>2)`. For qpel `3` positions an extra stride/byte is added to point at the next filtered plane.
 - **Masks:** `pu_luma_mask_arr[16*8]` — three 16-byte `vshf` masks for the 8-wide and 4-wide luma horizontal 6-tap filter (indices into a pair of 8-byte vectors), and a second set for 4-wide cases that packs two rows into one vector. `pu_chroma_mask_arr[16*5]` — five masks for 8/4/2-wide chroma bilinear filtering.
 - **Weight descriptors:** `x264_weight_t` with `i_scale`, `i_offset`, `i_denom`; the MSA code reads these directly.
 - **Working vectors:** up to 16 vector registers per kernel; row loop counts are `height/4` or `height%4`, with scalar tails.
 
-## 4. Algorithm / behaviour
+## 5. Algorithm / behaviour
 
 ### Luma horizontal 6-tap filter (`avc_luma_hz_16w_msa`)
 
@@ -75,13 +79,13 @@ These are the dispatchers: compute `qpel_idx`/`offset`, pick the two half-pel so
 - `hpel_filter_msa`: for each 16-wide column group, calls the vertical, center and horizontal filters to produce the vertical-only, center and horizontal-only half-pel planes.
 - `core_store_interleave_chroma_msa`, `load_deinterleave_chroma_fenc/fdec_msa`: frame-stride-specific wrappers around the deinterleave/interleave cores for FDEC/FENC strides.
 
-## 5. Dependencies
+## 6. Dependencies
 
 - **Calls:** `mips/macros.h` (`LD_SB*`, `LD_UB*`, `ST_UB*`, `LD4`, `LW`, `SW`, `SD`, `SD4`, `XORI_B*`, `VSHF_B2`, `HADD_SB*`, `DPADD_SB*`, `SRARI_H*`, `SAT_SH*`, `PCKEV_*`, `PCKOD_*`, `ILVR_*`, `ILVL_*`, `AVER_UB*`, `INSERT_W4`, `ST8x4_UB`, `ST4x4_UB`, `AVC_HORZ_FILTER_SH`, `AVC_CALC_DPADD_H_6PIX_2COEFF_SH`) and MSA intrinsics.
 - **Called by:** `x264_mc_init()` in `common/mc.c`.
 - **Shared tables:** `x264_hpel_ref0[16]`, `x264_hpel_ref1[16]` from `common/mc.c`; `x264_weight_t` from `common/frame.h`; `FDEC_STRIDE`/`FENC_STRIDE`.
 
-## 6. Constants and tables
+## 7. Constants and tables
 
 - `pu_luma_mask_arr`: 8 rows × 16 bytes giving the three `vshf` masks for 8-wide and 4-wide luma horizontal filtering. Values are byte indices into neighbouring 8-byte vectors (e.g. `{0,5,1,6,2,7,3,8,4,9,5,10,6,11,7,12}`).
 - `pu_chroma_mask_arr`: 5 rows × 16 bytes for chroma bilinear gather (`{0,1,1,2,2,3,3,4,...}` for 8-wide, plus 4- and 2-wide variants).
@@ -91,15 +95,17 @@ These are the dispatchers: compute `qpel_idx`/`offset`, pick the two half-pel so
 
 **Why:** the 6-tap coefficients and shifts are fixed by H.264 §8.4.2.2.1; the chroma `>>6` comes from 1/8-pel precision; the weight denominator 5 yields 1/32 steps for B-frame weighted prediction.
 
-## 7. Performance notes
+## 8. Performance notes
 
 - **Hotness:** highest of all MIPS kernels for inter frames; every macroblock calls MC one to four times.
 - **SIMD status:** fully MSA-128 except the `memcpy_aligned` slot (uses libc `memcpy`) and scalar tails for height/width not divisible by block factors.
 - **Branch behaviour:** dispatch on block size and qpel pattern is call-site-uniform; per-row loops are counted. Weighted-predicate `weight==32` check is uniform.
 - **Optimization tips:** (a) the half-pel filter kernels are the main cost — keep the mask arrays in read-only cache and avoid reloading them per call; (b) align destination pointers to 16 bytes so vector stores are aligned; (c) for `get_ref_msa`, the zero-copy path avoids a full block copy — preserve it; (d) fuse the two half-pel averages with the weighting step when both are needed to avoid a round-trip through the destination; (e) the RGB deinterleave kernels benefit from unrolling four rows at a time (already done).
-- **References:** ITU-T H.264 §8.4.2 (sample interpolation) and §8.4.4 (weighted sample prediction); x264 `common/mc.c`; MSA programmer's guide.
+## 9. References
 
-## 8. Verification checklist
+ITU-T H.264 §8.4.2 (sample interpolation) and §8.4.4 (weighted sample prediction); x264 `common/mc.c`; MSA programmer's guide.
+
+## 10. Verification checklist
 
 1. For all qpel positions (0..3 in x and y), compare `mc_luma_msa` output with the scalar reference for a deterministic reference plane; check the `qpel_idx & 5` path specifically.
 2. Chroma: test all 8x8 fractional offsets for widths 2/4/8 and heights 2/4/8/16 against the scalar bilinear reference.
@@ -111,7 +117,7 @@ These are the dispatchers: compute `qpel_idx`/`offset`, pick the two half-pel so
 8. ASan with odd strides and non-multiple-of-4 heights to catch tail-handling errors.
 9. Full-encode bitstream equivalence between MSA and C builds.
 
-## 9. Open questions
+## 11. Open questions
 
 - UNKNOWN: exact source-pointer arithmetic for qpel positions with `mvx&3 == 3` / `mvy&3 == 3` (extra byte/stride selection via `x264_hpel_ref1`); validate against scalar MC for all 16 qpel combinations.
 - UNKNOWN: whether `memcpy_aligned` being plain libc `memcpy` is intentional (it is in the source) or a placeholder for a MSA vector copy.

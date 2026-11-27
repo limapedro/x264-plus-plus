@@ -2,11 +2,15 @@
 
 **Dirty-side behavioural specification.** Source path: `E:\_x264_dirty_stash\x264-source\common\mips\deblock-c.c`. Role: MSA-128 implementation of the H.264 loop filter (deblocking), including intra and inter edge filters for luma and interleaved chroma, plus the vectorized boundary-strength computation. Compiled only for 8-bit builds.
 
-## 1. Purpose
+## 1. Header
+
+The title line above gives the source path and the file's role in one sentence; the adjacent bold marker identifies this document as a **dirty-side behavioural specification** written from the reference source and public literature. No reference source or near-verbatim pseudocode is reproduced.
+
+## 2. Purpose
 
 The deblocking filter smooths block artifacts on reconstructed macroblock edges. It is invoked for every edge of every macroblock and, because it follows reconstruction and precedes reference storage, it is on the critical path of the encode loop. The MSA version processes a full 16-pixel edge (or 8-pixel chroma edge) per vector, uses per-quarter predicates stored in vector mask lanes, and skips work entirely when all boundary strengths are zero.
 
-## 2. Public interface
+## 3. Public interface
 
 Nine exports declared in `mips/deblock.h.md`:
 
@@ -18,7 +22,7 @@ Nine exports declared in `mips/deblock.h.md`:
 
 Contract details: `pix` is modified in place; `alpha`/`beta` are the standard thresholds; `tc0[0..3]` are four per-quarter clipping thresholds — a **negative** value disables filtering for that quarter (the wrapper converts negative to boundary strength 0). `bs` is the `uint8_t[2][8][4]` output strength array.
 
-## 3. State and data structures
+## 4. State and data structures
 
 No globals. The kernels use:
 
@@ -26,7 +30,7 @@ No globals. The kernels use:
 - Per-quarter `bs`/`tc` broadcast into four word lanes of a vector (`insve_w`), so each 16-byte vector holds four independent 4-pixel segments.
 - Masks: `is_less_than`, `is_less_than_beta`, `negate_is_less_than_beta`, computed per byte lane; `bmnz_v` merges new values only where the mask bits are set.
 
-## 4. Algorithm / behaviour
+## 5. Algorithm / behaviour
 
 ### Shared filter macros
 
@@ -86,13 +90,13 @@ Only the p0/q0 boundary pair is modified, using `AVC_LPF_P0Q0` with `tc` (and th
 
 It processes vertical edges in one SIMD pass (loading `nnz`, `ref`, `mv` for five consecutive 4x4 blocks and using `splati_w` to align neighbours) and horizontal edges in a second pass using `TRANSPOSE8X4_SH_SH` on the MV arrays. Each result word is extracted and stored as four bytes into `bs[1][edge]` or `bs[0][edge]`. The public wrapper falls back to a scalar nested loop when `bframe != 0`, since the B-frame list-1 condition is not vectorized.
 
-## 5. Dependencies
+## 6. Dependencies
 
 - **Calls:** `mips/macros.h` (`LD_UB4/5/8`, `ST_UB`, `ST4x4_UB`, `ST2x4_UB`, `ST4x8_UB`, `ILVR_B*`, `ILVL_B*`, `TRANSPOSE16x8_UB_UB`, `TRANSPOSE8x8_UB_UB`, `TRANSPOSE8X4_SH_SH`, `PCKEV_B*`, `CLIP_SH`, `CLIP_SH2_0_255`, `SW4`, `SD4`), MSA intrinsics (`asub_u_b`, `test_bz_v`, `srari_h`, `aver_u_h`, `ave_s_h`, `bmnz_v`, `xori_b`, `sldi_b`, `maxi_s_h`, `mini_s_h`, `cle_u_h`, `asub_s_h`, `insve_w`, `copy_u_w`).
 - **Called by:** `x264_deblock_init()` in `common/deblock.c` when `X264_CPU_MSA` is set.
 - **Shared config:** `HIGH_BIT_DEPTH` gate; `X264_SCAN8_*` constants for the strength arrays.
 
-## 6. Constants and tables
+## 7. Constants and tables
 
 - Threshold predicates: `alpha`, `beta`, `alpha>>2 + 2` (the "tmp_flag" strong-filter condition).
 - Rounding shifts: `>>2` and `>>3` with rounding (`srari_h`) for the strong boundary filters; `>>2` for the weak p0/q0 filter; delta computation `(4·(q0−p0)+(p1−q1)+4)>>3`.
@@ -102,15 +106,17 @@ It processes vertical edges in one SIMD pass (loading `nnz`, `ref`, `mv` for fiv
 
 **Why:** all constants follow H.264 §8.4.2/§8.4.3 exactly; the `+2/+4` terms implement round-to-nearest; `tc` is the clipping threshold derived from QP and index.
 
-## 7. Performance notes
+## 8. Performance notes
 
 - **Hotness:** very high; each frame filters four edges per macroblock.
 - **SIMD status:** fully MSA-128, including conditional execution via masks rather than branches. The early-out `test_bz_v(is_less_than)` is the only data-dependent branch and is common (most edges do not need filtering).
 - **Cache behaviour:** sequential row access for horizontal edges; for vertical edges a 16x8 row-block transpose trades strided GPR loads for vector registers.
 - **Optimization tips:** (a) check the four `tc` values first — if all are negative, the wrapper already returns; (b) the strongest speedup comes from the `test_bz_v` early-out, so keep predicate computation minimal before it; (c) on MSARev6, `bmnz_v` and `insve_w` are single-cycle, so the per-quarter masks are cheap; (d) the strength computation's B-frame fallback is scalar — a vectorized version of the list-1 condition would help B-frame-heavy content.
-- **References:** ITU-T H.264 §8.4 (deblocking filter); x264 `common/deblock.c`; MSA programmer's guide for `bmnz_v`, `asub_u_b`, `test_bz_v`.
+## 9. References
 
-## 8. Verification checklist
+ITU-T H.264 §8.4 (deblocking filter); x264 `common/deblock.c`; MSA programmer's guide for `bmnz_v`, `asub_u_b`, `test_bz_v`.
+
+## 10. Verification checklist
 
 1. For each of the eight filter entry points, feed deterministic edge patterns and compare output with the scalar reference bit-for-bit.
 2. Coverage of all three regimes: no filtering (`|p0−q0| >= alpha`), weak filter, strong intra filter — construct inputs that trigger each.
@@ -120,7 +126,7 @@ It processes vertical edges in one SIMD pass (loading `nnz`, `ref`, `mv` for fiv
 6. Strength: construct blocks with known nnz/ref/mv patterns and verify `bs` equals the scalar computation for P and B frames.
 7. ASan: check that vertical kernels do not read above `pix−4*stride` or beyond 16 rows.
 
-## 9. Open questions
+## 11. Open questions
 
 - UNKNOWN: exact orientation convention of `v_*` versus `h_*` entry points relative to macroblock edges; the names in the implementation map `v_*` to the horizontal-edge filter (row-based) and `h_*` to the vertical-edge filter — confirm against the generic dispatcher.
 - UNKNOWN: whether the `bs[2][8][4]` direction index in the strength function matches the generic `deblock.c` usage; verify with a known macroblock layout.

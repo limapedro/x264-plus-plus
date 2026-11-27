@@ -2,11 +2,15 @@
 
 **Dirty-side behavioural specification.** Source path: `E:\_x264_dirty_stash\x264-source\common\mips\pixel-c.c`. Role: MSA-128 implementations of SAD, SSD, SATD, SA8D, Hadamard/AC, SSIM, variance, and the intra-prediction-plus-metric combined helpers. Compiled only for 8-bit builds.
 
-## 1. Purpose
+## 1. Header
+
+The title line above gives the source path and the file's role in one sentence; the adjacent bold marker identifies this document as a **dirty-side behavioural specification** written from the reference source and public literature. No reference source or near-verbatim pseudocode is reproduced.
+
+## 2. Purpose
 
 Motion estimation and mode decision evaluate a large number of candidate blocks, so distortion metrics dominate encoder runtime at all presets. This file provides vectorized versions of every metric the generic `common/pixel.c` dispatcher can install, including multi-reference SAD variants that compute three or four candidate costs in one pass. It also implements the fast intra decision helpers that generate a few candidate predictions and score them immediately.
 
-## 2. Public interface
+## 3. Public interface
 
 Declared in `mips/pixel.h.md`; the full set includes:
 
@@ -21,7 +25,7 @@ Declared in `mips/pixel.h.md`; the full set includes:
 
 Return values: SAD/SSD/SATD/SA8D are non-negative `int32_t`; Hadamard-AC and variance are packed `uint64_t` (low 32 bits AC/sum, high 32 bits DC/sum-of-squares). Multi-reference helpers write their results into caller arrays.
 
-## 3. State and data structures
+## 4. State and data structures
 
 No globals. Working state is in MSA vectors:
 
@@ -29,7 +33,7 @@ No globals. Working state is in MSA vectors:
 - SSE/SATD accumulators are four word lanes (`v4i32`); the maximum squared difference per byte is 65025, and 16·16·65025 ≈ 16.6M fits in 32 bits.
 - Intra combined helpers use a 16-byte-aligned local scratch block `uint8_t pix[8*FDEC_STRIDE]` for 8x8 predictions; 4x4 and 16x16 helpers predict directly into `p_dec`.
 
-## 4. Algorithm / behaviour
+## 5. Algorithm / behaviour
 
 ### SAD (single reference)
 
@@ -72,13 +76,13 @@ The residual is obtained by interleaving source and reference bytes, taking pair
 - SAD x3 (8x8 / 8x8c): use a local aligned scratch block, call the `*_8x8_msa(pix, p_edge)` helpers (V, H, DC or DC-4blk, H, V) and score with `x264_pixel_sad_8x8_msa`.
 - SATD x3 and SA8D x3 mirror the same pattern with the corresponding metric, using the same predictor order and output slots.
 
-## 5. Dependencies
+## 6. Dependencies
 
 - **Calls:** `mips/macros.h` (`LW4`, `INSERT_W4_UB`, `LD_UB2/4/8`, `PCKEV_D2/4_UB`, `SAD_UB2_UH`, `HADD_UB*`, `HSUB_UB2/4_SH`, `DPADD_SH2/4_SW`, `ILVRL_B2_UB`, `CLIP*`, `TRANSPOSE4x4_SH_SH`, `TRANSPOSE8X4/4X8_SH_SH`, `TRANSPOSE8x8_SH_SH`, `BUTTERFLY_4/8`, `HADD_SW_S32`, `HADD_UH_U32`) and MSA intrinsics (`asub_u_b`, `add_a_h/w`, `hadd_u_h`, `dotp_u_w`, `dpadd_u_w`, `nloc`, `asub_s_h`).
 - **Called by:** `x264_pixel_init()` in `common/pixel.c`, and `x264_intra_*_init()` paths for the combined helpers.
 - **Cross-file:** `mips/predict.h` declarations are required by the intra combined helpers; `FENC_STRIDE`/`FDEC_STRIDE` from `common/common.h`.
 
-## 6. Constants and tables
+## 7. Constants and tables
 
 - `VARIANCE_WxH` shifts: **7** for 8x16, **6** for 8x8 (the `log2(W·H)+1` correction).
 - SATD normalization: `>>1`. SA8D normalization: `(sum+2)>>2`. Hadamard-AC packing: low word `sum>>1`, high word `sum>>34`.
@@ -87,15 +91,17 @@ The residual is obtained by interleaving source and reference bytes, taking pair
 
 **Why:** the `>>1`/`>>2` factors convert the Hadamard energy to a comparable scale with SAD for rate-distortion decisions; the variance shift is `log2(n)+1` from the identity `Var = E[x²] − E[x]²`.
 
-## 7. Performance notes
+## 8. Performance notes
 
 - **Hotness:** highest for motion search; x3/x4 SAD variants are the inner loop of diamond/hex/umh search.
 - **SIMD status:** fully MSA-128; the 4-wide path uses GPR word loads plus vector inserts because 4 bytes do not fill a vector.
 - **Branch behaviour:** no data-dependent branches in the kernels; loop counts derive only from block height.
 - **Optimization tips:** (a) reuse the loaded source vector across all references in x3/x4 (already done); (b) keep the `v8u16` accumulators in registers across the full block height to avoid partial reductions; (c) for SATD/SA8D, the transpose macros are the main cost — use the specialized 4x4/8x8 transposes; (d) align `p_enc`/`p_dec` to 16 bytes; (e) in motion search, prefer the x4 SAD variant over four single SAD calls to save source loads.
-- **References:** x264 `common/pixel.c`; ITU-T H.264 §8.4.2.2; literature on sum-of-absolute-Hadamard-transform distortion estimation; MSA programmer's guide.
+## 9. References
 
-## 8. Verification checklist
+x264 `common/pixel.c`; ITU-T H.264 §8.4.2.2; literature on sum-of-absolute-Hadamard-transform distortion estimation; MSA programmer's guide.
+
+## 10. Verification checklist
 
 1. For all eight block sizes, compare single SAD with the scalar reference on random and pattern inputs (including max values 255).
 2. Multi-reference SAD: verify each output slot matches an independent scalar SAD; test source stride `FENC_STRIDE` and arbitrary reference strides.
@@ -107,7 +113,7 @@ The residual is obtained by interleaving source and reference bytes, taking pair
 8. Intra helpers: compare each candidate SAD/SATD value with a manual predict-then-metric sequence using the scalar predictor.
 9. ASan with 16-byte-aligned and deliberately unaligned pointers.
 
-## 9. Open questions
+## 11. Open questions
 
 - UNKNOWN: precise quadrant-to-index mapping in `ssim_4x4x2_core_msa` output (`sums[2][4]`) relative to the generic SSIM formula; validate with a known 4x4 pattern.
 - UNKNOWN: whether the 8x8 Hadamard-AC `u_dc` subtraction removes exactly the true DC term for all four sub-block sizes; verify with a constant-valued block.

@@ -2,18 +2,22 @@
 
 **Dirty-side behavioural specification.** Source path: `E:\_x264_dirty_stash\x264-source\common\loongarch\mc-c.c`. Role: C-side glue that builds weight-function tables, defines `get_ref`/`mc_luma` wrappers, generates plane-copy helpers via macros, and installs all LSX/LASX implementations into the generic MC function table.
 
-## 1. Purpose
+## 1. Header
+
+The title line above gives the source path and the file's role in one sentence; the adjacent bold marker identifies this document as a **dirty-side behavioural specification** written from the reference source and public literature. No reference source or near-verbatim pseudocode is reproduced.
+
+## 2. Purpose
 
 The heavy lifting is in `mc-a.S`; this file wires it up. It defines the `x264_weight_t.weightfn` selection logic (denominator ≥ 1 vs zero), the width-indexed average/copy/weight tables, and the `get_ref`/`mc_luma` dispatch that resolves quarter-pel references. It also emits the plane-copy/YUYV helpers with the `PLANE_INTERLEAVE` and `PLANE_COPY_YUYV` macros, and exposes `x264_mc_init_loongarch` as the single entry point for architecture initialization.
 
-## 2. Public interface
+## 3. Public interface
 
 - `void x264_mc_init_loongarch(int cpu, x264_mc_functions_t *pf)` — declared in `loongarch/mc.h`.
 - `void x264_mc_chroma_lsx(...)` and `x264_mc_chroma_lasx(...)` — forward declarations of the assembly chroma interpolators (the definitions are in `mc-a.S`), present here so the C dispatcher can reference them.
 
 All other definitions are `static`.
 
-## 3. State and data structures
+## 4. State and data structures
 
 **Static tables (all file-local):**
 
@@ -27,7 +31,7 @@ All other definitions are `static`.
 
 **Generated helpers:** `PLANE_INTERLEAVE(lsx)` and `PLANE_COPY_YUYV(32, lsx)` / `PLANE_COPY_YUYV(64, lasx)` expand to `plane_copy_interleave_lsx`, `plane_copy_deinterleave_yuyv_lsx`, `plane_copy_deinterleave_yuyv_lasx` (the 32/64 argument is the vector width in bytes).
 
-## 4. Algorithm / behaviour
+## 5. Algorithm / behaviour
 
 ### `get_ref_*` and `mc_luma_*`
 
@@ -45,26 +49,28 @@ Both variants are structurally identical:
 
 `x264_mc_init_loongarch` first installs LSX slots when `cpu & X264_CPU_LSX` (mc_luma, mc_chroma, get_ref, all nine avg entries, weight tables, weight_cache, copy slots, chroma interleave/deinterleave, plane copies, hpel_filter, memcpy/memzero, frame_init_lowres, three prefetch slots), then installs LASX slots when `cpu & X264_CPU_LASX` (mc_luma, mc_chroma, get_ref, avg entries 16x8 through 4x2 — **not** 16x16, weight tables, weight_cache, plane deinterleave + YUYV, copy slots, hpel_filter, memzero, frame_init_lowres). LASX therefore overrides most but not all LSX entries.
 
-## 5. Dependencies
+## 6. Dependencies
 
 - **Calls:** the assembly symbols declared in `loongarch/mc.h`; `x264_hpel_ref0/1` tables from `common/mc.c`; generic macros `PLANE_INTERLEAVE`, `PLANE_COPY_YUYV` from `common/mc.h`/`macroblock.h`.
 - **Called by:** `x264_mc_init()` in `common/mc.c`.
 - **Shared config:** `HIGH_BIT_DEPTH` gates the whole implementation; `X264_CPU_LSX`/`X264_CPU_LASX` flags.
 
-## 6. Constants and tables
+## 7. Constants and tables
 
 - Width-index tables `[6]` and `[5]` with the layout described above.
 - The `MC_WEIGHT`/`MC_WEIGHT_LSX` macros generate four 6-entry tables from eight base function names.
 - Denominator threshold **1** selects normal vs no-denominator weighting.
 - `PLANE_COPY_YUYV(32, ...)` / `(64, ...)` reflect LSX/LASX vector widths in bytes.
 
-## 7. Performance notes
+## 8. Performance notes
 
 - **Hotness:** init runs once; the installed tables are on every inter macroblock's critical path.
 - **Optimization tips:** (a) the `get_ref` zero-copy path avoids a block copy — preserve it; (b) `weight_cache` should be invoked once per weight configuration, not per macroblock (the generic code does this); (c) on LASX CPUs the wider avg/filter/copy kernels are installed — keep the override list accurate; (d) width-code lookup via `i_width>>2` is a single shift; do not replace it with a branch chain.
-- **References:** x264 `common/mc.c`, `mc.h`; ITU-T H.264 §8.4.
+## 9. References
 
-## 8. Verification checklist
+x264 `common/mc.c`, `mc.h`; ITU-T H.264 §8.4.
+
+## 10. Verification checklist
 
 1. Call `x264_mc_init_loongarch` with each CPU flag combination and inspect all `pf` slots for expected values.
 2. Verify `weight_cache` picks the normal table for `i_denom >= 1` and no-denominator otherwise.
@@ -73,7 +79,7 @@ Both variants are structurally identical:
 5. Round-trip plane interleave/deinterleave and YUYV deinterleave with random data.
 6. Confirm generated `plane_copy_deinterleave_yuyv_*` symbols exist after macro expansion.
 
-## 9. Open questions
+## 11. Open questions
 
 - UNKNOWN: exact contents of the `PLANE_INTERLEAVE` and `PLANE_COPY_YUYV` macros (defined in generic headers) — a clean rebuild must obtain them from `common/mc.h`/`common/frame.h`, not guess them.
 - UNKNOWN: why `avg[PIXEL_16x16]` is not overridden by LASX — likely because no LASX 16x16 avg symbol exists; verify from `mc-a.S` symbol list.

@@ -2,11 +2,15 @@
 
 **Dirty-side behavioural specification.** Source path: `E:\_x264_dirty_stash\x264-source\common\loongarch\pixel.h`. Role: declares LSX/LASX distortion metrics and the combined intra-prediction metric helpers implemented in `loongarch/pixel-a.S`, `sad-a.S`, and `loongarch/pixel-c.c`.
 
-## 1. Purpose
+## 1. Header
+
+The title line above gives the source path and the file's role in one sentence; the adjacent bold marker identifies this document as a **dirty-side behavioural specification** written from the reference source and public literature. No reference source or near-verbatim pseudocode is reproduced.
+
+## 2. Purpose
 
 Exposes all LoongArch pixel-distortion primitives to the generic dispatcher, in both 128-bit LSX and 256-bit LASX flavours. The set is broader than the MIPS port: it includes 32-byte-wide SAD x4 for large blocks, LASX SATD/SSD/SA8D variants, and a separate `hadamard_ac_8x8_*` core symbol that the C wrappers in `pixel-c.c` call.
 
-## 2. Public interface
+## 3. Public interface
 
 **SATD** — `x264_pixel_satd_WxH_lsx` for eight sizes (4x4, 4x8, 4x16, 8x4, 8x8, 8x16, 16x8, 16x16), but the 4x4 implementation is labelled `_lsx` only; LASX variants exist for 4x8, 4x16, 8x4, 8x8, 8x16, 16x8, 16x16 (not 4x4). Signature `int32_t (uint8_t*, intptr_t, uint8_t*, intptr_t)`.
 
@@ -28,11 +32,11 @@ Exposes all LoongArch pixel-distortion primitives to the generic dispatcher, in 
 
 All names are mangled by `x264_template(...)`; there is an `#if !HIGH_BIT_DEPTH` guard around the file body in the implementation, not around individual declarations here.
 
-## 3. State and data structures
+## 4. State and data structures
 
 No state. Include guard `X264_LOONGARCH_PIXEL_H`. The `p_edge[36]` array is the standard x264 intra neighbour buffer; LASX intra helpers use the same offsets as the LSX versions because they call the LSX predictor for some modes.
 
-## 4. Algorithm / behaviour
+## 5. Algorithm / behaviour
 
 Declarations only. Metric definitions match the generic x264 C versions:
 
@@ -45,28 +49,32 @@ Declarations only. Metric definitions match the generic x264 C versions:
 
 The assembly implementations use LSX `vr*` / LASX `xr*` registers, `xvdp2.h.bu.b` dot-product helpers from `loongson_asm.S`, and Hadamard butterfly macros (`HADAMARD4_V`, `SUMSUB_BADC`, `HADAMARD_1/2`) defined in `pixel-a.S`.
 
-## 5. Dependencies
+## 6. Dependencies
 
 - **Included by:** `common/loongarch/pixel-a.S`, `sad-a.S`, `pixel-c.c`, and `common/pixel.c`.
 - **Requires:** `x264_template`, `int32_t`, `uint64_t`, `intptr_t`, `uint8_t`, `pixel`, `ALIGNED_ARRAY_16`.
 - **Cross-file:** `loongarch/predict.h` must be visible where the intra combined helpers are implemented; `pixel-c.c` includes it.
 
-## 6. Constants and tables
+## 7. Constants and tables
 
 None in the header. Implementation constants are documented in `pixel-a.S.md` and `sad-a.S.md`.
 
-## 7. Performance notes
+## 8. Performance notes
 
 No runtime cost. For rebuild, preserve the mixed LSX/LASX declaration coverage — a missing LASX declaration would prevent the dispatcher from installing the wider variant for that block size.
 
-## 8. Verification checklist
+## 9. References
+
+ITU-T H.264 standard; x264 project documentation; architecture SIMD programmer's guides.
+
+## 10. Verification checklist
 
 1. Include header alone and compile under both bit-depth configurations.
 2. Verify each declared symbol exists in one of `pixel-a.S`, `sad-a.S`, or `pixel-c.c`.
 3. Check the `var2` signature difference from MIPS — a wrong stride assumption is a likely source of runtime corruption.
 4. Confirm the set of LASX SAD/SATD/SSD sizes matches what the dispatcher installs.
 
-## 9. Open questions
+## 11. Open questions
 
 - UNKNOWN: why 4x4 SATD/SA8D have no LASX declarations — likely because one 4x4 block fits a 128-bit register and widening brings no benefit; confirm.
 - UNKNOWN: exact `ssd[2]` layout in `var2` (whether element 1 is used) — validate against the generic `x264_pixel_var2_t` typedef.

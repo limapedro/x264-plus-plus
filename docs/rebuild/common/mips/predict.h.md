@@ -2,11 +2,15 @@
 
 **Dirty-side behavioural specification.** Source path: `E:\_x264_dirty_stash\x264-source\common\mips\predict.h`. Role: declares the MSA intra prediction functions installed by the generic prediction dispatcher.
 
-## 1. Purpose
+## 1. Header
+
+The title line above gives the source path and the file's role in one sentence; the adjacent bold marker identifies this document as a **dirty-side behavioural specification** written from the reference source and public literature. No reference source or near-verbatim pseudocode is reproduced.
+
+## 2. Purpose
 
 Intra prediction is invoked once per candidate mode per block, so a fast SIMD implementation reduces encoder latency measurably at slow presets where many modes are evaluated. This header exposes the MSA implementation set to `common/predict.c` with x264's standard `x264_template` name mangling. It is compiled only for 8-bit builds.
 
-## 2. Public interface
+## 3. Public interface
 
 All functions are name-mangled via `x264_template(...)` and take a single destination/source pointer `uint8_t *p_src` (the current block position in the reconstruction plane, from which neighbouring samples are addressed at negative offsets), except the 8x8 variants that also take the 36-byte edge array.
 
@@ -29,11 +33,11 @@ All functions are name-mangled via `x264_template(...)` and take a single destin
 
 Contracts: each routine writes only the block at `p` with reconstruction stride `FDEC_STRIDE` (32 bytes). Neighbouring samples are read at `p−1` (left) and `p−FDEC_STRIDE` (above). The edge-array variants read exclusively from the caller-supplied `edge[36]` and write to `p`. No function returns a value.
 
-## 3. State and data structures
+## 4. State and data structures
 
 No state. Include guard `X264_MIPS_PREDICT_H`. The edge array (36 bytes) is the standard x264 intra-neighbour buffer; the implementation uses offsets 16 (top row and top-left corner), 14 (left column), and 7 (left samples for 8x8 DC), consistent with the generic predictor's layout. Output uses `FDEC_STRIDE` pitch; note that `FDEC_STRIDE` (32) is twice the block width for 8x8 and 16x16 blocks, leaving room for the right-neighbour placeholder bytes used by later stages.
 
-## 4. Algorithm / behaviour
+## 5. Algorithm / behaviour
 
 The header performs no computation. Semantics of each mode follow H.264 §8.3.1 (4x4/16x16 luma) and §8.3.2 (chroma 8x8):
 
@@ -43,28 +47,32 @@ The header performs no computation. Semantics of each mode follow H.264 §8.3.1 
 - **Plane:** compute the two slope terms `H = Σ(i+1)·(P[8+i] − P[6−i])` and `V = Σ(i+1)·(P[8+i]·stride − P[6−i]·stride)`, then `pred(x,y) = clip((A + B·(x−3) + C·(y−3) + 16) >> 5)` with `A = 16·(P[−1]+P[7·stride+7]+1)`, `B = (5·H+32)>>6`, `C = (5·V+32)>>6`. The MSA code computes these with shuffle-mask-based pairwise differences and word-lane accumulators; see `predict-c.c.md` for the exact lane mapping.
 - **DDL (diagonal-down-left):** each output byte is `(2·edge[i] + edge[i+1] + edge[i+2] + 2) >> 2` with boundary replication, implemented via byte shuffles and pairwise horizontal adds.
 
-## 5. Dependencies
+## 6. Dependencies
 
 - **Included by:** `common/mips/predict-c.c`, `common/mips/pixel-c.c` (the intra SAD/SATD combined helpers), and `common/predict.c`.
 - **Requires:** `x264_template`, `uint8_t`, `FDEC_STRIDE`, and the `x264_predict_t`/`x264_predict8x8_t` typedefs at the dispatcher call site.
 - Note: unlike the LoongArch version, this MIPS header declares no `*_init_mips` functions; the generic predictor installs these symbols directly by name.
 
-## 6. Constants and tables
+## 7. Constants and tables
 
 None in the header. The shuffle masks used by plane/DDL and the rounding constants (16, 32, 5, 128) are implementation details documented in `predict-c.c.md`.
 
-## 7. Performance notes
+## 8. Performance notes
 
 No runtime cost. For rebuild, the important performance property is that all helpers write contiguous full rows (16 bytes for 4x4, 64/128 bits per store for 8x8/16x16), allowing 128-bit stores without read-modify-write of neighbouring macroblock data.
 
-## 8. Verification checklist
+## 9. References
+
+ITU-T H.264 standard; x264 project documentation; architecture SIMD programmer's guides.
+
+## 10. Verification checklist
 
 1. Compile header alone in 8-bit and 10-bit builds; check declarations disappear in the latter.
 2. Compare each MSA predictor output against the scalar reference for a deterministic neighbour pattern (e.g. `edge[i]=i`) across all block sizes.
 3. Confirm all 17 declarations resolve to symbols in `predict-c.c`.
 4. Verify no out-of-bounds writes: the destination stride is `FDEC_STRIDE`, not the block width.
 
-## 9. Open questions
+## 11. Open questions
 
 - UNKNOWN: exact correspondence between the `_8x8_msa(p, edge)` functions and the generic `x264_predict8x8_t` callback signature — verify the dispatcher passes `p_edge` in the same slot.
 - UNKNOWN: whether some of the declared helpers are also used outside prediction (e.g. directly by analyse.c) in this x264 version.

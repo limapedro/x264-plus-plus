@@ -2,11 +2,15 @@
 
 **Dirty-side behavioural specification.** Source path: `E:\_x264_dirty_stash\x264-source\common\mips\pixel.h`. Role: public interface for the MSA pixel-distortion metrics used by motion search, intra decision, rate-distortion, and SSIM.
 
-## 1. Purpose
+## 1. Header
+
+The title line above gives the source path and the file's role in one sentence; the adjacent bold marker identifies this document as a **dirty-side behavioural specification** written from the reference source and public literature. No reference source or near-verbatim pseudocode is reproduced.
+
+## 2. Purpose
 
 This header declares every distortion primitive that the generic `common/pixel.c` dispatcher can replace with an MSA implementation: SAD (single and multi-reference), SSD, SATD, SA8D, Hadamard/AC, SSIM core, variance, and the intra-prediction-plus-metric combined helpers. All declarations are guarded by `#if !HIGH_BIT_DEPTH` and name-mangled through `x264_template`.
 
-## 2. Public interface
+## 3. Public interface
 
 Signatures (all names carry the `_msa` suffix before mangling):
 
@@ -30,13 +34,13 @@ Signatures (all names carry the `_msa` suffix before mangling):
 
 **Intra combined metrics** — `x264_intra_sad_x3_4x4_msa`, `..._16x16_msa`, `..._8x8_msa(p_enc, p_edge[36], sad[3])`, `..._8x8c_msa`, and the matching `x264_intra_satd_x3_*`, `x264_intra_sa8d_x3_8x8_msa`. These generate three candidate predictions (V/H/DC) into a scratch block and score each against the encoder block.
 
-## 3. State and data structures
+## 4. State and data structures
 
 No state. Include guard `X264_MIPS_PIXEL_H`. The `p_edge[36]` array used by 8x8 helpers is the standard x264 edge buffer laid out as: indices 0–7 top-left/top rows, 8–15 top-right, 16–23 left column, 24–31 unused/filler, plus corner sample at index 35 in the generic convention. The implementations in `pixel-c.c` use offsets `+14`, `+16`, `+7` into this array for H/V/DC predictions.
 
 Scratch prediction blocks use `ALIGNED_ARRAY_16(uint8_t, pix, [8*FDEC_STRIDE])` — a 16-byte-aligned local buffer of eight rows at reconstruction stride.
 
-## 4. Algorithm / behaviour
+## 5. Algorithm / behaviour
 
 Declarations only. The metric definitions and rounding are in `pixel-c.c.md`. Important ABI facts for a rebuild:
 
@@ -44,28 +48,32 @@ Declarations only. The metric definitions and rounding are in `pixel-c.c.md`. Im
 - The integer types of return values distinguish packed results (`uint64_t`) from scalar costs (`int32_t`).
 - `p_edge` is read-only from the caller's perspective, but the intra helpers write a temporary prediction buffer, not the edge itself.
 
-## 5. Dependencies
+## 6. Dependencies
 
 - **Included by:** `common/mips/pixel-c.c` and `common/pixel.c` (dispatcher).
 - **Requires:** `x264_template`, `intptr_t`, `int32_t`, `uint64_t`, `uint8_t`, `ALIGNED_ARRAY_16`, and the `FENC_STRIDE`/`FDEC_STRIDE` macros from generic headers.
 - **Cross-header:** `mips/predict.h` must be in scope because the intra-combined helpers call `x264_intra_predict_*_msa` functions; `pixel-c.c` includes it directly.
 
-## 6. Constants and tables
+## 7. Constants and tables
 
 None here. Numerical constants (the `>>1` SATD normalization, `(sum+2)>>2` SA8D, `>>34`/`>>1` Hadamard-AC packing) are documented in `pixel-c.c.md`.
 
-## 7. Performance notes
+## 8. Performance notes
 
 No runtime cost. For rebuild, preserve the exact signature ordering — the multi-reference helpers are called in tight motion-search loops and mismatched pointer/stride order would produce wrong costs without a compiler error (all pointers are `uint8_t*`).
 
-## 8. Verification checklist
+## 9. References
+
+ITU-T H.264 standard; x264 project documentation; architecture SIMD programmer's guides.
+
+## 10. Verification checklist
 
 1. Include this header plus `mips/predict.h` in isolation under an 8-bit build; confirm no warnings.
 2. Verify each declared symbol appears in `pixel-c.c`'s object file.
 3. Check that the eight single-reference SAD sizes and the seven x4 SAD sizes listed above match the dispatch slots the generic `pixel.c` expects.
 4. Confirm no high-bit-depth declaration leaks (rebuild with `HIGH_BIT_DEPTH=1`).
 
-## 9. Open questions
+## 11. Open questions
 
 - UNKNOWN: the precise edge-buffer layout for `p_edge[36]` should be cross-checked against `common/predict.c`'s `x264_predict_8x8_filter` output, since the MSA helpers index it with hardcoded offsets.
 - UNKNOWN: whether `x264_pixel_var2_*_msa`'s `ssd[2]`-style signature in other architectures implies a second element that this MIPS version ignores; verify against the generic typedef.

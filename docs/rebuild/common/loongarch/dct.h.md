@@ -2,11 +2,15 @@
 
 **Dirty-side behavioural specification.** Source path: `E:\_x264_dirty_stash\x264-source\common\loongarch\dct.h`. Role: public interface for the LoongArch LSX (128-bit) and LASX (256-bit) transform implementations in `loongarch/dct-a.S`.
 
-## 1. Purpose
+## 1. Header
+
+The title line above gives the source path and the file's role in one sentence; the adjacent bold marker identifies this document as a **dirty-side behavioural specification** written from the reference source and public literature. No reference source or near-verbatim pseudocode is reproduced.
+
+## 2. Purpose
 
 Exposes the transform primitives to x264's architecture dispatcher. Unlike the MIPS port, this header declares **two variants per operation** — one suffixed `_lsx` (128-bit vectors) and one `_lasx` (256-bit vectors) — because LoongArch machines may support either or both instruction sets. Every declaration is name-mangled with `x264_template`. There is no `HIGH_BIT_DEPTH` guard around the declarations themselves (the implementations behave per build config).
 
-## 2. Public interface
+## 3. Public interface
 
 Each symbol follows the pattern `x264_<op>_lsx` or `x264_<op>_lasx`:
 
@@ -33,7 +37,7 @@ Each symbol follows the pattern `x264_<op>_lsx` or `x264_<op>_lasx`:
 
 Contracts mirror the generic DCT vtable exactly: forward transforms produce unscaled integer-transform coefficients, inverse transforms add to the destination (pitch `FDEC_STRIDE` = 32 for 8-bit, or 64 for high-bit-depth) and clip to the pixel range, DC-only variants add a uniform offset, and the zig-zag routine reorders 16 coefficients into the H.264 frame scan order.
 
-## 3. State and data structures
+## 4. State and data structures
 
 No state. Include guard `X264_LOONGARCH_DCT_H`. Coefficient arrays are caller-owned and laid out as in the generic x264 DCT:
 
@@ -42,7 +46,7 @@ No state. Include guard `X264_LOONGARCH_DCT_H`. Coefficient arrays are caller-ow
 - 8x8 with 8x8 transform: 64 consecutive coefficients.
 - LSX vectors are 128 bits (8 halfwords); LASX vectors are 256 bits (16 halfwords), so the LASX variants can hold a full 4x4 coefficient block in one register.
 
-## 4. Algorithm / behaviour
+## 5. Algorithm / behaviour
 
 Declarations only. The implementations are behavioural equivalents of the MIPS/C versions, with the following ISA-specific facts:
 
@@ -53,28 +57,32 @@ Declarations only. The implementations are behavioural equivalents of the MIPS/C
 - The 8x8 inverse uses the 8-point extension with quarter shifts and rounding.
 - Zig-zag uses the constant table `zigzag_scan4 = {0,4,1,2,5,8,12,9,6,3,7,10,13,14,11,15}` with `vshf.h`/`xvshuf.h`.
 
-## 5. Dependencies
+## 6. Dependencies
 
 - **Included by:** `common/loongarch/dct-a.S` (which implements these symbols) and `common/dct.c` (dispatcher).
 - **Requires:** `x264_template`, `int16_t`, `uint8_t` from generic headers; `x264_dct_functions_t` typedef at dispatcher sites.
 - **No** dependency on `loongson_asm.S` at declaration level — that is assembly-only.
 
-## 6. Constants and tables
+## 7. Constants and tables
 
 None declared in the header. The constants used by the implementations (zig-zag table, `hsub_mul` byte pattern, rounding offsets) are documented in `dct-a.S.md`.
 
-## 7. Performance notes
+## 8. Performance notes
 
 No runtime cost. For rebuild, note that declaring both LSX and LASX variants lets the dispatcher select the wider one when `X264_CPU_LASX` is set; the two are functionally interchangeable, so a clean implementation may initially provide only one variant and alias the other.
 
-## 8. Verification checklist
+## 9. References
+
+ITU-T H.264 standard; x264 project documentation; architecture SIMD programmer's guides.
+
+## 10. Verification checklist
 
 1. Compile header alone under 8-bit and high-bit-depth configs.
 2. Verify expanded symbol names against the object file produced from `dct-a.S`.
 3. Confirm each generic DCT vtable slot claimed by the LoongArch path has both an LSX and LASX declaration where applicable.
 4. Check no high-bit-depth-specific type mismatch (`dctcoef` vs `int16_t`).
 
-## 9. Open questions
+## 11. Open questions
 
 - UNKNOWN: whether the dispatcher prefers LASX over LSX when both flags are set, and whether any routine lacks a LASX variant intentionally (observed: 4x4 DCT and 4x4 IDCT are LSX-only).
 - UNKNOWN: exact `FDEC_STRIDE`/`FENC_STRIDE` values used by the assembly in high-bit-depth builds (the header names `pixel`/`pixel` typedefs in some files; verify the bit-depth macros in `loongson_util.S`).

@@ -2,11 +2,15 @@
 
 **Dirty-side behavioural specification.** Source path: `E:\_x264_dirty_stash\x264-source\common\mips\quant.h`. Role: declares the MSA quantization, dequantization, and last-coefficient-index helpers installed by the generic quant dispatcher.
 
-## 1. Purpose
+## 1. Header
+
+The title line above gives the source path and the file's role in one sentence; the adjacent bold marker identifies this document as a **dirty-side behavioural specification** written from the reference source and public literature. No reference source or near-verbatim pseudocode is reproduced.
+
+## 2. Purpose
 
 Quantization and coefficient scanning are executed for every coded block; combined with DCT they dominate the "front end" of encoding. This header exposes the MSA implementations of those primitives to `common/quant.c`, using the standard `x264_template` name mangling and an 8-bit-only guard.
 
-## 2. Public interface
+## 3. Public interface
 
 All names are mangled through `x264_template(...)`.
 
@@ -27,11 +31,11 @@ All names are mangled through `x264_template(...)`.
 
 Contracts: quant routines overwrite the input coefficient array with signed quantized levels and preserve sign; `mf`/`bias` arrays are caller-owned lookup tables. The `bias` values are already Q16 fractional offsets such that `(|dct| + bias) * mf >> 16` yields the level (the implementation adds absolute value then restores sign).
 
-## 3. State and data structures
+## 4. State and data structures
 
 No state. Include guard `X264_MIPS_QUANT_H`. Dequantization factor tables are owned by the caller (generic `common/quant.c`); the MSA code reads them by `qp % 6` and does not cache them. Quantization multiplier/bias arrays are likewise caller-owned and are indexed by coefficient position (0..15 or 0..63).
 
-## 4. Algorithm / behaviour
+## 5. Algorithm / behaviour
 
 Declarations only. Key semantic points implemented in `quant-c.c.md`:
 
@@ -40,28 +44,32 @@ Declarations only. Key semantic points implemented in `quant-c.c.md`:
 - `quant_4x4x4` accumulates per-block flags with an OR-shift so the return value is a nibble mask.
 - Last-coefficient helpers compute a bitmask of zero/nonzero groups, then count leading zeros to find the highest nonzero index.
 
-## 5. Dependencies
+## 6. Dependencies
 
 - **Included by:** `common/mips/quant-c.c` and `common/quant.c`.
 - **Requires:** `x264_template`, `int16_t`, `int32_t`, `uint16_t` from standard/config headers.
 - No dependency on `mips/macros.h` at the declaration level.
 
-## 6. Constants and tables
+## 7. Constants and tables
 
 None in the header. The factor-table dimensions `[6][16]` and `[6][64]` reflect the six QP-modulo quantizer matrices defined by H.264; the `>>16` quantizer scale and the `−4`/`−6` dequantization offsets are x264's fixed-point conventions.
 
-## 7. Performance notes
+## 8. Performance notes
 
 No runtime cost. For rebuild, preserve the exact `int32_t` vs `uint16_t` types: the MSA code relies on `bias` being unsigned 16-bit so the "add absolute value" step cannot overflow the 32-bit lane for valid coefficient ranges.
 
-## 8. Verification checklist
+## 9. References
+
+ITU-T H.264 standard; x264 project documentation; architecture SIMD programmer's guides.
+
+## 10. Verification checklist
 
 1. Include header alone in 8-bit build; check all nine declarations compile.
 2. Verify symbol names after `x264_template` expansion against `quant-c.c`'s object.
 3. Check that `quant_4x4x4`'s 4-bit return mask convention matches the generic dispatcher's expectation.
 4. Confirm the last-coefficient functions return −1 (or the documented sentinel) for an all-zero block — cross-check with the generic implementation.
 
-## 9. Open questions
+## 11. Open questions
 
 - UNKNOWN: exact sentinel for an all-zero input to `x264_coeff_last*_msa` as used by this version (the MSA code returns `63 − leading_zeros`, which yields a specific value when all groups are zero); verify numerically against the scalar `x264_coeff_last64_c`.
 - UNKNOWN: whether `dequant_4x4_dc_msa`'s shift (`qp/6 − 6`) differs intentionally from `dequant_4x4_msa` (`qp/6 − 4`); confirm against generic `quant.c` to avoid off-by-two scaling.

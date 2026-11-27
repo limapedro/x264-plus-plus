@@ -2,11 +2,15 @@
 
 **Dirty-side behavioural specification.** Source path: `E:\_x264_dirty_stash\x264-source\common\mips\predict-c.c`. Role: MSA-128 implementations of H.264 intra prediction for 4x4, 8x8 and 16x16 blocks. Compiled only for 8-bit builds.
 
-## 1. Purpose
+## 1. Header
+
+The title line above gives the source path and the file's role in one sentence; the adjacent bold marker identifies this document as a **dirty-side behavioural specification** written from the reference source and public literature. No reference source or near-verbatim pseudocode is reproduced.
+
+## 2. Purpose
 
 Intra prediction generates a candidate block from already-reconstructed neighbouring samples. The MSA implementations replace row-by-row byte loops with vector fills, shuffles and horizontal adds, accelerating the many candidate modes evaluated at slow presets and the fast intra-metric helpers used by `pixel-c.c`.
 
-## 2. Public interface
+## 3. Public interface
 
 The exported set is declared in `mips/predict.h.md` and consists of 17 functions:
 
@@ -16,7 +20,7 @@ The exported set is declared in `mips/predict.h.md` and consists of 17 functions
 
 Each writes one block at `p_src` with reconstruction pitch `FDEC_STRIDE` (32 bytes). The neighbour-based functions read above at `p_src − FDEC_STRIDE` and left at `p_src − 1`; the edge-based 8x8 variants read only from `pu_xyz`.
 
-## 3. State and data structures
+## 4. State and data structures
 
 No globals. All temporaries are MSA vectors or 32/64-bit GPRs used to broadcast byte patterns.
 
@@ -27,7 +31,7 @@ No globals. All temporaries are MSA vectors or 32/64-bit GPRs used to broadcast 
   - offset `+7`: the four upper-left samples for 8x8 DC;
   - for DDL, a 16-byte vector loaded from `pu_xyz + 16` (top row and corner) with the last element replaced by `pu_xyz[15]`.
 
-## 4. Algorithm / behaviour
+## 5. Algorithm / behaviour
 
 ### Vertical prediction
 
@@ -89,13 +93,13 @@ Loads 16 neighbour bytes from `edge+16`, creates byte-shifted copies (`sldi_b` b
 
 Fills the whole 16x16 block with the byte 128 using two groups of eight 16-byte stores.
 
-## 5. Dependencies
+## 6. Dependencies
 
 - **Calls:** local helpers in `mips/macros.h` (`LW4`, `SW4`, `LD`, `SD4`, `LD_UB`, `ST_UB8`, `INSERT_D2_UB`, `SRA_4V`, `PCKEV_H2_SH`, `CLIP_SH2_0_255`, `PCKEV_ST_SB`) and MSA intrinsics (`fill_b`, `ldi_b`, `splati_b`, `vshf_b`, `hadd_u_h/w/d`, `hsub_u_h`, `srari_w/d/h`, `sldi_b`, `insert_b`, `pckev_b`, `maxi_s_h`, `min_s_h`).
 - **Called by:** `x264_predict_*_init()` in `common/predict.c` (by symbol name), `mips/pixel-c.c` intra-metric helpers, and the macroblock analysis code when MSA is selected.
 - **Shared config:** `HIGH_BIT_DEPTH`, `FDEC_STRIDE` (32).
 
-## 6. Constants and tables
+## 7. Constants and tables
 
 - Broadcast multipliers: `0x01010101` (32-bit), `0x0101010101010101` (64-bit), fill-byte intrinsics for 128-bit.
 - DC rounding constants: `+4 >>3` (4x4 both), `+2 >>2` (4x4 one side), `+16 >>5` (16x16 both), `+8 >>4` (16x16 one side), `+4 >>3` (8x8 four-block DC corners), `+2 >>2` (8x8 single-side DC).
@@ -105,15 +109,17 @@ Fills the whole 16x16 block with the byte 128 using two groups of eight 16-byte 
 
 **Why:** these constants are the exact integer approximations mandated by H.264 for plane prediction and the natural round-to-nearest constants for averaging.
 
-## 7. Performance notes
+## 8. Performance notes
 
 - **Hotness:** moderate to high depending on preset; at `--preset veryslow`, dozens of intra predictions per macroblock.
 - **SIMD status:** fully MSA-128; vertical/DC fills are pure vector stores; horizontal uses GPR multiply-broadcast; plane uses shuffles and word-lane arithmetic.
 - **Branch behaviour:** only the uniform `is_above`/`is_left` flags in the DC helpers are branches; these are call-site constants, so no per-sample branching.
 - **Optimization tips:** (a) the scalar left-column accumulation loops in DC and plane could be replaced with a strided vector gather if the neighbour layout allows; (b) keep the fill vectors in registers across multiple mode evaluations; (c) the plane prediction's per-row word candidates are independent — unrolling both rows per iteration (as currently done for 8x8) improves throughput; (d) ensure the destination is 16-byte aligned to use aligned vector stores.
-- **References:** ITU-T H.264 §8.3.1 (intra prediction); x264 `common/predict.c`; MSA programmer's guide for `vshf_b`, `hadd_u_h`, `srari`.
+## 9. References
 
-## 8. Verification checklist
+ITU-T H.264 §8.3.1 (intra prediction); x264 `common/predict.c`; MSA programmer's guide for `vshf_b`, `hadd_u_h`, `srari`.
+
+## 10. Verification checklist
 
 1. For each block size and mode, generate deterministic neighbours (e.g. ramp values 0..255) and compare MSA output byte-for-byte with scalar reference.
 2. DC availability matrix: test all four combinations of above/left available for 4x4 and 16x16; verify rounding at half-way cases.
@@ -122,7 +128,7 @@ Fills the whole 16x16 block with the byte 128 using two groups of eight 16-byte 
 5. Check that no write crosses into the next macroblock row: the stride is `FDEC_STRIDE`, not the logical block width.
 6. Intra metric wrappers in `pixel-c.c`: verify the three candidate predictions use the expected modes in the expected output slots.
 
-## 9. Open questions
+## 11. Open questions
 
 - UNKNOWN: exact mapping of the 8x8 edge-array offsets (14, 16, 7) to the generic `x264_predict_8x8_filter` output layout; validate against a known edge pattern.
 - UNKNOWN: whether the 8x8 plane helper's mask `{3,5,2,6,1,7,0,8,...}` intentionally duplicates indices (it does), and whether the duplicate elements affect the H sum for certain inputs — verify numerically against scalar.

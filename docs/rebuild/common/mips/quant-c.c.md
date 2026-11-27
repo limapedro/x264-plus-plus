@@ -2,11 +2,15 @@
 
 **Dirty-side behavioural specification.** Source path: `E:\_x264_dirty_stash\x264-source\common\mips\quant-c.c`. Role: MSA-128 implementations of scalar quantization, dequantization and last-nonzero-index computation for 4x4 and 8x8 coefficient blocks. Compiled only for 8-bit (`HIGH_BIT_DEPTH == 0`) builds.
 
-## 1. Purpose
+## 1. Header
+
+The title line above gives the source path and the file's role in one sentence; the adjacent bold marker identifies this document as a **dirty-side behavioural specification** written from the reference source and public literature. No reference source or near-verbatim pseudocode is reproduced.
+
+## 2. Purpose
 
 Quantization is applied to every transformed residual block; dequantization is applied to every block during reconstruction (including skipped blocks). These routines are therefore executed tens of times per macroblock. The MSA versions vectorize the per-coefficient multiply/round/select across 16 or 64 lanes and compute the "any nonzero" predicate with a single horizontal add rather than a scalar loop.
 
-## 2. Public interface
+## 3. Public interface
 
 See `mips/quant.h.md` for the nine exported prototypes. Summary of exported behaviour:
 
@@ -17,7 +21,7 @@ See `mips/quant.h.md` for the nine exported prototypes. Summary of exported beha
 
 All functions are re-entrant; `mf`/`bias`/`dequant_mf` are read-only caller tables.
 
-## 3. State and data structures
+## 4. State and data structures
 
 No globals. All working data lives in MSA vector registers.
 
@@ -25,7 +29,7 @@ No globals. All working data lives in MSA vector registers.
 - Quantization tables: `pu_mf[...]` of unsigned 16-bit fixed-point multipliers and `pu_bias[...]` of unsigned 16-bit additive biases, indexed by coefficient position.
 - Coefficients are 16-bit signed; intermediate products are computed in 32-bit lanes so no overflow occurs for valid encoder inputs.
 
-## 4. Algorithm / behaviour
+## 5. Algorithm / behaviour
 
 ### Dequantization (4x4)
 
@@ -78,13 +82,13 @@ The 64 coefficients are loaded as eight halfword vectors. Each is compared equal
 
 Same technique over two vectors, reduced to a 16-bit word and `nloc_h`; result is `15 − leading_zeros`.
 
-## 5. Dependencies
+## 6. Dependencies
 
 - **Calls:** `mips/macros.h` (`LD_SH2/4/8`, `LD_SW2`, `ST_SH2/4/8`, `UNPCK_SH_SW`, `PCKEV_H2/4_SH`, `ILVR_H2/4_SW`, `ILVL_H2/4_SW`, `SRA_4V`, `SLLI_4V`, `HADD_SW_S32`, `HADD_UB*`, `SUB4`, `CLIP*`, `XORI`, etc.) and MSA intrinsics (`add_a_w`, `bmnz_v`, `clei_s_h`, `ceqi_h`, `nloc_h/d`, `srari_w`, `fill_h/w`, `copy_u_w`, `insve_*`).
 - **Called by:** `x264_quant_init()` in `common/quant.c`, which installs these pointers when `X264_CPU_MSA` is set.
 - **Shared globals:** none; dequantization factor tables are in `common/tables.c` and passed in.
 
-## 6. Constants and tables
+## 7. Constants and tables
 
 - `q_bits` offsets: **4** (4x4 dequant), **6** (8x8 and 4x4-DC dequant).
 - Rounding constant `1 << (−q_bits − 1)` added before right shift.
@@ -94,15 +98,17 @@ Same technique over two vectors, reduced to a 16-bit word and `nloc_h`; result i
 
 **Why:** the `qp/6` factor follows H.264's quantizer step doubling every 6 QP steps; the Q16 scale lets the same multiplier table serve all QPs with integer arithmetic.
 
-## 7. Performance notes
+## 8. Performance notes
 
 - **Hotness:** extremely high — one quantization call per coded block, one dequantization call per reconstructed block.
 - **SIMD status:** fully MSA-128; 4 lanes of 32-bit or 8 lanes of 16-bit per instruction.
 - **Branch behaviour:** the only branch is the `q_bits >= 0` split, which is uniform across a frame (depends only on QP) and therefore perfectly predicted.
 - **Optimization tips:** (a) hoist the factor-table row pointer and shift count out of block loops at the caller; (b) for `quant_4x4x4`, the four calls currently reload mf/bias each time — a fused version could keep them in registers; (c) on MSARev6 the `add_a_w`/`bmnz_v` instructions are single-cycle, making the quant kernel ~10 instructions per 4 coefficients; (d) fuse quantization with the DCT butterfly in a specialized macroblock loop if rewriting the pipeline.
-- **References:** ITU-T H.264 §8.5.1/§8.5.2 (scaling and quantization); x264 `common/quant.c` for the C reference and table derivation; MSA instruction set reference for `add_a_w`, `dpadd`, `nloc`.
+## 9. References
 
-## 8. Verification checklist
+ITU-T H.264 §8.5.1/§8.5.2 (scaling and quantization); x264 `common/quant.c` for the C reference and table derivation; MSA instruction set reference for `add_a_w`, `dpadd`, `nloc`.
+
+## 10. Verification checklist
 
 1. For random coefficient blocks and a range of QPs (0..51), compare all dequantization outputs bit-for-bit with the scalar `x264_dequant_*_c`.
 2. Quantization: for random blocks and QPs, verify levels and the nonzero flag match scalar `x264_quant_4x4_c`; verify sign preservation for negative inputs.
@@ -112,7 +118,7 @@ Same technique over two vectors, reduced to a 16-bit word and `nloc_h`; result i
 6. Run a full short encode with MSA quant enabled and compare the bitstream against a C-only build: it must be bit-identical.
 7. ASan-check with coefficient arrays at 16-byte-aligned addresses and with deliberately unaligned pointers to see whether the implementation relies on alignment.
 
-## 9. Open questions
+## 11. Open questions
 
 - UNKNOWN: exact all-zero sentinel returned by `x264_coeff_last*_msa`; the expression `63 − nloc(...)` needs numeric validation against the scalar implementation.
 - UNKNOWN: whether `x264_dequant_4x4_dc_msa` is intended to scale only the first element or the whole 16-byte group — the implementation operates on two vectors, so verify with non-DC coefficients present.

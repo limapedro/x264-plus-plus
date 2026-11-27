@@ -2,11 +2,15 @@
 
 **Dirty-side behavioural specification.** Source path: `E:\_x264_dirty_stash\x264-source\common\mips\macros.h`. Role: a shared portability/shorthand layer over the MSA C intrinsics (`<msa.h>`) used by every MIPS SIMD source file in this directory.
 
-## 1. Purpose
+## 1. Header
+
+The title line above gives the source path and the file's role in one sentence; the adjacent bold marker identifies this document as a **dirty-side behavioural specification** written from the reference source and public literature. No reference source or near-verbatim pseudocode is reproduced.
+
+## 2. Purpose
 
 MSA intrinsics are verbose and have awkward type casts. This header defines a large family of preprocessor macros that give short, uniform names to common operations: strided loads/stores, interleaves, packs, butterflies, transposes, saturating arithmetic, shifts with rounding, dot products, and sign handling. It also abstracts the ISA-revision difference between MSARev5 (unaligned `ulh`/`ulw`/`uld` helpers) and MSARev6 (native `lh`/`lw`/`ld`/`sh`/`sw`/`sd`). All MIPS algorithm files include it so their code stays readable and so a single change (e.g. an alignment fix) propagates everywhere.
 
-## 2. Public interface
+## 3. Public interface
 
 This is a macro-only header; it exports no functions or variables. Include guard `X264_MIPS_MACROS_H`. It includes `<stdint.h>` and `<msa.h>`. Macros are grouped by function:
 
@@ -41,13 +45,13 @@ This is a macro-only header; it exports no functions or variables. Include guard
 - `PCKEV_XORI128_UB`, `PCKEV_ST4x4_UB`, `PCKEV_ST_SB`.
 - `AVC_CALC_DPADD_H_6PIX_2COEFF_SH`, `AVC_HORZ_FILTER_SH` — the luma 6-tap filter kernels used by `mc-c.c`.
 
-## 3. State and data structures
+## 4. State and data structures
 
 None. All macros are functional: they either produce an expression (statement-expression style with `__msa_*` intrinsics) or expand to a brace-enclosed block that writes to output operands. Vector types are the MSA built-ins `v16i8`, `v16u8`, `v8i16`, `v8u16`, `v4i32`, `v4u32`, `v2i64`, `v2u64`. The `RTYPE` template parameter of a macro selects the result element type; typed aliases fix it (e.g. `..._UB` → `v16u8`, `..._SH` → `v8i16`, `..._SW` → `v4i32`).
 
 **Important convention:** stride arguments to load/store macros are expressed in units of the *base pointer's element type*, not bytes. For `uint8_t*` this is bytes; for `int16_t*` a stride of 4 means four 16-bit elements. Mixed usage is possible (e.g. `LD_SW2(pi_dequant_mf[i_mf], 4, ...)` passes 4 words = 16 bytes).
 
-## 4. Algorithm / behaviour
+## 5. Algorithm / behaviour
 
 The header defines no algorithms of its own; it delegates to MSA intrinsics. Key semantics that a clean-room rebuild must reproduce:
 
@@ -59,13 +63,13 @@ The header defines no algorithms of its own; it delegates to MSA intrinsics. Key
 - **Horizontal sums:** `HADD_UH_U32` reduces eight unsigned halfwords to one 32-bit sum via word/doubleword horizontal adds; `HADD_SW_S32` reduces four signed words similarly. Widening dot products (`DOTP_*`/`DPADD_*`) accumulate adjacent pair products and are the basis of SAD/SSE/SSIM kernels.
 - **ISA selection:** for `__mips_isa_rev >= 6` scalar loads/stores use `lh/lw/ld/sh/sw/sd`; for older revisions the `ul*`/`us*` unaligned forms are used. On 32-bit MIPS, 64-bit load/store is composed from two 32-bit halves.
 
-## 5. Dependencies
+## 6. Dependencies
 
 - **Included by:** all MIPS `.c` files: `dct-c.c`, `deblock-c.c`, `mc-c.c`, `pixel-c.c`, `predict-c.c`, `quant-c.c`.
 - **Requires:** `<msa.h>` (the compiler-provided intrinsic header), `<stdint.h>`, and compiler support for GCC statement expressions (`({ ... })`) and `__msa_*` builtins.
 - **Not used directly by** the public headers; it is an implementation detail.
 
-## 6. Constants and tables
+## 7. Constants and tables
 
 - The XOR constant **128** for signed↔unsigned byte conversion.
 - Saturation widths passed as immediates (e.g. `7` → clamp to 255, `9` → clamp to 1023).
@@ -73,13 +77,15 @@ The header defines no algorithms of its own; it delegates to MSA intrinsics. Key
 - Zig-zag/filter constants are not here; they belong to the algorithm files.
 - No data tables are defined in this header.
 
-## 7. Performance notes
+## 8. Performance notes
 
 - **Hotness:** N/A (header), but code quality here determines all MIPS kernels' performance.
 - **Optimization tips:** (a) macro expansion should produce single MSA instructions for the simple wrappers — inspect compiler output to confirm no temporaries spill; (b) statement-expression macros can inhibit CSE when used twice with the same inputs; hoist into a local vector if needed; (c) on MSARev6 the `LD_UB*/ST_UB*` macros via typed dereference are usually compiled to aligned `ld`/`st` when pointers are known aligned — keep pointers 16-byte aligned; (d) `BUTTERFLY_8` is only eight add/sub instructions — do not replace with a loop.
-- **References:** MSA Intrinsics specification (Imagination Technologies / MIPS "MSA Programmer's Guide"), the `msa.h` header shipped with GCC/binutils, and the Loongson/MIPS x264 port documentation.
+## 9. References
 
-## 8. Verification checklist
+MSA Intrinsics specification (Imagination Technologies / MIPS "MSA Programmer's Guide"), the `msa.h` header shipped with GCC/binutils, and the Loongson/MIPS x264 port documentation.
+
+## 10. Verification checklist
 
 1. Compile a test TU that instantiates every macro family with each typed alias under both `__mips_isa_rev` branches (via cross-compiler or `-D`).
 2. For butterfly macros, verify output ordering with distinct input values.
@@ -89,7 +95,7 @@ The header defines no algorithms of its own; it delegates to MSA intrinsics. Key
 6. For load/store macros, test with 8-, 16- and 32-bit-strided pointers and confirm no overlap or gap.
 7. Check that no macro relies on undefined C behaviour (strict-aliasing violations from typed pointer casts) in the target compiler.
 
-## 9. Open questions
+## 11. Open questions
 
 - UNKNOWN: whether any macro is unused by the current algorithm files and could be dropped in a minimal rebuild (inventory shows most are used).
 - UNKNOWN: exact behaviour of `LD4x4_SH` when passed a non-8-element-aligned `int16_t*`; documented as taking a 1-D 4x4 block but may require 16-byte alignment.

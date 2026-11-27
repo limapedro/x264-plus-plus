@@ -2,11 +2,15 @@
 
 **Dirty-side behavioural specification.** Source path: `E:\_x264_dirty_stash\x264-source\common\loongarch\predict.h`. Role: declares all LSX/LASX intra prediction functions and the four architecture init routines implemented in `predict-a.S` and `predict-c.c`.
 
-## 1. Purpose
+## 1. Header
+
+The title line above gives the source path and the file's role in one sentence; the adjacent bold marker identifies this document as a **dirty-side behavioural specification** written from the reference source and public literature. No reference source or near-verbatim pseudocode is reproduced.
+
+## 2. Purpose
 
 This header is the LoongArch counterpart of `mips/predict.h`, but it also declares the init functions that populate the generic prediction function-pointer tables — a design difference from MIPS. It provides both 128-bit and 256-bit variants for several modes (notably 8x8 H/DDL/DDR/VR/VL and 16x16 plane), so the dispatcher can choose the wider implementation when LASX is available.
 
-## 2. Public interface
+## 3. Public interface
 
 All names are mangled through `x264_template(...)`.
 
@@ -31,11 +35,11 @@ All names are mangled through `x264_template(...)`.
 
 Contracts: neighbours are read from the reconstruction plane at `src - FDEC_STRIDE` (above) and `src - 1` (left) for the non-edge variants; edge-array variants read only from `edge[36]`. Output uses `FDEC_STRIDE` row pitch. Nothing returns a value.
 
-## 3. State and data structures
+## 4. State and data structures
 
 No state. Include guard `X264_LOONGARCH_PREDICT_H`. The `x264_predict_t`, `x264_predict8x8_t`, `x264_predict_8x8_filter_t` types come from `common/predict.h`. The `pf` arrays passed to the init functions are caller-owned tables of size 7 (16x16/chroma) or 12 (8x8), indexed by the `I_PRED_*` enum values.
 
-## 4. Algorithm / behaviour
+## 5. Algorithm / behaviour
 
 Declarations only. Semantics follow H.264 §8.3.1/§8.3.2 identically to the MIPS implementations (see `mips/predict-c.c.md`): vertical replication, horizontal replication, DC averaging with available-side rounding, constant-128 fill, plane prediction with the ±1 corner extrapolation and `>>5` output shift, and the diagonal-down-left/right plus vertical-right/left 8x8 directional modes computed from the 36-byte edge array with byte shifts and pairwise averages.
 
@@ -45,21 +49,25 @@ The init functions in `predict-c.c` install:
 - ten 8x8 LSX predictors when LSX is set, then override H/DDL/DDR/VR/VL with their LASX versions when LASX is set;
 - seven 4x4 LSX predictors when LSX is set.
 
-## 5. Dependencies
+## 6. Dependencies
 
 - **Included by:** `common/loongarch/predict-a.S`, `predict-c.c`, `pixel-c.c` (intra metric helpers), and `common/predict.c`.
 - **Requires:** `pixel`, `uint8_t`, `x264_predict_t` et al., `x264_template`, `FDEC_STRIDE`.
 - The assembly implementations include `loongson_asm.S`/`loongson_util.S`.
 
-## 6. Constants and tables
+## 7. Constants and tables
 
 None in the header. Plane prediction constants (17/5 scaling, `+16>>5`/`+32>>6`, `A = 16·(corners+1)`, slope multipliers) and DDL rounding constants are in `predict-a.S.md`.
 
-## 7. Performance notes
+## 8. Performance notes
 
 No runtime cost. The init functions are called once; the LASX override pattern is the performance-relevant detail — a rebuild should keep the wider variants installed for the five 8x8 directional modes and 16x16 plane, since those are the most frequently evaluated at slow presets.
 
-## 8. Verification checklist
+## 9. References
+
+ITU-T H.264 standard; x264 project documentation; architecture SIMD programmer's guides.
+
+## 10. Verification checklist
 
 1. Include header alone under both bit-depth configurations.
 2. Verify each declared symbol exists in `predict-a.S` or `predict-c.c`.
@@ -67,7 +75,7 @@ No runtime cost. The init functions are called once; the LASX override pattern i
 4. Compare all predictor outputs against scalar references for deterministic neighbour patterns.
 5. Verify no writes outside the destination block (stride `FDEC_STRIDE`).
 
-## 9. Open questions
+## 11. Open questions
 
 - UNKNOWN: whether any 8x8 mode other than H/DDL/DDR/VR/VL benefits from LASX but was omitted intentionally; confirm from the init function.
 - UNKNOWN: exact `edge[36]` layout relative to the generic predictor filter output (same uncertainty as the MIPS port).

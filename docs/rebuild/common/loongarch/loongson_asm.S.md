@@ -2,11 +2,15 @@
 
 **Dirty-side behavioural specification.** Source path: `E:\_x264_dirty_stash\x264-source\common\loongarch\loongson_asm.S`. Role: third-party (Loongson, ISC-licensed) assembly helper library providing register aliases, function/constant definition macros, LSX/LASX dot-product, clip, sign-flip, strided-load and transpose macros used by all x264 LoongArch SIMD sources.
 
-## 1. Purpose
+## 1. Header
+
+The title line above gives the source path and the file's role in one sentence; the adjacent bold marker identifies this document as a **dirty-side behavioural specification** written from the reference source and public literature. No reference source or near-verbatim pseudocode is reproduced.
+
+## 2. Purpose
 
 Writing LoongArch SIMD by hand with raw instruction mnemonics is verbose and error-prone, especially for the two vector ISAs (LSX: 128-bit `$vr*`; LASX: 256-bit `$xr*`). This library, version 0.4.0, defines a consistent set of aliases and high-level macros so the algorithm files can express operations like "dot-product two byte vectors into halfwords" or "transpose an 8x8 halfword block" without spelling out every shuffle. It is licensed separately (ISC) from x264's GPL code and is vendored here as-is.
 
-## 2. Public interface
+## 3. Public interface
 
 Macro-only file; no runtime functions. Include guard: none (it is an `.S` file included with `#include`, relying on the assembler's one-time inclusion via the including files). Defines:
 
@@ -42,11 +46,11 @@ Macro-only file; no runtime functions. Include guard: none (it is an `.S` file i
 - `LASX_TRANSPOSE4x4_D` — 64-bit doubleword transpose.
 - Each macro has scratch-vector parameters (`tmp0`, `tmp1`, ...) so callers control register allocation.
 
-## 3. State and data structures
+## 4. State and data structures
 
 No runtime state. Macros expand inline; the transpose macros declare no local labels and use only their explicit output/scratch operands. The register aliases are simple preprocessor renames (`#define a0 $a0`, etc.) so mixing them with raw `$r*` names is safe.
 
-## 4. Algorithm / behaviour
+## 5. Algorithm / behaviour
 
 No algorithm of its own. Semantics of the key macro families:
 
@@ -57,20 +61,20 @@ No algorithm of its own. Semantics of the key macro families:
 
 The function/const macros use `.align` (log base 2) with default 5 (32-byte alignment), `.globl`, `.type @function`, `.size`, and `.purgem` for correct ELF metadata.
 
-## 5. Dependencies
+## 6. Dependencies
 
 - **Included by:** all nine LoongArch `.S` files, before `loongson_util.S`.
 - **Requires:** GNU assembler macro syntax and LoongArch LSX/LASX instruction support in the toolchain.
 - **No** C or x264-header dependency.
 
-## 6. Constants and tables
+## 7. Constants and tables
 
 - Version triple `0.4.0`.
 - `DEFAULT_ALIGN = 5` (32-byte alignment).
 - `ASM_PREF` empty (overridden indirectly by `loongson_util.S`'s `ASM_REF` for x264 symbols).
 - Clip bound 255 in the `clip255` macros.
 
-## 7. Performance notes
+## 8. Performance notes
 
 No runtime cost; the macros map nearly one-to-one to instructions. Optimization tips for users of the library:
 
@@ -79,7 +83,11 @@ No runtime cost; the macros map nearly one-to-one to instructions. Optimization 
 - `vstelmx` is slower than a vector store; use it only for strided scalar writes.
 - The `.b` boolean dot-product variants are useful for computing SAD masks without separate compare instructions.
 
-## 8. Verification checklist
+## 9. References
+
+ITU-T H.264 standard; x264 project documentation; architecture SIMD programmer's guides.
+
+## 10. Verification checklist
 
 1. Instantiate each macro family in a small assembly test file, assemble it, and disassemble to verify instruction counts and operand types.
 2. For each transpose macro, run a runtime test that transposes a known matrix twice and recovers the original.
@@ -87,7 +95,7 @@ No runtime cost; the macros map nearly one-to-one to instructions. Optimization 
 4. For strided-load macros, verify each output vector contains the expected row for distinct base/stride values.
 5. Verify `function`/`endfunc` produce correct global symbol, size, alignment and return instruction.
 
-## 9. Open questions
+## 11. Open questions
 
 - UNKNOWN: whether the vendored library exactly matches LoongML v0.4.0 or carries x264-specific patches; compare with the upstream release if needed.
 - UNKNOWN: some aliases (`fa*`, `f*`) may be unused by x264 — a minimal rebuild can omit them but must keep `vr*`/`xr*` and the GPR aliases.

@@ -2,11 +2,15 @@
 
 **Dirty-side behavioural specification.** Source path: `E:\_x264_dirty_stash\x264-source\common\mips\dct-c.c`. Role: supplies MSA (MIPS SIMD Architecture) implementations of the forward/inverse 4x4 and 8x8 H.264 integer transforms, the 4x4 DC Hadamard transform, block-add variants, and the 4x4 frame zig-zag scan. The whole file is compiled only when `HIGH_BIT_DEPTH == 0` (8-bit pixels, 16-bit transform coefficients).
 
-## 1. Purpose
+## 1. Header
+
+The title line above gives the source path and the file's role in one sentence; the adjacent bold marker identifies this document as a **dirty-side behavioural specification** written from the reference source and public literature. No reference source or near-verbatim pseudocode is reproduced.
+
+## 2. Purpose
 
 The transform stage is one of the hottest non-search parts of the encoder. This file provides 128-bit SIMD versions of every primitive the generic `common/dct.c` exposes, so that a MIPS machine with MSA can reach comparable throughput to x86-64 without changing callers. It relies on the local `macros.h` wrapper layer for loads/stores/interleaves; it adds only the algorithm-specific butterflies. Every routine is a drop-in replacement with bit-identical results to the scalar implementation for the supported block sizes.
 
-## 2. Public interface
+## 3. Public interface
 
 All symbols are declared in `mips/dct.h` and use the `x264_template` name-mangling macro (so the real exported name depends on bit depth, e.g. `x264_8_add4x4_idct_msa`). Calling convention is the standard C ABI; pointers are ordinary host pointers.
 
@@ -28,7 +32,7 @@ All symbols are declared in `mips/dct.h` and use the `x264_template` name-mangli
 
 Contract: forward routines write coefficients in natural (raster) order with no scaling; inverse routines add an already-dequantized coefficient block to the destination and clear the input. Clipping is always to unsigned 8-bit range.
 
-## 3. State and data structures
+## 4. State and data structures
 
 All functions are pure and stateless: no globals, no persistent buffers, no thread-local state. Intermediate vectors live entirely in the 32 MSA vector registers (`v0..v31`, 128 bits each, viewed as `v16i8`, `v8i16`, `v4i32`, `v2i64`). The coefficient arrays are caller-owned:
 
@@ -39,7 +43,7 @@ All functions are pure and stateless: no globals, no persistent buffers, no thre
 
 **Convention quirk (important for rebuild):** the local load/store macros accept the *stride in units of the pointer's element type*, not in bytes. For `uint8_t*` that is bytes; for `int16_t*` a stride of 4 means four 16-bit elements (8 bytes). Internal helper functions take strides explicitly, so the public wrappers pass 4 or 8 accordingly.
 
-## 4. Algorithm / behaviour
+## 5. Algorithm / behaviour
 
 ### Forward 4x4 residual DCT
 
@@ -76,14 +80,14 @@ A halfword `vshf` of the two input vectors with these masks produces `level[i] =
 
 `subtract_sum4x4_msa` widens the four 32-bit words of a source row and the matching prediction row into signed halfwords, computes pairwise unsigned-difference values via `hsub`, and horizontally sums them to a signed 16-bit total (max magnitude 4*4*255 ≈ 4080, fits in 16 bits). `sub8x8_dct_dc` collects four such sums (one per 4x4 quadrant of an 8x8 block) and applies a 2-level 4-point Hadamard; `sub8x16_dct_dc` collects eight sums and applies two levels of an 8-point Hadamard, writing results in the x264 DC coefficient order (indices 0,1,6,7,5,4,3,2 for the 8x16 case).
 
-## 5. Dependencies
+## 6. Dependencies
 
 - **Calls:** local macros in `mips/macros.h` (`LW4`, `INSERT_W4_SB`, `ILVRL_B2_UB`, `HSUB_UB2_SH`, `BUTTERFLY_4/8`, `TRANSPOSE4x4_*`, `TRANSPOSE8x8_SH_SH`, `SRARI_H4_SH`, `SRARI_W4_SW`, `ADDBLK_ST4x4_UB`, `CLIP_SH*`, `PCKEV_*`, `PCKOD_*`, `ST8x4_UB`, `LD4x4_SH`, `LD_SH4/8`, `ST_SH2`, etc.) and MSA intrinsics from `<msa.h>`.
 - **Called by:** `x264_dct_init()` in `common/dct.c`, which installs these pointers when `X264_CPU_MSA` is set and the build is 8-bit.
 - **Shared config:** `HIGH_BIT_DEPTH` gates the whole file; `FDEC_STRIDE`/`FENC_STRIDE` from `common/common.h` fix destination/source pitches.
 - **Cross-file:** `pixel.h`/`predict.h` are not used here; the inverse-DC and forward-DC routines must agree with `quant-c.c` scaling conventions.
 
-## 6. Constants and tables
+## 7. Constants and tables
 
 - Shuffle masks `{0,4,1,2,5,8,12,9}` and `{6,3,7,10,13,14,11,15}` — the 4x4 frame zig-zag order expressed as byte/halfword indices.
 - Rounding constants: `+32` before `>>6` for 4x4 inverse and DC-only inverse; `+32` added to the 8x8 DC coefficient before the 8x8 inverse transform; `+1` added in the 4x4 DC Hadamard path through `SRARI_W4_SW(...,1)`.
@@ -92,15 +96,17 @@ A halfword `vshf` of the two input vectors with these masks produces `level[i] =
 
 **Why:** the `>>6` factors are the standard H.264 inverse-transform normalization (scaling by 1/64). The `+32`/`+1` terms implement round-to-nearest rather than truncation. The zig-zag table is defined by the H.264 spec (Table 8-3 style scanning order for 4x4 blocks).
 
-## 7. Performance notes
+## 8. Performance notes
 
 - **Hotness:** very high. Every macroblock invokes forward DCT for residual coding and inverse DCT for reconstruction, even in `veryfast` presets. DC-only paths dominate in flat/skip-heavy content.
 - **SIMD status:** fully MSA-128. The 4x4 transform processes one row/column per vector; the 8x8 transform uses word-lane unpacking to avoid 16-bit overflow in the rotation terms.
 - **Branch behaviour:** no data-dependent branches; all masking is via compare-and-select vectors. The only loops are the fixed-count 4x4/8x8/16x16 unrolls generated by helper composition.
 - **Optimization tips:** (a) keep the transpose macros register-only to avoid store-forwarding stalls; (b) for DC-only blocks prefer the dedicated `add*_idct_dc` routines — they avoid the full butterfly chain; (c) when all coefficients are zero, callers can skip the add entirely (x264's skip/MB-level logic already does); (d) fuse `sub4x4_dct` and `quant_4x4` in a caller-side loop to keep residuals in registers if rewriting the pipeline; (e) on MSARev6 prefer aligned `ld/sh`/`lw/sw` over the unaligned fallbacks in `macros.h` (the header already selects these via `__mips_isa_rev >= 6`).
-- **References:** MSA intrinsics specification (Imagination/MIPS "MSA Programmer's Guide"); x264's `common/dct.c` for the reference transform; ITU-T H.264 §8.5.1 (4x4 integer transform) and §8.5.3 (8x8 transform).
+## 9. References
 
-## 8. Verification checklist
+MSA intrinsics specification (Imagination/MIPS "MSA Programmer's Guide"); x264's `common/dct.c` for the reference transform; ITU-T H.264 §8.5.1 (4x4 integer transform) and §8.5.3 (8x8 transform).
+
+## 10. Verification checklist
 
 1. For random 8-bit `src`/`ref` blocks, `sub4x4_dct_msa` output equals scalar `x264_dct4x4` output bit-for-bit.
 2. `add4x4_idct_msa` on a known coefficient set, added to a known byte block, equals the C reference; destination bytes are in `[0,255]`; the source array is zero on return.
@@ -111,7 +117,7 @@ A halfword `vshf` of the two input vectors with these masks produces `level[i] =
 7. Run under UBSan/ASan with unaligned-but-valid pointers to confirm no out-of-bounds access from strided vector loads.
 8. Compare MSA and C encoder bitstreams over a short clip: output must be bit-identical (same QP, same options).
 
-## 9. Open questions
+## 11. Open questions
 
 - UNKNOWN: whether `x264_add8x8_idct8_msa` intentionally leaves coefficients un-zeroed (observed in source) or whether callers zero them; verify against the generic 8x8 inverse implementation before assuming.
 - UNKNOWN: exact output ordering of the two-level 8x16 DC Hadamard (`sub8x16_dct_dc_msa`) relative to the generic `x264_sub8x16_dct_dc`; the butterfly output permutation is non-obvious from the macro expansion and should be validated numerically against the C reference.
