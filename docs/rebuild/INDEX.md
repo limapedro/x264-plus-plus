@@ -240,14 +240,14 @@ One document per source file, same tree, `.md` appended. Regenerate with `pwsh d
 | `output/mp4_lsmash.c` | [output/mp4_lsmash.c.md](output/mp4_lsmash.c.md) | thin | 56 |
 | `output/output.h` | [output/output.h.md](output/output.h.md) | thin | 53 |
 | `output/raw.c` | [output/raw.c.md](output/raw.c.md) | thin | 49 |
-| `tools/bash-autocomplete.sh` | tools/bash-autocomplete.sh.md | pending | 0 |
+| `tools/bash-autocomplete.sh` | [tools/bash-autocomplete.sh.md](tools/bash-autocomplete.sh.md) | done | 83 |
 | `tools/checkasm.c` | [tools/checkasm.c.md](tools/checkasm.c.md) | done | 229 |
 | `tools/checkasm-a.asm` | [tools/checkasm-a.asm.md](tools/checkasm-a.asm.md) | done | 103 |
 | `tools/checkasm-aarch64.S` | [tools/checkasm-aarch64.S.md](tools/checkasm-aarch64.S.md) | done | 86 |
 | `tools/checkasm-arm.S` | [tools/checkasm-arm.S.md](tools/checkasm-arm.S.md) | done | 86 |
 | `tools/checkasm-loongarch.S` | [tools/checkasm-loongarch.S.md](tools/checkasm-loongarch.S.md) | done | 85 |
 | `tools/cltostr.sh` | [tools/cltostr.sh.md](tools/cltostr.sh.md) | done | 70 |
-| `tools/countquant_x264.pl` | tools/countquant_x264.pl.md | pending | 0 |
+| `tools/countquant_x264.pl` | [tools/countquant_x264.pl.md](tools/countquant_x264.pl.md) | done | 103 |
 | `tools/digress/__init__.py` | [tools/digress/__init__.py.md](tools/digress/__init__.py.md) | done | 60 |
 | `tools/digress/cli.py` | [tools/digress/cli.py.md](tools/digress/cli.py.md) | done | 95 |
 | `tools/digress/comparers.py` | [tools/digress/comparers.py.md](tools/digress/comparers.py.md) | done | 73 |
@@ -259,11 +259,11 @@ One document per source file, same tree, `.md` appended. Regenerate with `pwsh d
 | `tools/digress/testing.py` | [tools/digress/testing.py.md](tools/digress/testing.py.md) | done | 158 |
 | `tools/gas-preprocessor.pl` | [tools/gas-preprocessor.pl.md](tools/gas-preprocessor.pl.md) | done | 136 |
 | `tools/msvsdepend.sh` | [tools/msvsdepend.sh.md](tools/msvsdepend.sh.md) | done | 74 |
-| `tools/test_x264.py` | tools/test_x264.py.md | pending | 0 |
+| `tools/test_x264.py` | [tools/test_x264.py.md](tools/test_x264.py.md) | done | 131 |
 | `version.sh` | [version.sh.md](version.sh.md) | done | 82 |
 | `x264.c` | [x264.c.md](x264.c.md) | done | 171 |
 | `x264.h` | [x264.h.md](x264.h.md) | done | 179 |
 | `x264cli.h` | [x264cli.h.md](x264cli.h.md) | done | 83 |
 | `x264dll.c` | [x264dll.c.md](x264dll.c.md) | done | 64 |
 
-**Progress: 163 / 261 documents complete (thin docs need expansion).**
+**Progress: 166 / 261 documents complete (thin docs need expansion).**
