@@ -5,6 +5,7 @@
 *.rej
 *.dll*
 *.exe
+!oracle/x264.exe
 *.def
 *.lib
 *.pdb
