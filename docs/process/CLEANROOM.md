@@ -11,8 +11,8 @@ The process combines two ideas:
 
 | Role | May read | May write | Must not |
 | --- | --- | --- | --- |
-| **Specification (dirty)** | `oracle/` (reference CLI binary), published H.264/AVC standard and public literature, black-box probe results | `spec/` only | Write code in `src/`; copy reference source text into `spec/` |
-| **Implementation (clean)** | `spec/`, `src/`, public standards | `src/` only | Read `oracle/`, `cert/`, the stashed reference source, or any dirty research notes |
+| **Specification (dirty)** | `oracle/` (reference CLI binary), published H.264/AVC standard and public literature, black-box probe results, stashed reference source for reverse engineering | `spec/` and `docs/rebuild/` only | Write code in `src/`; copy reference source text into specifications |
+| **Implementation (clean)** | `spec/`, `docs/rebuild/`, `src/`, public standards | `src/` only | Read `oracle/`, `cert/`, the stashed reference source, or any dirty research notes |
 | **Certification (independent)** | `spec/`, `cert/`, built candidate binaries, `oracle/` for comparative testing | `cert/`, `score.md` | Modify `src/` or `spec/` |
 
 The reference source archive and the earlier source-level research are kept **outside the repository** in `E:\_x264_dirty_stash\` and are off-limits to the implementation team. The only reference artifact inside the repository is `oracle/x264.exe`, a compiled binary used strictly as a black-box behavioural oracle and speed baseline.

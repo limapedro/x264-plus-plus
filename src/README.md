@@ -4,7 +4,7 @@ Original source for x264++. Written only from `spec/` and public standards. No r
 
 ## Wall rules (enforced by agent instructions)
 
-- Read: `spec/`, this directory, public H.264 documentation.
+- Read: `spec/`, `docs/rebuild/` (dirty-side rebuild specifications, written as behaviour not code), this directory, public H.264 documentation.
 - Do not read: `oracle/`, `cert/`, `E:\_x264_dirty_stash\`, or any dirty research notes.
 - Questions about missing specification go to `src/verification/questions.md`.
 
