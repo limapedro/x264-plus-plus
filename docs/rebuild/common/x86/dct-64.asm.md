@@ -140,6 +140,70 @@ perform `shift>>6`, add-to-destination, `packuswb`, and store two rows at a time
    `TRANSPOSE8x8W`, `DCT8_1D w`, then extracting 128-bit halves to write eight
    coefficient rows at `[r0-0x80+...]` and `[r0+...]`.
 
+### 5.9 Explicit per-stage equations
+
+To make the butterfly behaviour reproducible without reading assembly, the
+following equations describe the 8-point forward DCT stage algebraically. Let
+`x0..x7` be one column (or row) of the residual block and let `>>k` denote an
+arithmetic shift right by `k` (rounding toward negative infinity).
+
+Even/odd decomposition:
+```
+s07 = x0 + x7 ;  d07 = x0 - x7
+s16 = x1 + x6 ;  d16 = x1 - x6
+s25 = x2 + x5 ;  d25 = x2 - x5
+s34 = x3 + x4 ;  d34 = x3 - x4
+```
+Four-point stage:
+```
+a0 = s34 + s07 ;  a2 = s34 - s07
+a1 = s25 + s16 ;  a3 = s25 - s16
+```
+Odd coefficients (integer approximations of `cos` products):
+```
+a4 = d07 + (d07>>1) + d16 + d25
+a5 = d25 + (d25>>1) - d07 - d34
+a6 = d16 + (d16>>1) - d07 + d34
+a7 = d34 + (d34>>1) + d16 - d25
+```
+Final stage:
+```
+b0 = a0 + a1 ;  b4 = a0 - a1
+b1 = a2 + (a3>>1) ;  b7 = (a2>>2) - a3
+b2 = a3 + (a3>>1) - a1?  (per source: a1+(a1>>1)-a3) ;  b6 = (a1>>1) - a3
+b3 = a5 + (a6>>2) ;  b5 = a5 - (a5>>2) - a6
+```
+The eight results are then permuted by the macro's final `SWAP` chain into
+coefficient order `[b0,b1,b2,b3,b4,b5,b6,b7]` with the odd coefficients
+interleaved as required by the H.264 basis ordering. A clean implementation
+must reproduce the exact shift operands and operand order above; swapping the
+sign of any term changes the transform's orthogonality and breaks exact
+equivalence.
+
+**Decision conditions** in the inverse path:
+* The `+32` rounding bias is added only to the DC coefficient *before* the
+  second 1D stage; adding it to all coefficients changes the result.
+* The final right shift is by 6 for both 8-bit and high-bit-depth. For 8-bit
+  the pack to bytes (`packuswb`) performs the clamp; for high-bit-depth an
+  explicit `CLIPW` against zero and `pw_pixel_max` is required.
+* `FIX_STRIDES` converts `intptr_t` strides to register-sized values; on x86-32
+  this matters for frames larger than 2^31 bytes.
+
+### 5.10 Shared-entry composition
+
+The `.skip_prologue` labels exported by this file are the composition points
+used by `dct-a.asm`:
+* `sub8x8_dct_<isa>.skip_prologue` is loaded with `cextern` and called four
+  times by `SUB_NxN_DCT sub16x16_dct_<isa>, sub8x8_dct_<isa>, ...` to build the
+  16x16 forward transform.
+* `add8x8_idct_<isa>.skip_prologue` plays the same role for the inverse.
+* `add8x8_idct8_<isa>.skip_prologue` builds `add16x16_idct8_<isa>`.
+* `sub8x8_dct8_<isa>.skip_prologue` builds `sub16x16_dct8_<isa>`.
+The calling macro advances `r0` (output), `r1` (source row), and `r2` (predicted
+row) by fixed offsets between calls. The callee must not modify these registers
+beyond the documented pointer advancement, and must leave no ISA state (e.g.
+upper YMM bits) dirty, since the caller uses `TAIL_CALL` to chain the final call.
+
 ## 6. Dependencies
 
 * Includes `x86inc.asm`, `x86util.asm`.
