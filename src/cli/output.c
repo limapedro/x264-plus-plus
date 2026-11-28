@@ -14,10 +14,18 @@
 #include "cli/cli.h"
 #include "cli/output.h"
 
+/* Give stdio one generously sized buffer per output stream.  The encoder
+ * produces small Annex-B chunks (one per frame for I_PCM), so the default
+ * short buffer turned every chunk into its own write() syscall.  The buffer
+ * is allocated once at open and lives until close; x264pp_output_write() and
+ * its error semantics stay unchanged. */
+#define X264PP_OUT_BUFFER 65536
+
 struct x264pp_output
 {
     FILE *fh;
     int   is_stdout;
+    void *io_buffer;
 };
 
 static const char *extension_of( const char *path )
@@ -90,6 +98,17 @@ int x264pp_output_open( const char *path, x264pp_muxer_t muxer,
         free( out );
         return -1;
     }
+
+    out->io_buffer = malloc( X264PP_OUT_BUFFER );
+    if( out->io_buffer &&
+        setvbuf( out->fh, (char *)out->io_buffer, _IOFBF,
+                 X264PP_OUT_BUFFER ) != 0 )
+    {
+        /* Best effort: keep stdio's default buffering on failure. */
+        free( out->io_buffer );
+        out->io_buffer = NULL;
+    }
+
     out->is_stdout = to_stdout;
     *output = out;
     return 0;
@@ -106,7 +125,9 @@ int x264pp_output_write( x264pp_output_t *output, const uint8_t *data,
 void x264pp_output_close( x264pp_output_t *output )
 {
     if( !output ) return;
+    /* Flush before releasing the stdio buffer handed to setvbuf(). */
     if( output->is_stdout ) fflush( output->fh );
     else if( output->fh ) fclose( output->fh );
+    free( output->io_buffer );
     free( output );
 }
