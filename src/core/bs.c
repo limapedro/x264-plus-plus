@@ -6,6 +6,23 @@
 
 #include <string.h>
 
+/* Exact zero-byte detector for the emulation-prevention fast path.  A lane's
+ * high bit is set iff the corresponding byte is 0.  Unlike the classic
+ * (v - 0x0101..) & ~v trick this cannot produce borrow-propagation false
+ * positives, so the word scan never skips a byte that needs an escape.
+ *
+ * Implementation note: x264pp_bs_nal keeps the original destination-side
+ * zero-run semantics.  The fast path only changes *how* bytes are moved:
+ * spans of nonzero bytes are bulk memcpy'd, zero bytes are handled one at a
+ * time, and the word scan merely locates the next zero.  When zero_run >= 2
+ * the next byte is still inspected individually so the 0x03 insertion and
+ * its zero-run reset are bit-for-bit identical to the original loop. */
+static uint64_t bs_zero_byte_mask( uint64_t v )
+{
+    uint64_t t = (v & 0x7f7f7f7f7f7f7f7fULL) + 0x7f7f7f7f7f7f7f7fULL;
+    return ~(t | v) & 0x8080808080808080ULL;
+}
+
 void x264pp_bs_init( x264pp_bs_t *bs, uint8_t *buf, int cap )
 {
     bs->buf = buf;
@@ -103,8 +120,9 @@ int x264pp_bs_trailing( x264pp_bs_t *bs )
 int x264pp_bs_nal( const uint8_t *rbsp, int len, int ref_idc, int type,
                    int long_start, uint8_t *out, int out_cap )
 {
+    const uint8_t *p, *end;
     int pos = 0;
-    int i, zero_run = 0;
+    int zero_run = 0;
 
     if( !out || out_cap < 1 || len < 0 )
         return -1;
@@ -128,18 +146,62 @@ int x264pp_bs_nal( const uint8_t *rbsp, int len, int ref_idc, int type,
     /* forbidden_zero_bit = 0, nal_ref_idc in bits 6..5, type in 4..0. */
     out[pos++] = (uint8_t)( (ref_idc & 3) << 5 | (type & 31) );
 
-    for( i = 0; i < len; i++ )
+    if( len == 0 )
+        return pos;
+
+    p = rbsp;
+    end = rbsp + len;
+    while( p < end )
     {
-        uint8_t b = rbsp[i];
-        if( zero_run >= 2 && b <= 3 )
+        if( zero_run >= 2 )
         {
+            /* Only this state can emit an emulation-prevention byte, so the
+             * next byte is inspected individually, exactly as before. */
+            uint8_t b = *p++;
+            if( b <= 3 )
+            {
+                if( pos + 1 > out_cap ) return -1;
+                out[pos++] = 3;         /* emulation_prevention_three_byte */
+                zero_run = 0;           /* the 0x03 breaks the zero run */
+            }
             if( pos + 1 > out_cap ) return -1;
-            out[pos++] = 3;             /* emulation_prevention_three_byte */
-            zero_run = 0;               /* the 0x03 breaks the zero run */
+            out[pos++] = b;
+            zero_run = (b == 0) ? 1 : 0;
+            continue;
         }
-        if( pos + 1 > out_cap ) return -1;
-        out[pos++] = b;
-        zero_run = (b == 0) ? zero_run + 1 : 0;
+
+        /* zero_run < 2: no byte in this span can need an escape.  Scan 8 bytes
+         * at a time for the next 0x00, then bulk-copy the nonzero prefix. */
+        {
+            const uint8_t *q = p;
+            while( end - q >= 8 )
+            {
+                uint64_t v;
+                memcpy( &v, q, 8 );
+                if( bs_zero_byte_mask( v ) )
+                    break;
+                q += 8;
+            }
+            while( q < end && *q != 0 )
+                q++;
+
+            if( q > p )
+            {
+                int n = (int)(q - p);
+                if( pos + n > out_cap ) return -1;
+                memcpy( out + pos, p, (size_t)n );
+                pos += n;
+                p = q;
+                zero_run = 0;           /* the span ended with a nonzero byte */
+            }
+            if( p < end )               /* *p == 0 */
+            {
+                if( pos + 1 > out_cap ) return -1;
+                out[pos++] = 0;
+                zero_run++;             /* 1 or 2 */
+                p++;
+            }
+        }
     }
     return pos;
 }
