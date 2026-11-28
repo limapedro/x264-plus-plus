@@ -215,3 +215,8 @@ ffmpeg -hide_banner -v error -i baseline.264 -f null -
 
 With the gated I_16x16 path (-DX264PP_FORCE_PCM=0) at slice_qp_delta=0 (QP 23), 8 frames of 1920x1080 Fortnite decode cleanly but produce 2,204,665 bytes and PSNR 14.67 dB (Y 20.32, U 23.80, V 7.87). With slice_qp_delta=22 (the size-compliant setting) size drops to 390,087 bytes but PSNR stays 12.96 dB. The V-plane deficit shows the remaining loss is in chroma reconstruction, not only quantisation step. Default build remains all-I_PCM. No claim of competitive quality is made.
 
+
+## AVX2 predictor wiring test (rejected)
+
+Wiring `x264pp_intra16x16_avx2` into the gated I_16x16 path (passing the neighbour cache as raw above/left arrays) kept the default PCM build bit-identical and ffmpeg-clean, but regressed gated 1080p QP45 luma PSNR from 25.08 dB to 18.94 dB (average 26.24 -> 20.55 dB) while size changed from 293,151 to 312,559 bytes. The NASM predictor's plane-mode/sample convention differs from the normative `pred16_norm` used by this encoder, so the patch was rejected and not merged. Further assembly work must preserve exact predictor semantics.
+
