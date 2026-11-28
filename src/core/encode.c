@@ -373,23 +373,25 @@ static int encode_mb( x264pp_encoder_t *e, x264pp_bs_t *bs,
         x264pp_bs_ue( bs, 25 );             /* mb_type = I_PCM */
         while( bs->bitpos & 7 )
             x264pp_bs_write( bs, 0, 1 );    /* pcm_alignment_zero_bit */
+        /* I_PCM samples are byte-aligned: append whole rows in bulk instead
+         * of issuing eight single-bit writer calls per sample. */
         for( y = 0; y < 16; y++ )
-            for( x = 0; x < 16; x++ )
-            {
-                uint8_t v = e->fenc.plane[0][(size_t)(py + y) * e->fenc.stride[0] + px + x];
-                x264pp_bs_write( bs, v, 8 );
-                e->fdec.plane[0][(size_t)(py + y) * e->fdec.stride[0] + px + x] = v;
-            }
+        {
+            const uint8_t *src = e->fenc.plane[0] + (size_t)(py + y) * e->fenc.stride[0] + px;
+            uint8_t *dst = e->fdec.plane[0] + (size_t)(py + y) * e->fdec.stride[0] + px;
+            x264pp_bs_write_bytes( bs, src, 16 );
+            memcpy( dst, src, 16 );
+        }
         for( plane = 1; plane <= 2; plane++ )
         {
             int cpx = px / 2, cpy = py / 2;
             for( y = 0; y < 8; y++ )
-                for( x = 0; x < 8; x++ )
-                {
-                    uint8_t v = e->fenc.plane[plane][(size_t)(cpy + y) * e->fenc.stride[plane] + cpx + x];
-                    x264pp_bs_write( bs, v, 8 );
-                    e->fdec.plane[plane][(size_t)(cpy + y) * e->fdec.stride[plane] + cpx + x] = v;
-                }
+            {
+                const uint8_t *src = e->fenc.plane[plane] + (size_t)(cpy + y) * e->fenc.stride[plane] + cpx;
+                uint8_t *dst = e->fdec.plane[plane] + (size_t)(cpy + y) * e->fdec.stride[plane] + cpx;
+                x264pp_bs_write_bytes( bs, src, 8 );
+                memcpy( dst, src, 8 );
+            }
         }
         memset( e->nz_y + mbidx * 16, 0, 16 );
         memset( e->nz_c[0] + mbidx * 4, 0, 4 );
