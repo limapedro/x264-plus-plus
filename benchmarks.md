@@ -86,3 +86,8 @@ python cert\real_bench.py --frames 8 --reps 2 --warmups 1
 # full real-corpus run with the candidate present
 python cert\real_bench.py --frames 128 --reps 5
 ```
+
+### Gated compressed CAVLC path (opt-in)
+
+Built with `CPPFLAGS=-DX264PP_FORCE_PCM=0` (QP45): ffmpeg-clean 1920x1080 H.264, **293,151 B** for 8 frames (vs oracle 200,535 B), PSNR **26.24 dB** (Y 25.08 / U 30.61 / V 30.19; oracle 42.64 dB). Default build remains all-I_PCM and bit-identical (`83C71EBC...`). Compressed speed measured 0.41x ultrafast / 1.60x medium / 4.23x veryslow, so it is not the default. See `src/verification/{chroma-recon,luma-ac}.md`.
+
