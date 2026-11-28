@@ -402,17 +402,18 @@ void x264pp_cavlc_residual( x264pp_bs_t *bs, const int16_t *levels,
 
 int x264pp_cavlc_cbp_code( int cbp_chroma, int cbp_luma )
 {
-    /* Intra 4:2:0 CBP mapping (H.264 Table 9-4).  The first four combined
-     * patterns use the compact code numbers; the remaining luma masks
-     * follow in raster order. */
-    if( cbp_luma == 0 )
-        return cbp_chroma;                   /* 0,1,2 */
-    if( cbp_luma == 15 )
-        return 3 + cbp_chroma;               /* 3,4,5 */
-    if( cbp_chroma == 0 )
-    {
-        static const int idx[16] = { 0, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20 };
-        return idx[cbp_luma & 15];
-    }
-    return 6 + cbp_chroma * 15 + (cbp_luma & 15);
+    /* H.264 Table 9-4, ChromaArrayType == 1 (4:2:0).  me(v) is an Exp-Golomb
+     * codeNum followed by a *permutation* of the 48 combined CBP values: the
+     * frequent "all blocks coded" pattern is codeNum 0, the all-zero pattern
+     * is codeNum 3, and so on.  Index = CodedBlockPatternLuma | (Chroma << 4);
+     * entry = the Table 9-4 codeNum. */
+    static const uint8_t code[3][16] = {
+        {  3, 29, 30, 17, 31, 18, 37,  8, 32, 38, 19,  9, 20, 10, 11,  2 },
+        { 16, 33, 34, 21, 35, 22, 39,  4, 36, 40, 23,  5, 24,  6,  7,  1 },
+        { 41, 42, 43, 25, 44, 26, 46, 12, 45, 47, 27, 13, 28, 14, 15,  0 }
+    };
+    int l = cbp_luma & 15, c = cbp_chroma & 3;
+    if( c > 2 )
+        c = 2;
+    return code[c][l];
 }
