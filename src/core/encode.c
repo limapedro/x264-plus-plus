@@ -11,6 +11,7 @@
 #include "core/dct.h"
 #include "core/quant.h"
 #include "core/predict.h"
+#include "x86/kernels.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -243,6 +244,12 @@ static int sad_block( const uint8_t *a, int astride,
                        const uint8_t *b, int bstride, int size )
 {
     int x, y, sum = 0;
+    /* Hand-written AVX2 kernels replace the scalar loops on supported CPUs.
+     * The dispatcher in src/x86/ handles feature detection at init time. */
+    if( size == 4 )
+        return x264pp_sad4x4_avx2( a, astride, b, bstride );
+    if( size == 16 )
+        return x264pp_sad16x16_avx2( a, astride, b, bstride );
     for( y = 0; y < size; y++ )
         for( x = 0; x < size; x++ )
         {
