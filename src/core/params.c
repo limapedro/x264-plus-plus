@@ -217,9 +217,12 @@ void x264pp_sps_init( x264pp_sps_t *sps, const x264pp_param_t *param )
     sps->mbaff = 0;
     sps->direct8x8 = 1;
 
+    /* H.264 7.4.2.1.3: with frame_mbs_only_flag=1 and ChromaArrayType=1 the
+     * crop offsets are in units of two luma samples.  Converting the luma
+     * padding to those units is what makes ffprobe report the input size. */
     sps->crop[0] = sps->crop[1] = sps->crop[2] = sps->crop[3] = 0;
-    sps->crop[1] = sps->mb_width  * 16 - param->width;
-    sps->crop[3] = sps->mb_height * 16 - param->height;
+    sps->crop[1] = (sps->mb_width  * 16 - param->width)  / 2;
+    sps->crop[3] = (sps->mb_height * 16 - param->height) / 2;
     sps->b_crop = (sps->crop[0] || sps->crop[1] || sps->crop[2] || sps->crop[3]);
 
     sps->level_idc = x264pp_level_auto( param, sps );
