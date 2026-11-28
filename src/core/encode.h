@@ -2,7 +2,8 @@
 #define X264PP_CORE_ENCODE_H
 
 /*
- * I-slice / IDR encoder core for I1.  Original code for x264++.
+ * I/P-slice CAVLC encoder core (I1 intra path plus the I2 inter increment).
+ * Original code for x264++.
  */
 
 #include "core/api.h"
@@ -13,6 +14,27 @@
 extern "C" {
 #endif
 
+/* I2 searches whole-pel displacements in [-8,+8] on each axis.  Motion
+ * vectors are stored in quarter-luma units, so every value is a multiple of
+ * four and no interpolation filter is needed on luma. */
+#define X264PP_INTER_MV_RANGE 8
+
+/* Per-macroblock decision for a P picture.  Analysis (motion search, motion
+ * compensation, transform, quantisation and reconstruction) runs before the
+ * slice is written so that CAVLC mb_skip_run counts can be emitted in one
+ * pass; the stored arrays are the exact levels the entropy writer emits. */
+typedef struct x264pp_mb_inter
+{
+    uint8_t skip;                      /* P_Skip: inferred type, no syntax */
+    uint8_t cbp_luma;                  /* four bits, one per 8x8 quadrant */
+    uint8_t cbp_chroma;                /* 0 none, 1 DC only, 2 DC+AC */
+    int16_t mv[2];                     /* chosen MV, quarter-luma units */
+    int16_t mvp[2];                    /* predictor used for mvd_l0 */
+    int16_t luma_q[16][16];            /* natural-order levels, 16 per 4x4 */
+    int16_t chroma_dcq[2][4];          /* 2x2 chroma DC levels */
+    int16_t chroma_acq[2][4][16];      /* chroma 4x4 AC levels */
+} x264pp_mb_inter_t;
+
 typedef struct x264pp_encoder
 {
     x264pp_param_t param;
@@ -20,7 +42,8 @@ typedef struct x264pp_encoder
     x264pp_pps_t   pps;
 
     x264pp_frame_t fenc;       /* padded source */
-    x264pp_frame_t fdec;       /* padded reconstruction */
+    x264pp_frame_t fdec;       /* padded reconstruction (current picture) */
+    x264pp_frame_t ref;        /* previous reconstructed picture, padded */
 
     int   mb_width, mb_height, mb_count;
     int   frame_num;
@@ -30,6 +53,9 @@ typedef struct x264pp_encoder
     uint8_t *nz_y;             /* mb_count * 16 nonzero counts (luma 4x4) */
     uint8_t *nz_c[2];          /* mb_count * 4 nonzero counts (chroma 4x4) */
     uint8_t *i4_mode;          /* mb_count * 16 Intra_4x4 prediction modes */
+
+    int16_t (*mv_cache)[2];    /* mb_count MVs for the next picture's MVP */
+    x264pp_mb_inter_t *inter_mbs;
 
     uint8_t *sps_rbsp;
     uint8_t *pps_rbsp;
@@ -46,7 +72,8 @@ typedef struct x264pp_encoder
 x264pp_encoder_t *x264pp_encoder_create( const x264pp_param_t *param );
 
 /* Encode one picture.  On the first call the output contains SPS, PPS and
- * the IDR slice; later calls contain one IDR slice each. */
+ * the IDR slice (byte-identical to the I1 baseline); later calls contain one
+ * non-IDR P slice each with a single reference: the previous reconstruction. */
 int x264pp_encoder_encode_frame( x264pp_encoder_t *enc,
                                  const x264pp_picture_t *pic,
                                  uint8_t *out, int out_cap, int *out_len );
