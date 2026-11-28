@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fcntl.h>
+#include <io.h>
 
 #include "cli/cli.h"
 #include "cli/output.h"
@@ -90,7 +92,14 @@ int x264pp_output_open( const char *path, x264pp_muxer_t muxer,
     out = (x264pp_output_t *)calloc( 1, sizeof( *out ) );
     if( !out ) return -1;
 
-    out->fh = to_stdout ? stdout : fopen( path, "wb" );
+    if( to_stdout )
+    {
+        /* Annex B is binary: without this, Windows would expand every 0x0A
+         * into CRLF and the "-o -" stream would not match a file encode. */
+        _setmode( _fileno( stdout ), _O_BINARY );
+        out->fh = stdout;
+    }
+    else out->fh = fopen( path, "wb" );
     if( !out->fh )
     {
         x264pp_log( X264PP_LOG_ERROR, "x264",

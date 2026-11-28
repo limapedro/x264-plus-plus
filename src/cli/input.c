@@ -15,6 +15,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <fcntl.h>
+#include <io.h>
 
 #include "cli/cli.h"
 #include "cli/input.h"
@@ -173,13 +175,15 @@ static size_t io_read_bulk( byte_source_t *io, unsigned char *dst, size_t count,
         break;
     }
 
-    /* Read the remainder straight from the FILE into the picture buffer. */
-    if( done < count && !io->eof )
+    /* Read the remainder straight from the FILE into the picture buffer.
+     * A pipe may return a short read without being at EOF, so keep reading
+     * until the frame is complete (or fread actually returns zero). */
+    while( done < count && !io->eof )
     {
         size_t need = count - done;
         size_t n = fread( dst + done, 1, need, io->fh );
         done += n;
-        if( n < need ) io->eof = 1;
+        if( n == 0 ) io->eof = 1;
     }
     return done;
 }
@@ -427,7 +431,14 @@ x264pp_input_status_t x264pp_input_open( const char *path,
     if( !in ) return X264PP_INPUT_ERR_IO;
 
     from_stdin = path && strcmp( path, "-" ) == 0;
-    in->io.fh = from_stdin ? stdin : fopen( path, "rb" );
+    if( from_stdin )
+    {
+        /* Windows maps stdin to text mode by default: 0x1A would be treated
+         * as EOF and CRLF translated, both of which corrupt raw video. */
+        _setmode( _fileno( stdin ), _O_BINARY );
+        in->io.fh = stdin;
+    }
+    else in->io.fh = fopen( path, "rb" );
     if( !in->io.fh )
     {
         free( in );
@@ -554,6 +565,31 @@ int x264pp_input_read_frame( x264pp_input_t *in, x264pp_picture_t *pic,
         if( rc <= 0 ) return rc;
     }
     return read_one( in, pic );
+}
+
+int x264pp_input_seek_frame( x264pp_input_t *in, int64_t index )
+{
+    if( !in || index < in->next_frame ) return -1;
+    if( index == in->next_frame ) return 0;
+
+    /* Raw files have fixed-size frames, so a regular file can be positioned
+     * exactly.  Y4M (and stdin) have variable byte offsets per frame, so
+     * discard frames until the requested index is reached. */
+    if( in->regular_file && in->demux == X264PP_DEMUX_RAW && in->frame_size > 0 )
+    {
+        if( _fseeki64( in->io.fh, index * in->frame_size, SEEK_SET ) != 0 )
+            return -1;
+        io_reset( &in->io );
+        in->next_frame = index;
+        return 0;
+    }
+
+    while( in->next_frame < index )
+    {
+        int rc = read_one( in, NULL );
+        if( rc <= 0 ) return -1;
+    }
+    return 0;
 }
 
 void x264pp_input_close( x264pp_input_t *in )

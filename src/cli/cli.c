@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <windows.h>
 
 #include "cli/cli.h"
 #include "cli/input.h"
@@ -1197,6 +1198,274 @@ static void print_input_info( const x264pp_input_info_t *info,
                     p->sar_num, p->sar_den );
 }
 
+/* ------------------------------------------------------------------ */
+/* Frame-level parallelism                                             */
+/*                                                                    */
+/* I1 emits every picture as an independent IDR, so frames do not      */
+/* depend on one another.  Each worker owns a private input handle, a  */
+/* private encoder instance and a private scratch Annex-B buffer; the  */
+/* main thread writes finished frames in original frame order.        */
+/*                                                                    */
+/* A fresh encoder puts SPS and PPS in its first output buffer.  Only  */
+/* the first frame of the whole stream may keep them, so a worker that  */
+/* starts at a later frame drops those two NAL units from its first    */
+/* result.  Everything after that is a bare IDR slice, byte-for-byte   */
+/* identical to what the single encoder would have produced.          */
+/* ------------------------------------------------------------------ */
+
+#define X264PP_MAX_THREADS 64
+
+typedef struct encoded_frame
+{
+    uint8_t *data;
+    int      len;
+    int      valid;
+} encoded_frame_t;
+
+typedef struct worker_ctx
+{
+    x264pp_input_t  *input;
+    x264pp_encoder_t *encoder;
+    uint8_t         *scratch;
+    int              cap;
+    int64_t          start;        /* global frame index, --seek included */
+    int64_t          end;
+    int64_t          first_global; /* frame that must carry SPS/PPS */
+    encoded_frame_t *slots;        /* shared, indexed by index - seek */
+    volatile LONG   *failed;
+} worker_ctx_t;
+
+/* Drop the leading SPS and PPS NAL units from a worker's first frame.
+ * Annex-B start codes can only occur at NAL boundaries because the encoder
+ * escapes zero runs, so the third start code is the IDR slice. */
+static int skip_parameter_sets( uint8_t *buf, int len )
+{
+    int i, found = 0;
+    for( i = 0; i + 4 <= len; i++ )
+    {
+        if( buf[i] == 0 && buf[i+1] == 0 && buf[i+2] == 0 && buf[i+3] == 1 )
+        {
+            if( ++found == 3 )
+            {
+                memmove( buf, buf + i, (size_t)( len - i ) );
+                return len - i;
+            }
+        }
+    }
+    return len;   /* no parameter-set pair: emit unchanged */
+}
+
+static DWORD WINAPI encode_worker( void *arg )
+{
+    worker_ctx_t *w = (worker_ctx_t *)arg;
+    x264pp_picture_t picture;
+    int64_t g;
+    int local = 0;
+
+    for( g = w->start; g < w->end; g++, local++ )
+    {
+        encoded_frame_t *slot = &w->slots[g - w->first_global];
+        int out_len = 0, frame_type = 0;
+        int rc = x264pp_input_read_frame( w->input, &picture, g );
+        uint8_t *copy;
+
+        if( rc <= 0 )
+        {
+            /* 0 is a clean EOF: --frames may exceed the input length. */
+            if( rc < 0 ) InterlockedExchange( w->failed, 1 );
+            break;
+        }
+        if( x264pp_encoder_encode( w->encoder, &picture, 0, w->scratch,
+                                   w->cap, &out_len, &frame_type ) != X264PP_OK ||
+            out_len <= 0 )
+        {
+            InterlockedExchange( w->failed, 1 );
+            break;
+        }
+        if( local == 0 && g != w->first_global )
+            out_len = skip_parameter_sets( w->scratch, out_len );
+
+        copy = (uint8_t *)malloc( (size_t)out_len );
+        if( !copy )
+        {
+            InterlockedExchange( w->failed, 1 );
+            break;
+        }
+        memcpy( copy, w->scratch, (size_t)out_len );
+        slot->data = copy;
+        slot->len = out_len;
+        slot->valid = 1;
+    }
+
+    /* I1 has no delayed pictures; a flush must not produce bytes here. */
+    {
+        int out_len = 0, frame_type = 0;
+        if( x264pp_encoder_encode( w->encoder, NULL, 1, w->scratch, w->cap,
+                                   &out_len, &frame_type ) != X264PP_OK || out_len > 0 )
+            InterlockedExchange( w->failed, 1 );
+    }
+    return 0;
+}
+
+static int encode_threaded( const cli_state_t *c, x264pp_output_t *output,
+                            int64_t num_frames )
+{
+    SYSTEM_INFO si;
+    x264pp_input_t **inputs = NULL;
+    x264pp_encoder_t **encoders = NULL;
+    HANDLE *threads = NULL;
+    worker_ctx_t *ctxs = NULL;
+    encoded_frame_t *slots = NULL;
+    volatile LONG failed = 0;
+    int64_t total, seek, remaining, base, rem, start;
+    int nthreads, nworkers, cap, i, j, count = 0, ret = -1;
+
+    seek = c->param.seek;
+
+    /* Determine how many frames the sequential loop would have encoded. */
+    if( num_frames >= 0 )
+    {
+        remaining = num_frames - seek;
+        if( remaining < 0 ) remaining = 0;
+        total = ( c->param.frames > 0 && c->param.frames < remaining )
+              ? c->param.frames : remaining;
+    }
+    else
+    {
+        /* Y4M has no frame count in its header: count once up front so that
+         * --frames beyond EOF cannot hand a worker a block past the end. */
+        x264pp_input_t *counter = NULL;
+        x264pp_input_info_t ci;
+        if( x264pp_input_open( c->input_path, c->demux, c->resolution,
+                               c->csp_name, c->bit_depth, &counter, &ci )
+            != X264PP_INPUT_OK )
+            return -1;
+        total = 0;
+        while( x264pp_input_read_frame( counter, NULL, total ) > 0 )
+            total++;
+        x264pp_input_close( counter );
+        remaining = total - seek;
+        if( remaining < 0 ) remaining = 0;
+        total = ( c->param.frames > 0 && c->param.frames < remaining )
+              ? c->param.frames : remaining;
+    }
+    if( total <= 0 ) return 0;      /* no pictures: empty output, like I1 flush */
+    if( total > INT_MAX ) total = INT_MAX;
+
+    if( c->param.threads <= 0 )
+    {
+        GetSystemInfo( &si );
+        nthreads = (int)si.dwNumberOfProcessors;
+        if( nthreads < 1 ) nthreads = 1;
+        if( nthreads > 16 ) nthreads = 16;   /* bound the automatic count */
+    }
+    else nthreads = c->param.threads;
+    if( nthreads > X264PP_MAX_THREADS ) nthreads = X264PP_MAX_THREADS;
+    nworkers = (int)( total < nthreads ? total : nthreads );
+    if( nworkers < 1 ) nworkers = 1;
+
+    cap = (int)( (size_t)c->param.width * c->param.height * 6 + 4096 );
+    inputs   = (x264pp_input_t **)calloc( (size_t)nworkers, sizeof( *inputs ) );
+    encoders = (x264pp_encoder_t **)calloc( (size_t)nworkers, sizeof( *encoders ) );
+    threads  = (HANDLE *)calloc( (size_t)nworkers, sizeof( *threads ) );
+    ctxs     = (worker_ctx_t *)calloc( (size_t)nworkers, sizeof( *ctxs ) );
+    slots    = (encoded_frame_t *)calloc( (size_t)total, sizeof( *slots ) );
+    if( !inputs || !encoders || !threads || !ctxs || !slots )
+    {
+        x264pp_log( X264PP_LOG_ERROR, "x264", "out of memory" );
+        goto cleanup;
+    }
+
+    base = total / nworkers;
+    rem  = total % nworkers;
+    start = 0;
+    for( i = 0; i < nworkers; i++ )
+    {
+        int64_t len = base + ( i < rem ? 1 : 0 );
+        ctxs[i].cap = cap;
+        ctxs[i].start = seek + start;
+        ctxs[i].end = seek + start + len;
+        ctxs[i].first_global = seek;
+        ctxs[i].slots = slots;
+        ctxs[i].failed = &failed;
+        ctxs[i].scratch = (uint8_t *)malloc( (size_t)cap );
+        if( !ctxs[i].scratch )
+        {
+            x264pp_log( X264PP_LOG_ERROR, "x264", "out of memory" );
+            goto cleanup;
+        }
+        start += len;
+    }
+
+    /* Open each handle on the main thread: the Y4M header parser uses strtok
+     * and cannot be called concurrently.  After this point every worker
+     * touches only its own input, encoder and buffer. */
+    for( i = 0; i < nworkers; i++ )
+    {
+        x264pp_input_info_t wi;
+        if( x264pp_input_open( c->input_path, c->demux, c->resolution,
+                               c->csp_name, c->bit_depth,
+                               &inputs[i], &wi ) != X264PP_INPUT_OK )
+            goto cleanup;
+        if( x264pp_encoder_open( &c->param, &encoders[i] ) != X264PP_OK )
+            goto cleanup;
+        if( x264pp_input_seek_frame( inputs[i], ctxs[i].start ) != 0 )
+            goto cleanup;
+        ctxs[i].input = inputs[i];
+        ctxs[i].encoder = encoders[i];
+    }
+
+    for( i = 0; i < nworkers; i++ )
+    {
+        threads[i] = CreateThread( NULL, 0, encode_worker, &ctxs[i], 0, NULL );
+        if( !threads[i] )
+        {
+            InterlockedExchange( &failed, 1 );
+            break;
+        }
+    }
+    for( i = 0; i < nworkers; i++ )
+    {
+        if( threads[i] )
+        {
+            WaitForSingleObject( threads[i], INFINITE );
+            CloseHandle( threads[i] );
+            threads[i] = NULL;
+        }
+    }
+
+    if( !failed )
+    {
+        for( j = 0; j < total; j++ )
+        {
+            if( !slots[j].valid ) continue;
+            if( x264pp_output_write( output, slots[j].data,
+                                     (size_t)slots[j].len ) != 0 )
+                goto cleanup;
+            count++;
+        }
+        if( count > 0 )
+            fprintf( stderr, "encoded %d frames, 0.00 fps, 0.00 kb/s\n", count );
+        ret = 0;
+    }
+
+cleanup:
+    if( slots )
+        for( j = 0; j < total; j++ ) free( slots[j].data );
+    if( ctxs )
+        for( i = 0; i < nworkers; i++ ) free( ctxs[i].scratch );
+    if( encoders )
+        for( i = 0; i < nworkers; i++ ) x264pp_encoder_close( encoders[i] );
+    if( inputs )
+        for( i = 0; i < nworkers; i++ ) x264pp_input_close( inputs[i] );
+    free( slots );
+    free( ctxs );
+    free( threads );
+    free( encoders );
+    free( inputs );
+    return ret;
+}
+
 int x264pp_cli_main( int argc, char **argv )
 {
     cli_state_t c;
@@ -1315,6 +1584,22 @@ int x264pp_cli_main( int argc, char **argv )
         x264pp_encoder_close( encoder );
         x264pp_input_close( input );
         return -1;
+    }
+
+    /* Frame-level parallelism.  A single shared encoder is not thread-safe,
+     * so the threaded path opens one encoder and one input per worker and
+     * merges their results in frame order.  stdin cannot be opened more than
+     * once, so it (and --threads 1) keeps the sequential path below. */
+    if( c.param.threads != 1 && strcmp( c.input_path, "-" ) != 0 )
+    {
+        int rc_threaded;
+        x264pp_encoder_close( encoder );
+        encoder = NULL;
+        x264pp_input_close( input );
+        input = NULL;
+        rc_threaded = encode_threaded( &c, output, info.num_frames );
+        x264pp_output_close( output );
+        return rc_threaded;
     }
 
     /* One output buffer for the whole encode: per-frame allocation here would

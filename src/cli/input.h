@@ -65,6 +65,13 @@ x264pp_input_status_t x264pp_input_open( const char *path,
 int x264pp_input_read_frame( x264pp_input_t *input, x264pp_picture_t *pic,
                              int64_t index );
 
+/* Position a freshly opened handle at frame `index` without decoding it into
+ * a picture.  Regular raw files seek directly; other sources discard frames.
+ * Returns 0 on success, -1 if index is behind the read cursor or on error.
+ * Used by frame-parallel workers so each one can start at its own block
+ * without re-reading the whole stream. */
+int x264pp_input_seek_frame( x264pp_input_t *input, int64_t index );
+
 void x264pp_input_close( x264pp_input_t *input );
 
 #endif /* X264PP_CLI_INPUT_H */
