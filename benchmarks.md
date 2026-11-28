@@ -46,17 +46,17 @@ The other three clips (640×360, second 1080p, 720p60) and the full A/B table wi
 
 | Preset | Reference (fps) | x264++ (fps) | Speedup | ffmpeg decode | Notes |
 | --- | ---: | ---: | ---: | --- | --- |
-| ultrafast | 158.63 | 62.20 | **0.39×** | clean | 8×1920×1080 Fortnite, CRF 23, 6 threads |
+| ultrafast | 162.42 | 156.84 | **0.97×** | clean | 8×1920×1080 Fortnite, CRF 23, 6 threads |
 | superfast | — | — | — | not measured | — |
 | veryfast | — | — | — | not measured | — |
 | faster | — | — | — | not measured | — |
 | fast | — | — | — | not measured | — |
-| medium | 38.39 | 63.04 | **1.64×** | clean | same clip |
+| medium | 39.16 | 154.51 | **3.95×** | clean | same clip |
 | slow | — | — | — | not measured | — |
 | slower | — | — | — | not measured | — |
-| veryslow | 13.90 | 62.83 | **4.52×** | clean | same clip |
+| veryslow | 14.05 | 149.87 | **10.67×** | clean | same clip |
 
-These are post-PR-#13 numbers. Cumulative self-speedup at 1080p: ~12 fps → 62 fps (**~5.2×**), from bulk I_PCM writes (#9), fast NAL escaping (#10), buffered CLI I/O (#11), AVX2 frame copy (#12) and deterministic frame-level threading (#13). Every step was SHA256 bit-identical and ffmpeg-clean. Other clips: 640×360 reaches 368 fps (0.94× vs ultrafast, 3.5× vs veryslow); 720p60 reaches 145 fps (0.57× vs ultrafast, 2.2× vs veryslow). Decoded output is byte-exact/lossless (PSNR = inf with matching timestamps), but the file is ~126× larger than the oracle, so the quality/size envelope still fails.
+These are post-PR-#15 numbers. PR #15 removed redundant pre-PCM analysis and fixed SPS crop units (1080p is now exactly 1920×1080). Cumulative self-speedup at 1080p: ~12 fps → ~155 fps (**~13×**). Other clips: 640×360 reaches 549–605 fps (1.55× vs ultrafast, 5.6× vs veryslow); 1080p Twitter reaches ~159 fps (1.00× vs ultrafast, 2.96× vs veryslow); 720p60 reaches ~305 fps (1.20× vs ultrafast, 4.31× vs veryslow). Decoded output is byte-exact/lossless (PSNR reported as 99 dB sentinel for inf), but the file is ~126× larger than the oracle, so the quality/size envelope still fails. The CAVLC path is implemented and its writer is correct in isolation, but integration still desyncs ffmpeg at MB 0 residual.
 
 With `--threads 12` (all logical CPUs) the 1080p Fortnite case reaches 72 fps: 0.46× vs `ultrafast`, 1.54× vs `medium`, 4.38× vs `veryslow`. The 640×360 case reaches 340–407 fps: 0.90× vs `ultrafast`, 1.68× vs `medium`, 2.98× vs `veryslow`.
 
