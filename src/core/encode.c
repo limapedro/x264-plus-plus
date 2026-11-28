@@ -538,14 +538,25 @@ static int encode_mb( x264pp_encoder_t *e, x264pp_bs_t *bs,
     if( cbp_luma || cbp_chroma )
         x264pp_bs_se( bs, 0 );                 /* mb_qp_delta */
 
-    for( b = 0; b < 16; b++ )
-        if( cbp_luma & (1 << (b / 4)) )
+    /* H.264 residual blocks are emitted in scan8 order, not raster order. */
+    {
+        static const uint8_t scan8[16] = {
+             0,  1,  4,  5,  2,  3,  6,  7,
+             8,  9, 12, 13, 10, 11, 14, 15
+        };
+        for( i = 0; i < 16; i++ )
         {
-            for( i = 0; i < 16; i++ )
-                zl[i] = acq[b][x264pp_zigzag4[i]];
-            x264pp_cavlc_residual( bs, zl, 16,
-                block_nz_context( e, mbx, mby, b, 4, 4, e->nz_y ) );
+            b = scan8[i];
+            if( cbp_luma & (1 << (b / 4)) )
+            {
+                int j;
+                for( j = 0; j < 16; j++ )
+                    zl[j] = acq[b][x264pp_zigzag4[j]];
+                x264pp_cavlc_residual( bs, zl, 16,
+                    block_nz_context( e, mbx, mby, b, 4, 4, e->nz_y ) );
+            }
         }
+    }
     /* CodedBlockPatternChroma == 2 means DC *and* AC are present. */
     if( cbp_chroma > 0 )
         for( plane = 0; plane < 2; plane++ )
