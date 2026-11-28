@@ -18,9 +18,10 @@ The process follows IBM Cleanroom Software Engineering: box-structure specificat
 
 ## Benchmarks
 
-> **Candidate status: NOT CERTIFIED.** No x264++ speedup is published. The
-> candidate must decode cleanly with ffmpeg on every measured case before any
-> number is claimed.
+> **Candidate status: CERTIFIED as valid H.264, but NOT meeting the project goal.**
+> All speedups below are measured by `cert/real_bench.py` with ffmpeg decode checks.
+> The candidate is lossless (PSNR = inf) but uses all-I_PCM, making its files ~126×
+> larger than x264.
 
 Full standings and reproduction commands: [`benchmarks.md`](benchmarks.md). Machine-readable results: `cert/results/` and `cert/results/real/`.
 
@@ -35,13 +36,19 @@ Full standings and reproduction commands: [`benchmarks.md`](benchmarks.md). Mach
 
 Real-video corpus: `D:\Videos`, including a ready 1920×1080 × 128-frame I420 file at `D:\Videos\Wx264-reference\fortnite_prefix128.yuv`. The reproducible A/B runner is [`cert/real_bench.py`](cert/real_bench.py) (`python cert\real_bench.py --frames 8 --reps 2 --warmups 1`); its latest reference-only report is [`cert/results/real/latest.md`](cert/results/real/latest.md).
 
-### x264++ (clean-room candidate) — NOT CERTIFIED
+### x264++ (clean-room candidate) — CERTIFIED, goal not met
 
-| Preset | x264++ | Speedup | ffmpeg validity |
-| --- | ---: | ---: | --- |
-| ultrafast … veryslow | **NOT CERTIFIED** | — | **fails**: CAVLC `total_coeff=-1` |
+8×1920×1080 Fortnite, CRF 23, 6 threads (measured 2026-11-28):
 
-**Honest summary:** the 2× target is **not met**. The candidate builds and emits Annex-B H.264 that ffmpeg parses (Constrained Baseline, 64×64, yuv420p in the smoke test) but cannot decode correctly. Fixing CAVLC against the normative ITU-T tables is the current blocker; no speed numbers will be published before the bitstream is valid.
+| Preset | Reference | x264++ | Speedup | ffmpeg | Size vs oracle |
+| --- | ---: | ---: | ---: | --- | --- |
+| ultrafast | 162.42 fps | 156.84 fps | **0.97×** | clean | ~126× larger |
+| medium | 39.16 fps | 154.51 fps | **3.95×** | clean | ~126× larger |
+| veryslow | 14.05 fps | 149.87 fps | **10.67×** | clean | ~126× larger |
+
+640×360: 0.90–1.55× vs ultrafast, 2.3× vs medium, 5.6× vs veryslow. 720p60: 1.20× vs ultrafast, 2.3× vs medium, 4.3× vs veryslow.
+
+**Honest summary:** the ≥2×-on-every-preset target is **not met** — `ultrafast` remains ~equal. Decoded frames are byte-exact/lossless, but the all-I_PCM bitstream is ~126× larger than x264, so the quality/size envelope fails. CAVLC residual integration is the remaining blocker: the writer is correct in isolation (1000/1000 vectors) but desyncs ffmpeg at MB 0 on textured content.
 
 ## Layout
 
