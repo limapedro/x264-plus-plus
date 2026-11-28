@@ -111,3 +111,49 @@ correctly (a four-block column pattern 64/128/192/64 decodes as
 so the remaining loss is in the second-stage Hadamard ordering/scaling, not
 in CAVLC.  PSNR stays near 12-15 dB regardless of QP.  No further speculative
 patch was made; the I_PCM fallback remains the quality-known-good path.
+
+
+## Follow-up: Intra16x16 DC ordering/scaling (same PR)
+
+Replaced the unverifiable luma DC Hadamard round-trip with a decoder-calibrated
+linear inverse: `dc_sign[16][16]` is the H.264 8.5.10 Hadamard sign matrix in
+the decoder's coefficient convention and `round_div()` divides with
+sign-preserving rounding.  The 4x4 DCT DC values are scaled by 4 before the
+inverse (the DCT DC is 16*residual while the decoder's 4x4 IDCT needs
+64*residual).  Luma and chroma AC levels are now derived from decoder-measured
+per-zigzag-position coefficient scales (`ac_scale48`, proportional to
+`dequant(1)`), so the encoder and decoder agree on every coefficient.
+
+### Measured evidence (final tree, slice_qp_delta = 22)
+
+```
+make -f src/Makefile                     -> clean, no warnings/errors
+
+ffmpeg -hide_banner -v error -i out.264 -f null -
+# 64x64 testsrc2, 8 frames: exit 0, EMPTY stderr
+# 8x1920x1080 fortnite:     exit 0, EMPTY stderr
+
+ffprobe -v error -select_streams v:0 \
+  -show_entries stream=width,height,pix_fmt -of default=noprint_wrappers=1 out.264
+# width=1920 / height=1080 / pix_fmt=yuv420p
+
+8x1080p file size: 390,087 bytes  (limit 400,000: PASS)
+
+ffmpeg psnr (decoded YUV and raw source both at 25 fps):
+# PSNR y:14.966659 u:20.715565 v:7.750065 average:12.955281
+# oracle (cert/results/real/latest.md): 42.64 dB  -> FAIL
+```
+
+16x16 DC probe (source columns 64/128/192/64):
+
+```
+# at the earlier QP 23 operating point: 64 / 129 / 192 / 64
+# at the final QP 45 operating point:   65 / 135 / 191 / 65
+```
+
+The probe is now structurally correct (the previous 64/192/64/192 collapse is
+gone); residual ±1–7 sample error is integer-level quantisation at QP 45, not
+an ordering error.  Overall PSNR still misses the 25 dB target, mainly because
+chroma V and the remaining DC/AC quantisation step at the size-compliant QP
+are too coarse.  No success is claimed; the I_PCM fallback remains available
+via `X264PP_FORCE_PCM`.

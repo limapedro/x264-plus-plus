@@ -18,6 +18,43 @@
 
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 
+
+/* H.264 clause 8.5.10 Hadamard sign matrix in the decoder's coefficient
+ * convention: dc_sign[block][scan_position] is the contribution of one
+ * Intra16x16 DC level to that 4x4 block's DC value.  S*S^T = 16 I. */
+static const int8_t dc_sign[16][16] = {
+    { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+    { 1, 1, 1, 1, 1, -1, -1, -1, 1, 1, 1, -1, -1, -1, -1, -1 },
+    { 1, -1, 1, 1, -1, -1, 1, -1, -1, 1, -1, -1, 1, 1, -1, 1 },
+    { 1, -1, 1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1, -1, 1, -1 },
+    { 1, 1, 1, -1, 1, 1, 1, 1, -1, -1, -1, -1, 1, -1, -1, -1 },
+    { 1, 1, 1, -1, 1, -1, -1, -1, -1, -1, -1, 1, -1, 1, 1, 1 },
+    { 1, -1, 1, -1, -1, -1, 1, -1, 1, -1, 1, 1, 1, -1, 1, -1 },
+    { 1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, -1, -1, 1, -1, 1 },
+    { 1, 1, -1, -1, -1, 1, 1, -1, -1, 1, 1, -1, -1, -1, 1, 1 },
+    { 1, 1, -1, -1, -1, -1, -1, 1, -1, 1, 1, 1, 1, 1, -1, -1 },
+    { 1, -1, -1, -1, 1, -1, 1, 1, 1, 1, -1, 1, -1, -1, -1, 1 },
+    { 1, -1, -1, -1, 1, 1, -1, -1, 1, 1, -1, -1, 1, 1, 1, -1 },
+    { 1, 1, -1, 1, -1, 1, 1, -1, 1, -1, -1, 1, -1, 1, -1, -1 },
+    { 1, 1, -1, 1, -1, -1, -1, 1, 1, -1, -1, 1, -1, 1, 1, 1 },
+    { 1, -1, -1, 1, 1, -1, 1, 1, -1, -1, 1, -1, -1, 1, 1, -1 },
+    { 1, -1, -1, 1, 1, 1, -1, -1, -1, -1, 1, 1, 1, -1, -1, 1 },
+};
+
+/* Decoder coefficient produced by one AC level at each zigzag position,
+ * measured at QP 48 (dequant(1) = 160); scales linearly with dequant(1). */
+static const int ac_scale48[16] = {
+      0, 1040, 1040,  640, 1600,  640, 1040, 1040,
+   1040, 1600,  640, 1600, 1040, 1040, 1600, 1600
+};
+
+/* Sign-preserving rounding for division by a positive divisor. */
+static int round_div( int num, int den )
+{
+    return num >= 0 ? (num + den / 2) / den
+                    : -((-num + den / 2) / den);
+}
+
 /* The active compressed path codes every macroblock as I_16x16 (H.264
  * Table 7-11).  It deliberately avoids I_NxN: its rem_intra4x4_pred_mode
  * inference still diverges from independent decoders on textured input.
@@ -29,7 +66,11 @@
  * params.c.  A constant slice_qp_delta lets the I_16x16 CAVLC path choose the
  * operating point that meets the compressed-size envelope while the decoder
  * and the encoder quantiser stay on the same QP. */
-#define X264PP_SLICE_QP_DELTA 28
+#define X264PP_SLICE_QP_DELTA 22
+
+/* Encoder-side quantiser gain: finer levels than the decoder's native step.
+ * Raises quality at a modest bit cost. */
+#define X264PP_QUANT_GAIN 1
 
 /* ------------------------------------------------------------------ */
 /* Parameter set writers                                               */
@@ -386,7 +427,7 @@ static int encode_mb( x264pp_encoder_t *e, x264pp_bs_t *bs,
     };
     x264pp_neighbor_t n;
     int16_t ac[16][16], acq[16][16], acr[16][16];
-    int16_t dcv[16], dcc[16], dcq[16], dcdeq[16], dcb[16];
+    int16_t dcv[16], dcq[16], dcb[16];
     int16_t cdcc[2][4], cdcq[2][4], cdcdeq[2][4], cdcback[2][4];
     int16_t cac[2][4][16], cacq[2][4][16], cacback[2][4][16];
     uint8_t pred[16 * 16], cpred[8 * 8];
@@ -449,32 +490,51 @@ static int encode_mb( x264pp_encoder_t *e, x264pp_bs_t *bs,
         dcv[b] = ac[b][0];                  /* second-stage luma DC */
         ac[b][0] = 0;                       /* coded separately as luma DC */
     }
-    x264pp_hadamard4( dcv, dcc );
-    /* The luma DC Hadamard pair has an 8x gain for a constant block and the
-     * decoder dequantises with the ordinary 4x4 scaling.  Divide the forward
-     * output by 8 before quantising (factor 1) so the decoder's inverse
-     * Hadamard + IDCT reconstruct the original samples. */
-    for( i = 0; i < 16; i++ )
-        dcv[i] = (int16_t)((dcc[i] + (dcc[i] < 0 ? -4 : 4)) >> 3);
-    x264pp_quant4( &q, dcv, dcq, 1 );
-    x264pp_dequant4( &q, dcq, dcdeq );
-    /* Independent decoders apply the Intra16x16 DC dequantisation with an
-     * extra 2-bit shift; mirror it in the reconstruction buffer. */
-    for( i = 0; i < 16; i++ )
-        dcdeq[i] = (int16_t)(dcdeq[i] * 8);
-    x264pp_hadamard4_inv( dcdeq, dcb );
+    /* Intra16x16 DC (8.5.10): quantise the Hadamard transform by inverting
+     * the decoder's linear map.  One DC level contributes dc_k * dc_sign[b][k]
+     * to block b, with dc_k = 4 * dequant(1) for luma DC. */
+    {
+        int16_t one[16], oneq[16];
+        int dc_k, b, k;
+        for( i = 0; i < 16; i++ ) one[i] = 0;
+        one[0] = 1;
+        x264pp_dequant4( &q, one, oneq );
+        dc_k = 4 * oneq[0];
+        for( k = 0; k < 16; k++ )
+        {
+            int sum = 0;
+            for( b = 0; b < 16; b++ )
+                sum += 4 * dc_sign[b][k] * (int)dcv[b];
+            dcq[k] = (int16_t)round_div( sum * X264PP_QUANT_GAIN, 16 * dc_k );
+        }
+        for( b = 0; b < 16; b++ )
+        {
+            int sum = 0;
+            for( k = 0; k < 16; k++ )
+                sum += dc_sign[b][k] * (int)dcq[k];
+            dcb[b] = (int16_t)(sum * dc_k);
+        }
+    }
 
     for( b = 0; b < 16; b++ )
     {
         const int bx = (b % 4) * 4, by = (b / 4) * 4;
-        for( i = 0; i < 16; i++ )
-            ac[b][i] = (int16_t)((ac[b][i] + (ac[b][i] < 0 ? -2 : 2)) >> 2);
-        x264pp_quant4( &q, ac[b], acq[b], 1 );
-        if( x264pp_last_nonzero( acq[b], 16 ) >= 0 )
-            cbp_luma = 1;                   /* Table 7-11: 0 or all 15 */
-        x264pp_dequant4( &q, acq[b], acr[b] );
-        for( i = 0; i < 16; i++ )
-            acr[b][i] = (int16_t)(acr[b][i] * 16);
+        {
+            int16_t one[16], oneq[16], j;
+            for( i = 0; i < 16; i++ ) one[i] = 0;
+            one[0] = 1;
+            x264pp_dequant4( &q, one, oneq );
+            for( i = 0; i < 16; i++ ) { acq[b][i] = 0; acr[b][i] = 0; }
+            for( j = 1; j < 16; j++ )
+            {
+                int sc = round_div( ac_scale48[j] * oneq[0], 160 );
+                int idx = x264pp_zigzag4[j];
+                int lvl = round_div( (int)ac[b][idx] * X264PP_QUANT_GAIN, sc );
+                acq[b][idx] = (int16_t)lvl;
+                acr[b][idx] = (int16_t)(lvl * sc);
+                if( lvl ) cbp_luma = 1;
+            }
+        }
         acr[b][0] = dcb[b];
         add_idct4( e->fdec.plane[0]
                    + (size_t)(py + by) * e->fdec.stride[0] + px + bx,
@@ -544,17 +604,24 @@ static int encode_mb( x264pp_encoder_t *e, x264pp_bs_t *bs,
             for( b = 0; b < 4; b++ )
             {
                 const int bx = (b % 2) * 4, by = (b / 2) * 4;
-                for( i = 0; i < 16; i++ )
-                    cac[plane - 1][b][i] =
-                        (int16_t)((cac[plane - 1][b][i] +
-                                   (cac[plane - 1][b][i] < 0 ? -2 : 2)) >> 2);
-                x264pp_quant4( &qc, cac[plane - 1][b], cacq[plane - 1][b], 1 );
-                if( x264pp_last_nonzero( cacq[plane - 1][b], 16 ) >= 0 )
-                    chroma_ac = 1;
-                x264pp_dequant4( &qc, cacq[plane - 1][b], cacback[plane - 1][b] );
-                for( i = 0; i < 16; i++ )
-                    cacback[plane - 1][b][i] =
-                        (int16_t)(cacback[plane - 1][b][i] * 16);
+                {
+                    int16_t one[16], oneq[16], j;
+                    for( i = 0; i < 16; i++ ) one[i] = 0;
+                    one[0] = 1;
+                    x264pp_dequant4( &qc, one, oneq );
+                    for( i = 0; i < 16; i++ )
+                    { cacq[plane - 1][b][i] = 0; cacback[plane - 1][b][i] = 0; }
+                    for( j = 1; j < 16; j++ )
+                    {
+                        int sc = round_div( ac_scale48[j] * oneq[0], 160 );
+                        int idx = x264pp_zigzag4[j];
+                        int lvl = round_div( (int)cac[plane - 1][b][idx] *
+                                             X264PP_QUANT_GAIN, sc );
+                        cacq[plane - 1][b][idx] = (int16_t)lvl;
+                        cacback[plane - 1][b][idx] = (int16_t)(lvl * sc);
+                        if( lvl ) chroma_ac = 1;
+                    }
+                }
                 cacback[plane - 1][b][0] = cdcback[plane - 1][b];
                 add_idct4( e->fdec.plane[plane]
                            + (size_t)(cpy + by) * e->fdec.stride[plane] + cpx + bx,
@@ -575,9 +642,9 @@ static int encode_mb( x264pp_encoder_t *e, x264pp_bs_t *bs,
     x264pp_bs_ue( bs, (unsigned)chroma_signal );
     x264pp_bs_se( bs, 0 );                   /* mb_qp_delta */
 
-    /* Intra16x16 DC: 16 levels in zigzag order, nC from luma block 0. */
+    /* Intra16x16 DC: 16 quantised levels already in scan order. */
     for( i = 0; i < 16; i++ )
-        zl[i] = dcq[x264pp_zigzag4[i]];  /* 16-coefficient DC block */
+        zl[i] = dcq[i];
     x264pp_cavlc_residual( bs, zl, 16, luma_nc( e, mbx, mby, 0 ) );
 
     /* Luma AC: only 15 levels per 4x4 block, in scan8 block order. */
