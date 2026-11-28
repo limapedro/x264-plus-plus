@@ -1209,6 +1209,7 @@ int x264pp_cli_main( int argc, char **argv )
     x264pp_input_status_t ist;
     uint8_t *bitstream = NULL;
     int64_t frame_index;
+    int cap;
     int count = 0;
     int rc;
 
@@ -1316,7 +1317,11 @@ int x264pp_cli_main( int argc, char **argv )
         return -1;
     }
 
-    bitstream = (uint8_t *)malloc( (size_t)c.param.width * c.param.height * 6 + 4096 );
+    /* One output buffer for the whole encode: per-frame allocation here would
+     * dominate the I/O path for all-I_PCM frames.  Its capacity is invariant,
+     * so compute it once instead of once per frame. */
+    cap = (int)( (size_t)c.param.width * c.param.height * 6 + 4096 );
+    bitstream = (uint8_t *)malloc( (size_t)cap );
     if( !bitstream )
     {
         x264pp_log( X264PP_LOG_ERROR, "x264", "out of memory" );
@@ -1329,7 +1334,6 @@ int x264pp_cli_main( int argc, char **argv )
     for( ;; )
     {
         int out_len = 0, frame_type = 0;
-        int cap = (int)( (size_t)c.param.width * c.param.height * 6 + 4096 );
 
         if( c.param.frames && count >= c.param.frames ) break;
         frame_index = (int64_t)c.param.seek + count;
@@ -1367,7 +1371,6 @@ int x264pp_cli_main( int argc, char **argv )
     for( ;; )
     {
         int out_len = 0, frame_type = 0;
-        int cap = (int)( (size_t)c.param.width * c.param.height * 6 + 4096 );
         if( x264pp_encoder_encode( encoder, NULL, 1,
                                    bitstream, cap, &out_len, &frame_type ) != X264PP_OK )
             break;

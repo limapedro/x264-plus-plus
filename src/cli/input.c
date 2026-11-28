@@ -131,6 +131,59 @@ static int io_getc( byte_source_t *io )
     return (int)c;
 }
 
+/* Bulk (frame-sized) read.  The probe buffer above is deliberately small;
+ * pushing multi-kilobyte frames through it would cost one memcpy per frame.
+ * When the whole frame is already buffered we hand back a borrowed pointer
+ * into that buffer instead (zero-copy); otherwise we drain the few remaining
+ * buffered bytes and issue one fread() directly into the destination.  The
+ * borrowed pointer stays valid until the next read from this source, which is
+ * exactly the lifetime the encoder needs for a picture. */
+static size_t io_read_bulk( byte_source_t *io, unsigned char *dst, size_t count,
+                            unsigned char **borrowed )
+{
+    size_t done = 0;
+
+    *borrowed = NULL;
+    if( io->push_pos >= io->push_len && count <= io->len - io->pos )
+    {
+        *borrowed = io->buf + io->pos;
+        io->pos += count;
+        return count;
+    }
+
+    /* Consume pushed-back and buffered bytes first so stream order is kept. */
+    while( done < count )
+    {
+        if( io->push_pos < io->push_len )
+        {
+            size_t chunk = min_size( io->push_len - io->push_pos, count - done );
+            memcpy( dst + done, io->push + io->push_pos, chunk );
+            io->push_pos += chunk;
+            done += chunk;
+            continue;
+        }
+        if( io->pos < io->len )
+        {
+            size_t chunk = min_size( io->len - io->pos, count - done );
+            memcpy( dst + done, io->buf + io->pos, chunk );
+            io->pos += chunk;
+            done += chunk;
+            continue;
+        }
+        break;
+    }
+
+    /* Read the remainder straight from the FILE into the picture buffer. */
+    if( done < count && !io->eof )
+    {
+        size_t need = count - done;
+        size_t n = fread( dst + done, 1, need, io->fh );
+        done += n;
+        if( n < need ) io->eof = 1;
+    }
+    return done;
+}
+
 static void io_unread( byte_source_t *io, const unsigned char *data, size_t count )
 {
     if( count > X264PP_PUSH_MAX ) count = X264PP_PUSH_MAX;
@@ -440,6 +493,8 @@ x264pp_input_status_t x264pp_input_open( const char *path,
 static int read_one( x264pp_input_t *in, x264pp_picture_t *pic )
 {
     const char *module = in->demux == X264PP_DEMUX_Y4M ? "y4m" : "raw";
+    unsigned char *borrowed = NULL;
+    unsigned char *frame_data;
     size_t got;
     int64_t y_size;
 
@@ -456,7 +511,8 @@ static int read_one( x264pp_input_t *in, x264pp_picture_t *pic )
         }
     }
 
-    got = io_read( &in->io, in->frame, (size_t)in->frame_size );
+    got = io_read_bulk( &in->io, in->frame, (size_t)in->frame_size, &borrowed );
+    frame_data = borrowed ? borrowed : in->frame;
     if( got == 0 ) return 0;
     if( got != (size_t)in->frame_size )
     {
@@ -472,9 +528,11 @@ static int read_one( x264pp_input_t *in, x264pp_picture_t *pic )
         pic->width     = in->width;
         pic->height    = in->height;
         pic->bit_depth = 8;
-        pic->plane[0]  = in->frame;
-        pic->plane[1]  = in->frame + y_size;
-        pic->plane[2]  = in->frame + y_size + y_size / 4;
+        /* Planes may point straight into the byte source's buffer; the caller
+         * encodes the picture before asking for the next frame. */
+        pic->plane[0]  = frame_data;
+        pic->plane[1]  = frame_data + y_size;
+        pic->plane[2]  = frame_data + y_size + y_size / 4;
         pic->stride[0] = in->width;
         pic->stride[1] = in->width / 2;
         pic->stride[2] = in->width / 2;
