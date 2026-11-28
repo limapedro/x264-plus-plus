@@ -210,3 +210,8 @@ SHA256(baseline.264) =
 ffmpeg -hide_banner -v error -i baseline.264 -f null -
 # exit 0, EMPTY stderr
 ```
+
+## I_16x16 QP tradeoff (2026-11-28)
+
+With the gated I_16x16 path (-DX264PP_FORCE_PCM=0) at slice_qp_delta=0 (QP 23), 8 frames of 1920x1080 Fortnite decode cleanly but produce 2,204,665 bytes and PSNR 14.67 dB (Y 20.32, U 23.80, V 7.87). With slice_qp_delta=22 (the size-compliant setting) size drops to 390,087 bytes but PSNR stays 12.96 dB. The V-plane deficit shows the remaining loss is in chroma reconstruction, not only quantisation step. Default build remains all-I_PCM. No claim of competitive quality is made.
+
