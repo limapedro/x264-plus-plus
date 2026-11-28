@@ -42,13 +42,19 @@ Real-video corpus: `D:\Videos`, including a ready 1920×1080 × 128-frame I420 f
 
 | Preset | Reference | x264++ | Speedup | ffmpeg | Size vs oracle |
 | --- | ---: | ---: | ---: | --- | --- |
-| ultrafast | 162.42 fps | 156.84 fps | **0.97×** | clean | ~126× larger |
-| medium | 39.16 fps | 154.51 fps | **3.95×** | clean | ~126× larger |
-| veryslow | 14.05 fps | 149.87 fps | **10.67×** | clean | ~126× larger |
+| ultrafast | 162.22 fps | 160.71 fps | **0.99×** | clean | ~126× larger |
+| superfast | 93.99 fps | 155.48 fps | **1.65×** | clean | ~126× larger |
+| veryfast | 69.08 fps | 164.06 fps | **2.38×** | clean | ~126× larger |
+| faster | 47.63 fps | 152.22 fps | **3.20×** | clean | ~126× larger |
+| fast | 40.28 fps | 161.74 fps | **4.02×** | clean | ~126× larger |
+| medium | 39.65 fps | 154.31 fps | **3.89×** | clean | ~126× larger |
+| slow | 24.17 fps | 152.59 fps | **6.31×** | clean | ~126× larger |
+| slower | 19.84 fps | 146.93 fps | **7.41×** | clean | ~126× larger |
+| veryslow | 13.91 fps | 147.95 fps | **10.64×** | clean | ~126× larger |
 
 640×360: 0.90–1.55× vs ultrafast, 2.3× vs medium, 5.6× vs veryslow. 720p60: 1.20× vs ultrafast, 2.3× vs medium, 4.3× vs veryslow.
 
-**Honest summary:** the ≥2×-on-every-preset target is **not met** — `ultrafast` remains ~equal. Decoded frames are byte-exact/lossless, but the all-I_PCM bitstream is ~126× larger than x264, so the quality/size envelope fails. CAVLC residual integration is the remaining blocker: the writer is correct in isolation (1000/1000 vectors) but desyncs ffmpeg at MB 0 on textured content.
+**Honest summary:** the ≥2×-on-every-preset target is **not met** — `ultrafast` 0.99× and `superfast` 1.65×; 2× is reached from `veryfast` onward. Decoded frames are byte-exact/lossless, but the all-I_PCM bitstream is ~126× larger than x264, so the quality/size envelope fails. CAVLC integration is the remaining blocker: the writer is correct in isolation (20,000/20,000 vectors), and an all-prev/DC/full-CBP configuration decodes cleanly, but at 8.57 dB PSNR; see `src/verification/cavlc-progress.md`.
 
 ## Layout
 

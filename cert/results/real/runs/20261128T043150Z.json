@@ -1,0 +1,3182 @@
+{
+  "schema_version": 1,
+  "generated_at_utc": "2026-11-28T04:31:50+00:00",
+  "run_id": "20261128T043150Z",
+  "status": "ok",
+  "candidate_certified": true,
+  "blocked_reason": null,
+  "publication": {
+    "publish_speeds": true,
+    "reason": "candidate decoded cleanly on every real-video case"
+  },
+  "machine": {
+    "platform": "Windows-11-10.0.26300-SP0",
+    "processor": "Intel64 Family 6 Model 151 Stepping 5, GenuineIntel",
+    "cpu_count": 12,
+    "python": "3.14.7"
+  },
+  "binaries": {
+    "oracle": {
+      "path": "E:\\__PROJECTS__\\x264++\\oracle\\x264.exe",
+      "exists": true,
+      "version": "x264 0.164.x",
+      "sha256": "d6c2528d9e2ce928e6b4dc9a5ab13938c2fe6e40fee725336f5949a937bdf8c5"
+    },
+    "candidate": {
+      "path": "E:\\__PROJECTS__\\x264++\\build\\x264pp.exe",
+      "exists": true,
+      "version": "x264 0.164.x",
+      "sha256": "7e95dadc6e2fb38a02459c85f68f6d87610055304834d8c95302314af367c640"
+    }
+  },
+  "reference_anchors": [
+    {
+      "case": "640x360, 120 f, medium, CRF 23, 6 threads (synthetic testsrc2)",
+      "fps": 609.14,
+      "source": "benchmarks.md / README.md"
+    },
+    {
+      "case": "1920x1080, 8 f, ultrafast, CRF 23, 6 threads (Fortnite I420)",
+      "fps": 126.98,
+      "source": "benchmarks.md / README.md"
+    },
+    {
+      "case": "1920x1080, 8 f, medium, CRF 23, 6 threads (Fortnite I420)",
+      "fps": 40.61,
+      "source": "benchmarks.md / README.md"
+    },
+    {
+      "case": "1920x1080, 8 f, veryslow, CRF 23, 6 threads (Fortnite I420)",
+      "fps": 13.84,
+      "source": "benchmarks.md / README.md"
+    }
+  ],
+  "settings": {
+    "corpus_dir": "D:\\Videos",
+    "clips": [
+      "fortnite-raw-1080p",
+      "twitter-640x360",
+      "twitter-1080p",
+      "twitter-720p60"
+    ],
+    "presets": [
+      "ultrafast",
+      "superfast",
+      "veryfast",
+      "faster",
+      "fast",
+      "medium",
+      "slow",
+      "slower",
+      "veryslow"
+    ],
+    "frames": 8,
+    "fps_override": null,
+    "crf": 23,
+    "threads": 6,
+    "reps": 2,
+    "warmups": 1,
+    "timeout_s": 600.0,
+    "quality": true,
+    "ffmpeg": "C:\\ffmpeg\\ffmpeg-master-latest-win64-gpl\\bin\\ffmpeg.exe",
+    "mingw_path_prepended": [
+      "C:\\msys64\\usr\\bin"
+    ],
+    "assets_dir": "C:\\Users\\multi\\AppData\\Local\\Temp\\x264pp-realbench-assets",
+    "timing": "wall clock incl. process startup + file write; warm-up discarded; A/B interleaved with alternating order per repetition",
+    "cli_shape": "x264-compatible raw I420; identical argv for both encoders except -o",
+    "candidate_state": "present"
+  },
+  "clips": [
+    {
+      "id": "fortnite-raw-1080p",
+      "label": "Fortnite 1080p (ready I420 prefix)",
+      "kind": "raw",
+      "source": "D:\\Videos\\Wx264-reference\\fortnite_prefix128.yuv",
+      "source_rel": "Wx264-reference\\fortnite_prefix128.yuv",
+      "source_sha256": "c0e2c11233791b9e6a25f5672da5ba91d9071f22f0ffa3087bb96cd16f166375",
+      "source_sha256_expected": "c0e2c11233791b9e6a25f5672da5ba91d9071f22f0ffa3087bb96cd16f166375",
+      "source_sha256_match": true,
+      "width": 1920,
+      "height": 1080,
+      "fps": 30,
+      "frames": 8,
+      "expected_bytes": 24883200,
+      "frame_bytes": 3110400,
+      "file": "C:\\Users\\multi\\AppData\\Local\\Temp\\x264pp-realbench-assets\\b7da1228e8901a70a101\\clip.yuv",
+      "reused": true,
+      "clip_sha256": "473e5391be06d5fc643d958acd6c31bea2d8c9d627b8be0d017b7cb7ad4ade9c",
+      "decode_command": "python: read first 8 frames (24883200 bytes) from fortnite_prefix128.yuv"
+    },
+    {
+      "id": "twitter-640x360",
+      "label": "640x360 social clip",
+      "kind": "container",
+      "source": "D:\\Videos\\ssstwitter.com_1732158697723.mp4",
+      "source_rel": "ssstwitter.com_1732158697723.mp4",
+      "source_sha256": "ee5dabeb8ebc6bcb5a846746f7d1c82c91337d8ae040ff099acdfb6fafcf496f",
+      "source_sha256_expected": "ee5dabeb8ebc6bcb5a846746f7d1c82c91337d8ae040ff099acdfb6fafcf496f",
+      "source_sha256_match": true,
+      "width": 640,
+      "height": 360,
+      "fps": 30,
+      "frames": 8,
+      "expected_bytes": 2764800,
+      "frame_bytes": 345600,
+      "file": "C:\\Users\\multi\\AppData\\Local\\Temp\\x264pp-realbench-assets\\77d5ccb53c6de549454a\\clip.yuv",
+      "reused": true,
+      "clip_sha256": "85e4f86d600bfd1f618040f2657538aac20291524d1a7b9c6d0c98ee5ba80f3e",
+      "decode_command": "C:\\ffmpeg\\ffmpeg-master-latest-win64-gpl\\bin\\ffmpeg.exe -hide_banner -nostats -loglevel error -y -i D:\\Videos\\ssstwitter.com_1732158697723.mp4 -frames:v 8 -an -sn -dn -pix_fmt yuv420p -f rawvideo C:\\Users\\multi\\AppData\\Local\\Temp\\x264pp-realbench-assets\\77d5ccb53c6de549454a\\clip.yuv"
+    },
+    {
+      "id": "twitter-1080p",
+      "label": "1080p social clip",
+      "kind": "container",
+      "source": "D:\\Videos\\ssstwitter.com_1736929558402.mp4",
+      "source_rel": "ssstwitter.com_1736929558402.mp4",
+      "source_sha256": "284afeb9449c1baa1e6ebb3d1f6a0749aa04c1c4334190ac5b624dc03e674aa6",
+      "source_sha256_expected": "284afeb9449c1baa1e6ebb3d1f6a0749aa04c1c4334190ac5b624dc03e674aa6",
+      "source_sha256_match": true,
+      "width": 1920,
+      "height": 1080,
+      "fps": 30,
+      "frames": 8,
+      "expected_bytes": 24883200,
+      "frame_bytes": 3110400,
+      "file": "C:\\Users\\multi\\AppData\\Local\\Temp\\x264pp-realbench-assets\\2f5e3ca57c820a6c0761\\clip.yuv",
+      "reused": true,
+      "clip_sha256": "200c44e01fa99503a9f6b1d0e530aa3bc9fcb35c34d0fe94c459da21151813f5",
+      "decode_command": "C:\\ffmpeg\\ffmpeg-master-latest-win64-gpl\\bin\\ffmpeg.exe -hide_banner -nostats -loglevel error -y -i D:\\Videos\\ssstwitter.com_1736929558402.mp4 -frames:v 8 -an -sn -dn -pix_fmt yuv420p -f rawvideo C:\\Users\\multi\\AppData\\Local\\Temp\\x264pp-realbench-assets\\2f5e3ca57c820a6c0761\\clip.yuv"
+    },
+    {
+      "id": "twitter-720p60",
+      "label": "720p60 social clip",
+      "kind": "container",
+      "source": "D:\\Videos\\ssstwitter.com_1731881880284.mp4",
+      "source_rel": "ssstwitter.com_1731881880284.mp4",
+      "source_sha256": "3191e8de186709b3d4b9383cd2116b09f7710bef8679916267088497bfec1609",
+      "source_sha256_expected": "3191e8de186709b3d4b9383cd2116b09f7710bef8679916267088497bfec1609",
+      "source_sha256_match": true,
+      "width": 1280,
+      "height": 720,
+      "fps": 60,
+      "frames": 8,
+      "expected_bytes": 11059200,
+      "frame_bytes": 1382400,
+      "file": "C:\\Users\\multi\\AppData\\Local\\Temp\\x264pp-realbench-assets\\fd445f27e2a81fc8a70f\\clip.yuv",
+      "reused": true,
+      "clip_sha256": "4448ad3476c43341b1afe1c1a21b476e1003366f37389361716bd33b4acf6ab4",
+      "decode_command": "C:\\ffmpeg\\ffmpeg-master-latest-win64-gpl\\bin\\ffmpeg.exe -hide_banner -nostats -loglevel error -y -i D:\\Videos\\ssstwitter.com_1731881880284.mp4 -frames:v 8 -an -sn -dn -pix_fmt yuv420p -f rawvideo C:\\Users\\multi\\AppData\\Local\\Temp\\x264pp-realbench-assets\\fd445f27e2a81fc8a70f\\clip.yuv"
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "fortnite-raw-1080p|ultrafast",
+      "clip_id": "fortnite-raw-1080p",
+      "preset": "ultrafast",
+      "settings": {
+        "width": 1920,
+        "height": 1080,
+        "fps": 30,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "Wx264-reference\\fortnite_prefix128.yuv",
+        "source_sha256": "c0e2c11233791b9e6a25f5672da5ba91d9071f22f0ffa3087bb96cd16f166375",
+        "clip_sha256": "473e5391be06d5fc643d958acd6c31bea2d8c9d627b8be0d017b7cb7ad4ade9c",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          50.99,
+          47.643
+        ],
+        "median_ms": 49.317,
+        "mean_ms": 49.317,
+        "min_ms": 47.643,
+        "max_ms": 50.99,
+        "fps": 162.22,
+        "sizes_bytes": [
+          493055,
+          493055
+        ],
+        "hash_full": "ae69c3620fe1363773ed79f2d26a69298354c690a9f55ccca248da1f6a3b3d70",
+        "size_bytes": 493055,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "fortnite-raw-1080p_ultrafast_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 44.8822,
+          "ssim": 0.9874,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          48.847,
+          50.709
+        ],
+        "availability": "present",
+        "median_ms": 49.778,
+        "mean_ms": 49.778,
+        "min_ms": 48.847,
+        "max_ms": 50.709,
+        "fps": 160.71,
+        "sizes_bytes": [
+          25287467,
+          25287467
+        ],
+        "hash_full": "bc538cdec58e681f08123d98bcc9dad4cb6ca241f6af7d7441ea79d81135de95",
+        "size_bytes": 25287467,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "fortnite-raw-1080p_ultrafast_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 0.9907,
+      "size_delta_pct": 5028.731
+    },
+    {
+      "case_id": "fortnite-raw-1080p|superfast",
+      "clip_id": "fortnite-raw-1080p",
+      "preset": "superfast",
+      "settings": {
+        "width": 1920,
+        "height": 1080,
+        "fps": 30,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "Wx264-reference\\fortnite_prefix128.yuv",
+        "source_sha256": "c0e2c11233791b9e6a25f5672da5ba91d9071f22f0ffa3087bb96cd16f166375",
+        "clip_sha256": "473e5391be06d5fc643d958acd6c31bea2d8c9d627b8be0d017b7cb7ad4ade9c",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          84.365,
+          85.87
+        ],
+        "median_ms": 85.117,
+        "mean_ms": 85.117,
+        "min_ms": 84.365,
+        "max_ms": 85.87,
+        "fps": 93.99,
+        "sizes_bytes": [
+          288093,
+          288093
+        ],
+        "hash_full": "ee68b2a330827995ee7c63a7e591009c7acf298cf5f7a6248b85a267b354e2e7",
+        "size_bytes": 288093,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "fortnite-raw-1080p_superfast_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 43.7337,
+          "ssim": 0.988,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          49.705,
+          53.2
+        ],
+        "availability": "present",
+        "median_ms": 51.453,
+        "mean_ms": 51.453,
+        "min_ms": 49.705,
+        "max_ms": 53.2,
+        "fps": 155.48,
+        "sizes_bytes": [
+          25287467,
+          25287467
+        ],
+        "hash_full": "bc538cdec58e681f08123d98bcc9dad4cb6ca241f6af7d7441ea79d81135de95",
+        "size_bytes": 25287467,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "fortnite-raw-1080p_superfast_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 1.6543,
+      "size_delta_pct": 8677.536
+    },
+    {
+      "case_id": "fortnite-raw-1080p|veryfast",
+      "clip_id": "fortnite-raw-1080p",
+      "preset": "veryfast",
+      "settings": {
+        "width": 1920,
+        "height": 1080,
+        "fps": 30,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "Wx264-reference\\fortnite_prefix128.yuv",
+        "source_sha256": "c0e2c11233791b9e6a25f5672da5ba91d9071f22f0ffa3087bb96cd16f166375",
+        "clip_sha256": "473e5391be06d5fc643d958acd6c31bea2d8c9d627b8be0d017b7cb7ad4ade9c",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          118.133,
+          113.471
+        ],
+        "median_ms": 115.802,
+        "mean_ms": 115.802,
+        "min_ms": 113.471,
+        "max_ms": 118.133,
+        "fps": 69.08,
+        "sizes_bytes": [
+          180387,
+          180387
+        ],
+        "hash_full": "32d97cabb7242463ede84aa6471bbdebf24db74999a1813cac2a93e14c3eebc7",
+        "size_bytes": 180387,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "fortnite-raw-1080p_veryfast_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 41.8234,
+          "ssim": 0.983,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          48.389,
+          49.135
+        ],
+        "availability": "present",
+        "median_ms": 48.762,
+        "mean_ms": 48.762,
+        "min_ms": 48.389,
+        "max_ms": 49.135,
+        "fps": 164.06,
+        "sizes_bytes": [
+          25287467,
+          25287467
+        ],
+        "hash_full": "bc538cdec58e681f08123d98bcc9dad4cb6ca241f6af7d7441ea79d81135de95",
+        "size_bytes": 25287467,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "fortnite-raw-1080p_veryfast_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 2.3748,
+      "size_delta_pct": 13918.453
+    },
+    {
+      "case_id": "fortnite-raw-1080p|faster",
+      "clip_id": "fortnite-raw-1080p",
+      "preset": "faster",
+      "settings": {
+        "width": 1920,
+        "height": 1080,
+        "fps": 30,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "Wx264-reference\\fortnite_prefix128.yuv",
+        "source_sha256": "c0e2c11233791b9e6a25f5672da5ba91d9071f22f0ffa3087bb96cd16f166375",
+        "clip_sha256": "473e5391be06d5fc643d958acd6c31bea2d8c9d627b8be0d017b7cb7ad4ade9c",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          165.729,
+          170.162
+        ],
+        "median_ms": 167.946,
+        "mean_ms": 167.946,
+        "min_ms": 165.729,
+        "max_ms": 170.162,
+        "fps": 47.63,
+        "sizes_bytes": [
+          196398,
+          196398
+        ],
+        "hash_full": "bf05f6c8972df8a75522ab53ee7149e97fbb4e4eb44f1fbb95a996eb1849e68d",
+        "size_bytes": 196398,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "fortnite-raw-1080p_faster_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 42.2703,
+          "ssim": 0.9836,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          56.243,
+          48.866
+        ],
+        "availability": "present",
+        "median_ms": 52.554,
+        "mean_ms": 52.554,
+        "min_ms": 48.866,
+        "max_ms": 56.243,
+        "fps": 152.22,
+        "sizes_bytes": [
+          25287467,
+          25287467
+        ],
+        "hash_full": "bc538cdec58e681f08123d98bcc9dad4cb6ca241f6af7d7441ea79d81135de95",
+        "size_bytes": 25287467,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "fortnite-raw-1080p_faster_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 3.1957,
+      "size_delta_pct": 12775.623
+    },
+    {
+      "case_id": "fortnite-raw-1080p|fast",
+      "clip_id": "fortnite-raw-1080p",
+      "preset": "fast",
+      "settings": {
+        "width": 1920,
+        "height": 1080,
+        "fps": 30,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "Wx264-reference\\fortnite_prefix128.yuv",
+        "source_sha256": "c0e2c11233791b9e6a25f5672da5ba91d9071f22f0ffa3087bb96cd16f166375",
+        "clip_sha256": "473e5391be06d5fc643d958acd6c31bea2d8c9d627b8be0d017b7cb7ad4ade9c",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          200.184,
+          197.083
+        ],
+        "median_ms": 198.634,
+        "mean_ms": 198.634,
+        "min_ms": 197.083,
+        "max_ms": 200.184,
+        "fps": 40.28,
+        "sizes_bytes": [
+          203188,
+          203188
+        ],
+        "hash_full": "7cd32caaf20029679d0404c6af0f20759c7c28b3f499440359dc51f19d89a3c8",
+        "size_bytes": 203188,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "fortnite-raw-1080p_fast_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 42.5706,
+          "ssim": 0.9849,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          49.133,
+          49.792
+        ],
+        "availability": "present",
+        "median_ms": 49.462,
+        "mean_ms": 49.462,
+        "min_ms": 49.133,
+        "max_ms": 49.792,
+        "fps": 161.74,
+        "sizes_bytes": [
+          25287467,
+          25287467
+        ],
+        "hash_full": "bc538cdec58e681f08123d98bcc9dad4cb6ca241f6af7d7441ea79d81135de95",
+        "size_bytes": 25287467,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "fortnite-raw-1080p_fast_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 4.0159,
+      "size_delta_pct": 12345.355
+    },
+    {
+      "case_id": "fortnite-raw-1080p|medium",
+      "clip_id": "fortnite-raw-1080p",
+      "preset": "medium",
+      "settings": {
+        "width": 1920,
+        "height": 1080,
+        "fps": 30,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "Wx264-reference\\fortnite_prefix128.yuv",
+        "source_sha256": "c0e2c11233791b9e6a25f5672da5ba91d9071f22f0ffa3087bb96cd16f166375",
+        "clip_sha256": "473e5391be06d5fc643d958acd6c31bea2d8c9d627b8be0d017b7cb7ad4ade9c",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          200.978,
+          202.516
+        ],
+        "median_ms": 201.747,
+        "mean_ms": 201.747,
+        "min_ms": 200.978,
+        "max_ms": 202.516,
+        "fps": 39.65,
+        "sizes_bytes": [
+          200535,
+          200535
+        ],
+        "hash_full": "6e7ced0c9684eec330f6800209b76fcfa8d61dd4325ba2375dc8ef5dea6305fc",
+        "size_bytes": 200535,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "fortnite-raw-1080p_medium_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 42.6445,
+          "ssim": 0.9849,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          51.047,
+          52.639
+        ],
+        "availability": "present",
+        "median_ms": 51.843,
+        "mean_ms": 51.843,
+        "min_ms": 51.047,
+        "max_ms": 52.639,
+        "fps": 154.31,
+        "sizes_bytes": [
+          25287467,
+          25287467
+        ],
+        "hash_full": "bc538cdec58e681f08123d98bcc9dad4cb6ca241f6af7d7441ea79d81135de95",
+        "size_bytes": 25287467,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "fortnite-raw-1080p_medium_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 3.8915,
+      "size_delta_pct": 12510.002
+    },
+    {
+      "case_id": "fortnite-raw-1080p|slow",
+      "clip_id": "fortnite-raw-1080p",
+      "preset": "slow",
+      "settings": {
+        "width": 1920,
+        "height": 1080,
+        "fps": 30,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "Wx264-reference\\fortnite_prefix128.yuv",
+        "source_sha256": "c0e2c11233791b9e6a25f5672da5ba91d9071f22f0ffa3087bb96cd16f166375",
+        "clip_sha256": "473e5391be06d5fc643d958acd6c31bea2d8c9d627b8be0d017b7cb7ad4ade9c",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          327.187,
+          334.72
+        ],
+        "median_ms": 330.953,
+        "mean_ms": 330.953,
+        "min_ms": 327.187,
+        "max_ms": 334.72,
+        "fps": 24.17,
+        "sizes_bytes": [
+          197577,
+          197577
+        ],
+        "hash_full": "571c3a886b675dd7a31680d1ccbf7d9d8a0dbe969da8e4c23f72c043972cd195",
+        "size_bytes": 197577,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "fortnite-raw-1080p_slow_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 42.6878,
+          "ssim": 0.9851,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          53.516,
+          51.338
+        ],
+        "availability": "present",
+        "median_ms": 52.427,
+        "mean_ms": 52.427,
+        "min_ms": 51.338,
+        "max_ms": 53.516,
+        "fps": 152.59,
+        "sizes_bytes": [
+          25287467,
+          25287467
+        ],
+        "hash_full": "bc538cdec58e681f08123d98bcc9dad4cb6ca241f6af7d7441ea79d81135de95",
+        "size_bytes": 25287467,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "fortnite-raw-1080p_slow_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 6.3126,
+      "size_delta_pct": 12698.791
+    },
+    {
+      "case_id": "fortnite-raw-1080p|slower",
+      "clip_id": "fortnite-raw-1080p",
+      "preset": "slower",
+      "settings": {
+        "width": 1920,
+        "height": 1080,
+        "fps": 30,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "Wx264-reference\\fortnite_prefix128.yuv",
+        "source_sha256": "c0e2c11233791b9e6a25f5672da5ba91d9071f22f0ffa3087bb96cd16f166375",
+        "clip_sha256": "473e5391be06d5fc643d958acd6c31bea2d8c9d627b8be0d017b7cb7ad4ade9c",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          405.855,
+          400.751
+        ],
+        "median_ms": 403.303,
+        "mean_ms": 403.303,
+        "min_ms": 400.751,
+        "max_ms": 405.855,
+        "fps": 19.84,
+        "sizes_bytes": [
+          199553,
+          199553
+        ],
+        "hash_full": "fad6fcd44604930c92cebdf3f41c08945419b93c9989d579868c16d4fc590453",
+        "size_bytes": 199553,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "fortnite-raw-1080p_slower_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 42.7057,
+          "ssim": 0.985,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          51.081,
+          57.813
+        ],
+        "availability": "present",
+        "median_ms": 54.447,
+        "mean_ms": 54.447,
+        "min_ms": 51.081,
+        "max_ms": 57.813,
+        "fps": 146.93,
+        "sizes_bytes": [
+          25287467,
+          25287467
+        ],
+        "hash_full": "bc538cdec58e681f08123d98bcc9dad4cb6ca241f6af7d7441ea79d81135de95",
+        "size_bytes": 25287467,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "fortnite-raw-1080p_slower_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 7.4073,
+      "size_delta_pct": 12572.056
+    },
+    {
+      "case_id": "fortnite-raw-1080p|veryslow",
+      "clip_id": "fortnite-raw-1080p",
+      "preset": "veryslow",
+      "settings": {
+        "width": 1920,
+        "height": 1080,
+        "fps": 30,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "Wx264-reference\\fortnite_prefix128.yuv",
+        "source_sha256": "c0e2c11233791b9e6a25f5672da5ba91d9071f22f0ffa3087bb96cd16f166375",
+        "clip_sha256": "473e5391be06d5fc643d958acd6c31bea2d8c9d627b8be0d017b7cb7ad4ade9c",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          589.146,
+          561.325
+        ],
+        "median_ms": 575.236,
+        "mean_ms": 575.236,
+        "min_ms": 561.325,
+        "max_ms": 589.146,
+        "fps": 13.91,
+        "sizes_bytes": [
+          186685,
+          186685
+        ],
+        "hash_full": "6ac1ca5c9198f0c9e3c775c2c1aeff33eb2db47a4a4e7191b8fcc250b383ee76",
+        "size_bytes": 186685,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "fortnite-raw-1080p_veryslow_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 42.2897,
+          "ssim": 0.9839,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          53.119,
+          55.027
+        ],
+        "availability": "present",
+        "median_ms": 54.073,
+        "mean_ms": 54.073,
+        "min_ms": 53.119,
+        "max_ms": 55.027,
+        "fps": 147.95,
+        "sizes_bytes": [
+          25287467,
+          25287467
+        ],
+        "hash_full": "bc538cdec58e681f08123d98bcc9dad4cb6ca241f6af7d7441ea79d81135de95",
+        "size_bytes": 25287467,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "fortnite-raw-1080p_veryslow_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 10.6381,
+      "size_delta_pct": 13445.527
+    },
+    {
+      "case_id": "twitter-640x360|ultrafast",
+      "clip_id": "twitter-640x360",
+      "preset": "ultrafast",
+      "settings": {
+        "width": 640,
+        "height": 360,
+        "fps": 30,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "ssstwitter.com_1732158697723.mp4",
+        "source_sha256": "ee5dabeb8ebc6bcb5a846746f7d1c82c91337d8ae040ff099acdfb6fafcf496f",
+        "clip_sha256": "85e4f86d600bfd1f618040f2657538aac20291524d1a7b9c6d0c98ee5ba80f3e",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          20.924,
+          22.323
+        ],
+        "median_ms": 21.623,
+        "mean_ms": 21.623,
+        "min_ms": 20.924,
+        "max_ms": 22.323,
+        "fps": 369.97,
+        "sizes_bytes": [
+          59902,
+          59902
+        ],
+        "hash_full": "fc21049455323d98c1a07e7fe282027dd3d482b0a74d661f5eaa93fd063a876e",
+        "size_bytes": 59902,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-640x360_ultrafast_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 45.8185,
+          "ssim": 0.9915,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          13.122,
+          13.923
+        ],
+        "availability": "present",
+        "median_ms": 13.523,
+        "mean_ms": 13.523,
+        "min_ms": 13.122,
+        "max_ms": 13.923,
+        "fps": 591.6,
+        "sizes_bytes": [
+          2870827,
+          2870827
+        ],
+        "hash_full": "1521ad1205cfbab3d464718a81f1b8309b28df5bf6c731d863f4c2822f691647",
+        "size_bytes": 2870827,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-640x360_ultrafast_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 1.599,
+      "size_delta_pct": 4692.539
+    },
+    {
+      "case_id": "twitter-640x360|superfast",
+      "clip_id": "twitter-640x360",
+      "preset": "superfast",
+      "settings": {
+        "width": 640,
+        "height": 360,
+        "fps": 30,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "ssstwitter.com_1732158697723.mp4",
+        "source_sha256": "ee5dabeb8ebc6bcb5a846746f7d1c82c91337d8ae040ff099acdfb6fafcf496f",
+        "clip_sha256": "85e4f86d600bfd1f618040f2657538aac20291524d1a7b9c6d0c98ee5ba80f3e",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          26.274,
+          23.817
+        ],
+        "median_ms": 25.046,
+        "mean_ms": 25.046,
+        "min_ms": 23.817,
+        "max_ms": 26.274,
+        "fps": 319.42,
+        "sizes_bytes": [
+          24403,
+          24403
+        ],
+        "hash_full": "a952e83db4bee43a85a6ca219d2124c897d90f0bfd643e6fe2f2fd8d43639f42",
+        "size_bytes": 24403,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-640x360_superfast_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 45.6733,
+          "ssim": 0.9939,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          13.347,
+          13.361
+        ],
+        "availability": "present",
+        "median_ms": 13.354,
+        "mean_ms": 13.354,
+        "min_ms": 13.347,
+        "max_ms": 13.361,
+        "fps": 599.06,
+        "sizes_bytes": [
+          2870827,
+          2870827
+        ],
+        "hash_full": "1521ad1205cfbab3d464718a81f1b8309b28df5bf6c731d863f4c2822f691647",
+        "size_bytes": 2870827,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-640x360_superfast_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 1.8755,
+      "size_delta_pct": 11664.238
+    },
+    {
+      "case_id": "twitter-640x360|veryfast",
+      "clip_id": "twitter-640x360",
+      "preset": "veryfast",
+      "settings": {
+        "width": 640,
+        "height": 360,
+        "fps": 30,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "ssstwitter.com_1732158697723.mp4",
+        "source_sha256": "ee5dabeb8ebc6bcb5a846746f7d1c82c91337d8ae040ff099acdfb6fafcf496f",
+        "clip_sha256": "85e4f86d600bfd1f618040f2657538aac20291524d1a7b9c6d0c98ee5ba80f3e",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          26.317,
+          25.844
+        ],
+        "median_ms": 26.081,
+        "mean_ms": 26.081,
+        "min_ms": 25.844,
+        "max_ms": 26.317,
+        "fps": 306.74,
+        "sizes_bytes": [
+          18746,
+          18746
+        ],
+        "hash_full": "7edc44482523c6157abf662b13e1be294776684a772a75a9af4b990fcb31c2d4",
+        "size_bytes": 18746,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-640x360_veryfast_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 43.9696,
+          "ssim": 0.9929,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          14.633,
+          14.428
+        ],
+        "availability": "present",
+        "median_ms": 14.531,
+        "mean_ms": 14.531,
+        "min_ms": 14.428,
+        "max_ms": 14.633,
+        "fps": 550.56,
+        "sizes_bytes": [
+          2870827,
+          2870827
+        ],
+        "hash_full": "1521ad1205cfbab3d464718a81f1b8309b28df5bf6c731d863f4c2822f691647",
+        "size_bytes": 2870827,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-640x360_veryfast_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 1.7949,
+      "size_delta_pct": 15214.344
+    },
+    {
+      "case_id": "twitter-640x360|faster",
+      "clip_id": "twitter-640x360",
+      "preset": "faster",
+      "settings": {
+        "width": 640,
+        "height": 360,
+        "fps": 30,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "ssstwitter.com_1732158697723.mp4",
+        "source_sha256": "ee5dabeb8ebc6bcb5a846746f7d1c82c91337d8ae040ff099acdfb6fafcf496f",
+        "clip_sha256": "85e4f86d600bfd1f618040f2657538aac20291524d1a7b9c6d0c98ee5ba80f3e",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          29.753,
+          29.215
+        ],
+        "median_ms": 29.484,
+        "mean_ms": 29.484,
+        "min_ms": 29.215,
+        "max_ms": 29.753,
+        "fps": 271.33,
+        "sizes_bytes": [
+          18981,
+          18981
+        ],
+        "hash_full": "2de9e0796f38ba6469589e8ffff9ef633aec26f8ddf6c85f39b1f15f50559d01",
+        "size_bytes": 18981,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-640x360_faster_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 44.7105,
+          "ssim": 0.9935,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          14.117,
+          13.095
+        ],
+        "availability": "present",
+        "median_ms": 13.606,
+        "mean_ms": 13.606,
+        "min_ms": 13.095,
+        "max_ms": 14.117,
+        "fps": 587.99,
+        "sizes_bytes": [
+          2870827,
+          2870827
+        ],
+        "hash_full": "1521ad1205cfbab3d464718a81f1b8309b28df5bf6c731d863f4c2822f691647",
+        "size_bytes": 2870827,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-640x360_faster_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 2.167,
+      "size_delta_pct": 15024.741
+    },
+    {
+      "case_id": "twitter-640x360|fast",
+      "clip_id": "twitter-640x360",
+      "preset": "fast",
+      "settings": {
+        "width": 640,
+        "height": 360,
+        "fps": 30,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "ssstwitter.com_1732158697723.mp4",
+        "source_sha256": "ee5dabeb8ebc6bcb5a846746f7d1c82c91337d8ae040ff099acdfb6fafcf496f",
+        "clip_sha256": "85e4f86d600bfd1f618040f2657538aac20291524d1a7b9c6d0c98ee5ba80f3e",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          31.927,
+          32.757
+        ],
+        "median_ms": 32.342,
+        "mean_ms": 32.342,
+        "min_ms": 31.927,
+        "max_ms": 32.757,
+        "fps": 247.36,
+        "sizes_bytes": [
+          19394,
+          19394
+        ],
+        "hash_full": "51e0996c09e96967f5e5d411c75580aa8a920e01e44116fc0de4ebba2d233038",
+        "size_bytes": 19394,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-640x360_fast_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 44.7691,
+          "ssim": 0.9935,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          13.084,
+          14.91
+        ],
+        "availability": "present",
+        "median_ms": 13.997,
+        "mean_ms": 13.997,
+        "min_ms": 13.084,
+        "max_ms": 14.91,
+        "fps": 571.55,
+        "sizes_bytes": [
+          2870827,
+          2870827
+        ],
+        "hash_full": "1521ad1205cfbab3d464718a81f1b8309b28df5bf6c731d863f4c2822f691647",
+        "size_bytes": 2870827,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-640x360_fast_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 2.3106,
+      "size_delta_pct": 14702.655
+    },
+    {
+      "case_id": "twitter-640x360|medium",
+      "clip_id": "twitter-640x360",
+      "preset": "medium",
+      "settings": {
+        "width": 640,
+        "height": 360,
+        "fps": 30,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "ssstwitter.com_1732158697723.mp4",
+        "source_sha256": "ee5dabeb8ebc6bcb5a846746f7d1c82c91337d8ae040ff099acdfb6fafcf496f",
+        "clip_sha256": "85e4f86d600bfd1f618040f2657538aac20291524d1a7b9c6d0c98ee5ba80f3e",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          32.674,
+          33.432
+        ],
+        "median_ms": 33.053,
+        "mean_ms": 33.053,
+        "min_ms": 32.674,
+        "max_ms": 33.432,
+        "fps": 242.03,
+        "sizes_bytes": [
+          19383,
+          19383
+        ],
+        "hash_full": "387c2cad21b0004e82f1805bbb6cd6f0c2b568a6af3c8a2e82e6810222637abf",
+        "size_bytes": 19383,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-640x360_medium_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 44.7878,
+          "ssim": 0.9935,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          13.742,
+          14.332
+        ],
+        "availability": "present",
+        "median_ms": 14.037,
+        "mean_ms": 14.037,
+        "min_ms": 13.742,
+        "max_ms": 14.332,
+        "fps": 569.93,
+        "sizes_bytes": [
+          2870827,
+          2870827
+        ],
+        "hash_full": "1521ad1205cfbab3d464718a81f1b8309b28df5bf6c731d863f4c2822f691647",
+        "size_bytes": 2870827,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-640x360_medium_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 2.3547,
+      "size_delta_pct": 14711.056
+    },
+    {
+      "case_id": "twitter-640x360|slow",
+      "clip_id": "twitter-640x360",
+      "preset": "slow",
+      "settings": {
+        "width": 640,
+        "height": 360,
+        "fps": 30,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "ssstwitter.com_1732158697723.mp4",
+        "source_sha256": "ee5dabeb8ebc6bcb5a846746f7d1c82c91337d8ae040ff099acdfb6fafcf496f",
+        "clip_sha256": "85e4f86d600bfd1f618040f2657538aac20291524d1a7b9c6d0c98ee5ba80f3e",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          51.85,
+          54.377
+        ],
+        "median_ms": 53.113,
+        "mean_ms": 53.113,
+        "min_ms": 51.85,
+        "max_ms": 54.377,
+        "fps": 150.62,
+        "sizes_bytes": [
+          19800,
+          19800
+        ],
+        "hash_full": "dc35912f48f276dcae5265f1050862ae4273163bfe6bdef9736ff0f4607c1886",
+        "size_bytes": 19800,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-640x360_slow_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 44.742,
+          "ssim": 0.9934,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          13.245,
+          13.423
+        ],
+        "availability": "present",
+        "median_ms": 13.334,
+        "mean_ms": 13.334,
+        "min_ms": 13.245,
+        "max_ms": 13.423,
+        "fps": 599.98,
+        "sizes_bytes": [
+          2870827,
+          2870827
+        ],
+        "hash_full": "1521ad1205cfbab3d464718a81f1b8309b28df5bf6c731d863f4c2822f691647",
+        "size_bytes": 2870827,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-640x360_slow_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 3.9833,
+      "size_delta_pct": 14399.126
+    },
+    {
+      "case_id": "twitter-640x360|slower",
+      "clip_id": "twitter-640x360",
+      "preset": "slower",
+      "settings": {
+        "width": 640,
+        "height": 360,
+        "fps": 30,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "ssstwitter.com_1732158697723.mp4",
+        "source_sha256": "ee5dabeb8ebc6bcb5a846746f7d1c82c91337d8ae040ff099acdfb6fafcf496f",
+        "clip_sha256": "85e4f86d600bfd1f618040f2657538aac20291524d1a7b9c6d0c98ee5ba80f3e",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          57.295,
+          59.804
+        ],
+        "median_ms": 58.549,
+        "mean_ms": 58.549,
+        "min_ms": 57.295,
+        "max_ms": 59.804,
+        "fps": 136.64,
+        "sizes_bytes": [
+          19759,
+          19759
+        ],
+        "hash_full": "2278ca99a96464b2ffbba1d9af10dcd6afa112ddb1d6c02c3277959be2b6cde5",
+        "size_bytes": 19759,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-640x360_slower_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 44.7976,
+          "ssim": 0.9935,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          14.216,
+          14.029
+        ],
+        "availability": "present",
+        "median_ms": 14.122,
+        "mean_ms": 14.122,
+        "min_ms": 14.029,
+        "max_ms": 14.216,
+        "fps": 566.47,
+        "sizes_bytes": [
+          2870827,
+          2870827
+        ],
+        "hash_full": "1521ad1205cfbab3d464718a81f1b8309b28df5bf6c731d863f4c2822f691647",
+        "size_bytes": 2870827,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-640x360_slower_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 4.1459,
+      "size_delta_pct": 14429.212
+    },
+    {
+      "case_id": "twitter-640x360|veryslow",
+      "clip_id": "twitter-640x360",
+      "preset": "veryslow",
+      "settings": {
+        "width": 640,
+        "height": 360,
+        "fps": 30,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "ssstwitter.com_1732158697723.mp4",
+        "source_sha256": "ee5dabeb8ebc6bcb5a846746f7d1c82c91337d8ae040ff099acdfb6fafcf496f",
+        "clip_sha256": "85e4f86d600bfd1f618040f2657538aac20291524d1a7b9c6d0c98ee5ba80f3e",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          78.695,
+          84.67
+        ],
+        "median_ms": 81.683,
+        "mean_ms": 81.683,
+        "min_ms": 78.695,
+        "max_ms": 84.67,
+        "fps": 97.94,
+        "sizes_bytes": [
+          18306,
+          18306
+        ],
+        "hash_full": "17bf13542f8a24fe9163080e73a2d22a989f9a0f99081a315bd87c2689420e9a",
+        "size_bytes": 18306,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-640x360_veryslow_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 45.243,
+          "ssim": 0.9936,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          13.413,
+          13.329
+        ],
+        "availability": "present",
+        "median_ms": 13.371,
+        "mean_ms": 13.371,
+        "min_ms": 13.329,
+        "max_ms": 13.413,
+        "fps": 598.32,
+        "sizes_bytes": [
+          2870827,
+          2870827
+        ],
+        "hash_full": "1521ad1205cfbab3d464718a81f1b8309b28df5bf6c731d863f4c2822f691647",
+        "size_bytes": 2870827,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-640x360_veryslow_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 6.109,
+      "size_delta_pct": 15582.437
+    },
+    {
+      "case_id": "twitter-1080p|ultrafast",
+      "clip_id": "twitter-1080p",
+      "preset": "ultrafast",
+      "settings": {
+        "width": 1920,
+        "height": 1080,
+        "fps": 30,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "ssstwitter.com_1736929558402.mp4",
+        "source_sha256": "284afeb9449c1baa1e6ebb3d1f6a0749aa04c1c4334190ac5b624dc03e674aa6",
+        "clip_sha256": "200c44e01fa99503a9f6b1d0e530aa3bc9fcb35c34d0fe94c459da21151813f5",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          49.935,
+          49.92
+        ],
+        "median_ms": 49.928,
+        "mean_ms": 49.928,
+        "min_ms": 49.92,
+        "max_ms": 49.935,
+        "fps": 160.23,
+        "sizes_bytes": [
+          30728,
+          30728
+        ],
+        "hash_full": "4107a45ebeb98ad37cc0edabeba37d64826aff9875be77f591e3004bc557cb0f",
+        "size_bytes": 30728,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-1080p_ultrafast_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 64.6237,
+          "ssim": 0.9998,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          55.521,
+          50.258
+        ],
+        "availability": "present",
+        "median_ms": 52.889,
+        "mean_ms": 52.889,
+        "min_ms": 50.258,
+        "max_ms": 55.521,
+        "fps": 151.26,
+        "sizes_bytes": [
+          25287467,
+          25287467
+        ],
+        "hash_full": "1f5434d29e331c3d3efa4bf62b23f58e89072323958cff579a2b76183f96ce90",
+        "size_bytes": 25287467,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-1080p_ultrafast_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 0.944,
+      "size_delta_pct": 82194.542
+    },
+    {
+      "case_id": "twitter-1080p|superfast",
+      "clip_id": "twitter-1080p",
+      "preset": "superfast",
+      "settings": {
+        "width": 1920,
+        "height": 1080,
+        "fps": 30,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "ssstwitter.com_1736929558402.mp4",
+        "source_sha256": "284afeb9449c1baa1e6ebb3d1f6a0749aa04c1c4334190ac5b624dc03e674aa6",
+        "clip_sha256": "200c44e01fa99503a9f6b1d0e530aa3bc9fcb35c34d0fe94c459da21151813f5",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          56.33,
+          61.727
+        ],
+        "median_ms": 59.029,
+        "mean_ms": 59.029,
+        "min_ms": 56.33,
+        "max_ms": 61.727,
+        "fps": 135.53,
+        "sizes_bytes": [
+          25008,
+          25008
+        ],
+        "hash_full": "b3eff71999680e164c88ebd0c0b602fe8dc2d110fcccee0bb7124d62a1abb77e",
+        "size_bytes": 25008,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-1080p_superfast_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 63.3877,
+          "ssim": 0.9998,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          49.478,
+          53.412
+        ],
+        "availability": "present",
+        "median_ms": 51.445,
+        "mean_ms": 51.445,
+        "min_ms": 49.478,
+        "max_ms": 53.412,
+        "fps": 155.51,
+        "sizes_bytes": [
+          25287467,
+          25287467
+        ],
+        "hash_full": "1f5434d29e331c3d3efa4bf62b23f58e89072323958cff579a2b76183f96ce90",
+        "size_bytes": 25287467,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-1080p_superfast_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 1.1474,
+      "size_delta_pct": 101017.51
+    },
+    {
+      "case_id": "twitter-1080p|veryfast",
+      "clip_id": "twitter-1080p",
+      "preset": "veryfast",
+      "settings": {
+        "width": 1920,
+        "height": 1080,
+        "fps": 30,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "ssstwitter.com_1736929558402.mp4",
+        "source_sha256": "284afeb9449c1baa1e6ebb3d1f6a0749aa04c1c4334190ac5b624dc03e674aa6",
+        "clip_sha256": "200c44e01fa99503a9f6b1d0e530aa3bc9fcb35c34d0fe94c459da21151813f5",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          70.469,
+          72.311
+        ],
+        "median_ms": 71.39,
+        "mean_ms": 71.39,
+        "min_ms": 70.469,
+        "max_ms": 72.311,
+        "fps": 112.06,
+        "sizes_bytes": [
+          14824,
+          14824
+        ],
+        "hash_full": "0780684943ed8cdb366b4bbf838ca4557b4ef0a0811032e14f15a89051ac7109",
+        "size_bytes": 14824,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-1080p_veryfast_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 59.7692,
+          "ssim": 0.9997,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          52.148,
+          51.781
+        ],
+        "availability": "present",
+        "median_ms": 51.964,
+        "mean_ms": 51.964,
+        "min_ms": 51.781,
+        "max_ms": 52.148,
+        "fps": 153.95,
+        "sizes_bytes": [
+          25287467,
+          25287467
+        ],
+        "hash_full": "1f5434d29e331c3d3efa4bf62b23f58e89072323958cff579a2b76183f96ce90",
+        "size_bytes": 25287467,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-1080p_veryfast_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 1.3738,
+      "size_delta_pct": 170484.64
+    },
+    {
+      "case_id": "twitter-1080p|faster",
+      "clip_id": "twitter-1080p",
+      "preset": "faster",
+      "settings": {
+        "width": 1920,
+        "height": 1080,
+        "fps": 30,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "ssstwitter.com_1736929558402.mp4",
+        "source_sha256": "284afeb9449c1baa1e6ebb3d1f6a0749aa04c1c4334190ac5b624dc03e674aa6",
+        "clip_sha256": "200c44e01fa99503a9f6b1d0e530aa3bc9fcb35c34d0fe94c459da21151813f5",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          95.053,
+          109.846
+        ],
+        "median_ms": 102.449,
+        "mean_ms": 102.449,
+        "min_ms": 95.053,
+        "max_ms": 109.846,
+        "fps": 78.09,
+        "sizes_bytes": [
+          16406,
+          16406
+        ],
+        "hash_full": "c8cd92419634d950ca1195ba42c7834a107c5772e46eed7a20ddf7e52117775b",
+        "size_bytes": 16406,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-1080p_faster_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 59.698,
+          "ssim": 0.9997,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          49.16,
+          51.439
+        ],
+        "availability": "present",
+        "median_ms": 50.3,
+        "mean_ms": 50.3,
+        "min_ms": 49.16,
+        "max_ms": 51.439,
+        "fps": 159.05,
+        "sizes_bytes": [
+          25287467,
+          25287467
+        ],
+        "hash_full": "1f5434d29e331c3d3efa4bf62b23f58e89072323958cff579a2b76183f96ce90",
+        "size_bytes": 25287467,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-1080p_faster_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 2.0368,
+      "size_delta_pct": 154035.481
+    },
+    {
+      "case_id": "twitter-1080p|fast",
+      "clip_id": "twitter-1080p",
+      "preset": "fast",
+      "settings": {
+        "width": 1920,
+        "height": 1080,
+        "fps": 30,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "ssstwitter.com_1736929558402.mp4",
+        "source_sha256": "284afeb9449c1baa1e6ebb3d1f6a0749aa04c1c4334190ac5b624dc03e674aa6",
+        "clip_sha256": "200c44e01fa99503a9f6b1d0e530aa3bc9fcb35c34d0fe94c459da21151813f5",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          102.088,
+          109.412
+        ],
+        "median_ms": 105.75,
+        "mean_ms": 105.75,
+        "min_ms": 102.088,
+        "max_ms": 109.412,
+        "fps": 75.65,
+        "sizes_bytes": [
+          15882,
+          15882
+        ],
+        "hash_full": "c5fd2838eb00da897e8d11945c10b68275f3e2a7303e8160377c8b6b656c8feb",
+        "size_bytes": 15882,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-1080p_fast_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 60.3377,
+          "ssim": 0.9997,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          60.223,
+          57.136
+        ],
+        "availability": "present",
+        "median_ms": 58.679,
+        "mean_ms": 58.679,
+        "min_ms": 57.136,
+        "max_ms": 60.223,
+        "fps": 136.33,
+        "sizes_bytes": [
+          25287467,
+          25287467
+        ],
+        "hash_full": "1f5434d29e331c3d3efa4bf62b23f58e89072323958cff579a2b76183f96ce90",
+        "size_bytes": 25287467,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-1080p_fast_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 1.8022,
+      "size_delta_pct": 159120.923
+    },
+    {
+      "case_id": "twitter-1080p|medium",
+      "clip_id": "twitter-1080p",
+      "preset": "medium",
+      "settings": {
+        "width": 1920,
+        "height": 1080,
+        "fps": 30,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "ssstwitter.com_1736929558402.mp4",
+        "source_sha256": "284afeb9449c1baa1e6ebb3d1f6a0749aa04c1c4334190ac5b624dc03e674aa6",
+        "clip_sha256": "200c44e01fa99503a9f6b1d0e530aa3bc9fcb35c34d0fe94c459da21151813f5",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          102.951,
+          106.342
+        ],
+        "median_ms": 104.646,
+        "mean_ms": 104.646,
+        "min_ms": 102.951,
+        "max_ms": 106.342,
+        "fps": 76.45,
+        "sizes_bytes": [
+          15584,
+          15584
+        ],
+        "hash_full": "d448f014252bf0507481e160d7ef719c787bb837a1d2d9d9dd20080ec6534437",
+        "size_bytes": 15584,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-1080p_medium_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 60.3566,
+          "ssim": 0.9997,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          49.187,
+          56.106
+        ],
+        "availability": "present",
+        "median_ms": 52.646,
+        "mean_ms": 52.646,
+        "min_ms": 49.187,
+        "max_ms": 56.106,
+        "fps": 151.96,
+        "sizes_bytes": [
+          25287467,
+          25287467
+        ],
+        "hash_full": "1f5434d29e331c3d3efa4bf62b23f58e89072323958cff579a2b76183f96ce90",
+        "size_bytes": 25287467,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-1080p_medium_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 1.9877,
+      "size_delta_pct": 162165.574
+    },
+    {
+      "case_id": "twitter-1080p|slow",
+      "clip_id": "twitter-1080p",
+      "preset": "slow",
+      "settings": {
+        "width": 1920,
+        "height": 1080,
+        "fps": 30,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "ssstwitter.com_1736929558402.mp4",
+        "source_sha256": "284afeb9449c1baa1e6ebb3d1f6a0749aa04c1c4334190ac5b624dc03e674aa6",
+        "clip_sha256": "200c44e01fa99503a9f6b1d0e530aa3bc9fcb35c34d0fe94c459da21151813f5",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          113.053,
+          115.792
+        ],
+        "median_ms": 114.422,
+        "mean_ms": 114.422,
+        "min_ms": 113.053,
+        "max_ms": 115.792,
+        "fps": 69.92,
+        "sizes_bytes": [
+          15620,
+          15620
+        ],
+        "hash_full": "d7e880aded0707dd7a48bc042773b886c44bf0c091b4daefc7840f0c59c1a2e0",
+        "size_bytes": 15620,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-1080p_slow_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 60.359,
+          "ssim": 0.9997,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          56.343,
+          51.653
+        ],
+        "availability": "present",
+        "median_ms": 53.998,
+        "mean_ms": 53.998,
+        "min_ms": 51.653,
+        "max_ms": 56.343,
+        "fps": 148.15,
+        "sizes_bytes": [
+          25287467,
+          25287467
+        ],
+        "hash_full": "1f5434d29e331c3d3efa4bf62b23f58e89072323958cff579a2b76183f96ce90",
+        "size_bytes": 25287467,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-1080p_slow_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 2.119,
+      "size_delta_pct": 161791.594
+    },
+    {
+      "case_id": "twitter-1080p|slower",
+      "clip_id": "twitter-1080p",
+      "preset": "slower",
+      "settings": {
+        "width": 1920,
+        "height": 1080,
+        "fps": 30,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "ssstwitter.com_1736929558402.mp4",
+        "source_sha256": "284afeb9449c1baa1e6ebb3d1f6a0749aa04c1c4334190ac5b624dc03e674aa6",
+        "clip_sha256": "200c44e01fa99503a9f6b1d0e530aa3bc9fcb35c34d0fe94c459da21151813f5",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          126.385,
+          125.257
+        ],
+        "median_ms": 125.821,
+        "mean_ms": 125.821,
+        "min_ms": 125.257,
+        "max_ms": 126.385,
+        "fps": 63.58,
+        "sizes_bytes": [
+          15846,
+          15846
+        ],
+        "hash_full": "554bdca9f1c53d9e1d2b3c325ac23b457c820b96e05c21a3567508b674e7032a",
+        "size_bytes": 15846,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-1080p_slower_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 60.3522,
+          "ssim": 0.9997,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          57.081,
+          52.579
+        ],
+        "availability": "present",
+        "median_ms": 54.83,
+        "mean_ms": 54.83,
+        "min_ms": 52.579,
+        "max_ms": 57.081,
+        "fps": 145.91,
+        "sizes_bytes": [
+          25287467,
+          25287467
+        ],
+        "hash_full": "1f5434d29e331c3d3efa4bf62b23f58e89072323958cff579a2b76183f96ce90",
+        "size_bytes": 25287467,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-1080p_slower_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 2.2947,
+      "size_delta_pct": 159482.652
+    },
+    {
+      "case_id": "twitter-1080p|veryslow",
+      "clip_id": "twitter-1080p",
+      "preset": "veryslow",
+      "settings": {
+        "width": 1920,
+        "height": 1080,
+        "fps": 30,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "ssstwitter.com_1736929558402.mp4",
+        "source_sha256": "284afeb9449c1baa1e6ebb3d1f6a0749aa04c1c4334190ac5b624dc03e674aa6",
+        "clip_sha256": "200c44e01fa99503a9f6b1d0e530aa3bc9fcb35c34d0fe94c459da21151813f5",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          146.263,
+          142.143
+        ],
+        "median_ms": 144.203,
+        "mean_ms": 144.203,
+        "min_ms": 142.143,
+        "max_ms": 146.263,
+        "fps": 55.48,
+        "sizes_bytes": [
+          13729,
+          13729
+        ],
+        "hash_full": "31e1f3241f349f007347b0e6d81541d277e084c8f7284e3aab7eb3cf78d63b03",
+        "size_bytes": 13729,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-1080p_veryslow_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 59.8813,
+          "ssim": 0.9997,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          51.004,
+          51.379
+        ],
+        "availability": "present",
+        "median_ms": 51.192,
+        "mean_ms": 51.192,
+        "min_ms": 51.004,
+        "max_ms": 51.379,
+        "fps": 156.28,
+        "sizes_bytes": [
+          25287467,
+          25287467
+        ],
+        "hash_full": "1f5434d29e331c3d3efa4bf62b23f58e89072323958cff579a2b76183f96ce90",
+        "size_bytes": 25287467,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-1080p_veryslow_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 2.8169,
+      "size_delta_pct": 184090.16
+    },
+    {
+      "case_id": "twitter-720p60|ultrafast",
+      "clip_id": "twitter-720p60",
+      "preset": "ultrafast",
+      "settings": {
+        "width": 1280,
+        "height": 720,
+        "fps": 60,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "ssstwitter.com_1731881880284.mp4",
+        "source_sha256": "3191e8de186709b3d4b9383cd2116b09f7710bef8679916267088497bfec1609",
+        "clip_sha256": "4448ad3476c43341b1afe1c1a21b476e1003366f37389361716bd33b4acf6ab4",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          34.726,
+          31.344
+        ],
+        "median_ms": 33.035,
+        "mean_ms": 33.035,
+        "min_ms": 31.344,
+        "max_ms": 34.726,
+        "fps": 242.17,
+        "sizes_bytes": [
+          76124,
+          76124
+        ],
+        "hash_full": "750c21b8a0fd5bb83c21723cccea7bc7276322fbf321995380db421734928ae3",
+        "size_bytes": 76124,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-720p60_ultrafast_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 49.93,
+          "ssim": 0.9958,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          26.277,
+          25.493
+        ],
+        "availability": "present",
+        "median_ms": 25.885,
+        "mean_ms": 25.885,
+        "min_ms": 25.493,
+        "max_ms": 26.277,
+        "fps": 309.06,
+        "sizes_bytes": [
+          11116906,
+          11116906
+        ],
+        "hash_full": "86336919021d4f130251e90c88db5163e71ca89a187b4ca5e42fd33cf0e8431b",
+        "size_bytes": 11116906,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-720p60_ultrafast_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 1.2762,
+      "size_delta_pct": 14503.681
+    },
+    {
+      "case_id": "twitter-720p60|superfast",
+      "clip_id": "twitter-720p60",
+      "preset": "superfast",
+      "settings": {
+        "width": 1280,
+        "height": 720,
+        "fps": 60,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "ssstwitter.com_1731881880284.mp4",
+        "source_sha256": "3191e8de186709b3d4b9383cd2116b09f7710bef8679916267088497bfec1609",
+        "clip_sha256": "4448ad3476c43341b1afe1c1a21b476e1003366f37389361716bd33b4acf6ab4",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          38.374,
+          39.326
+        ],
+        "median_ms": 38.85,
+        "mean_ms": 38.85,
+        "min_ms": 38.374,
+        "max_ms": 39.326,
+        "fps": 205.92,
+        "sizes_bytes": [
+          37124,
+          37124
+        ],
+        "hash_full": "0378ea678f5471631f4e81cee14d407bf06facfd3f7c5a3b488f38a0e4563d88",
+        "size_bytes": 37124,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-720p60_superfast_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 49.399,
+          "ssim": 0.997,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          25.597,
+          25.732
+        ],
+        "availability": "present",
+        "median_ms": 25.664,
+        "mean_ms": 25.664,
+        "min_ms": 25.597,
+        "max_ms": 25.732,
+        "fps": 311.72,
+        "sizes_bytes": [
+          11116906,
+          11116906
+        ],
+        "hash_full": "86336919021d4f130251e90c88db5163e71ca89a187b4ca5e42fd33cf0e8431b",
+        "size_bytes": 11116906,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-720p60_superfast_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 1.5138,
+      "size_delta_pct": 29845.335
+    },
+    {
+      "case_id": "twitter-720p60|veryfast",
+      "clip_id": "twitter-720p60",
+      "preset": "veryfast",
+      "settings": {
+        "width": 1280,
+        "height": 720,
+        "fps": 60,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "ssstwitter.com_1731881880284.mp4",
+        "source_sha256": "3191e8de186709b3d4b9383cd2116b09f7710bef8679916267088497bfec1609",
+        "clip_sha256": "4448ad3476c43341b1afe1c1a21b476e1003366f37389361716bd33b4acf6ab4",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          43.824,
+          44.689
+        ],
+        "median_ms": 44.256,
+        "mean_ms": 44.256,
+        "min_ms": 43.824,
+        "max_ms": 44.689,
+        "fps": 180.77,
+        "sizes_bytes": [
+          25286,
+          25286
+        ],
+        "hash_full": "eb4addb2074269e4a4ad6d1f5f861c3d25c57f4bd42e4ad9c0cd30c1f771f9f6",
+        "size_bytes": 25286,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-720p60_veryfast_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 48.2004,
+          "ssim": 0.9968,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          27.167,
+          28.276
+        ],
+        "availability": "present",
+        "median_ms": 27.722,
+        "mean_ms": 27.722,
+        "min_ms": 27.167,
+        "max_ms": 28.276,
+        "fps": 288.58,
+        "sizes_bytes": [
+          11116906,
+          11116906
+        ],
+        "hash_full": "86336919021d4f130251e90c88db5163e71ca89a187b4ca5e42fd33cf0e8431b",
+        "size_bytes": 11116906,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-720p60_veryfast_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 1.5964,
+      "size_delta_pct": 43864.668
+    },
+    {
+      "case_id": "twitter-720p60|faster",
+      "clip_id": "twitter-720p60",
+      "preset": "faster",
+      "settings": {
+        "width": 1280,
+        "height": 720,
+        "fps": 60,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "ssstwitter.com_1731881880284.mp4",
+        "source_sha256": "3191e8de186709b3d4b9383cd2116b09f7710bef8679916267088497bfec1609",
+        "clip_sha256": "4448ad3476c43341b1afe1c1a21b476e1003366f37389361716bd33b4acf6ab4",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          53.861,
+          53.645
+        ],
+        "median_ms": 53.753,
+        "mean_ms": 53.753,
+        "min_ms": 53.645,
+        "max_ms": 53.861,
+        "fps": 148.83,
+        "sizes_bytes": [
+          25512,
+          25512
+        ],
+        "hash_full": "7cb942f9e402c021c2cc66ef7be9ec2fa8f1dd3bca4a1a4d673059c6dfbec75e",
+        "size_bytes": 25512,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-720p60_faster_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 48.5977,
+          "ssim": 0.997,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          26.049,
+          25.525
+        ],
+        "availability": "present",
+        "median_ms": 25.787,
+        "mean_ms": 25.787,
+        "min_ms": 25.525,
+        "max_ms": 26.049,
+        "fps": 310.23,
+        "sizes_bytes": [
+          11116906,
+          11116906
+        ],
+        "hash_full": "86336919021d4f130251e90c88db5163e71ca89a187b4ca5e42fd33cf0e8431b",
+        "size_bytes": 11116906,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-720p60_faster_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 2.0845,
+      "size_delta_pct": 43475.204
+    },
+    {
+      "case_id": "twitter-720p60|fast",
+      "clip_id": "twitter-720p60",
+      "preset": "fast",
+      "settings": {
+        "width": 1280,
+        "height": 720,
+        "fps": 60,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "ssstwitter.com_1731881880284.mp4",
+        "source_sha256": "3191e8de186709b3d4b9383cd2116b09f7710bef8679916267088497bfec1609",
+        "clip_sha256": "4448ad3476c43341b1afe1c1a21b476e1003366f37389361716bd33b4acf6ab4",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          57.065,
+          60.186
+        ],
+        "median_ms": 58.626,
+        "mean_ms": 58.626,
+        "min_ms": 57.065,
+        "max_ms": 60.186,
+        "fps": 136.46,
+        "sizes_bytes": [
+          25287,
+          25287
+        ],
+        "hash_full": "ae71e461c7e4247bc78ff854fe6b5b2f6284aa3c72db97c9835eb863a0b76c73",
+        "size_bytes": 25287,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-720p60_fast_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 48.0953,
+          "ssim": 0.9966,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          25.382,
+          27.213
+        ],
+        "availability": "present",
+        "median_ms": 26.298,
+        "mean_ms": 26.298,
+        "min_ms": 25.382,
+        "max_ms": 27.213,
+        "fps": 304.21,
+        "sizes_bytes": [
+          11116906,
+          11116906
+        ],
+        "hash_full": "86336919021d4f130251e90c88db5163e71ca89a187b4ca5e42fd33cf0e8431b",
+        "size_bytes": 11116906,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-720p60_fast_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 2.2293,
+      "size_delta_pct": 43862.93
+    },
+    {
+      "case_id": "twitter-720p60|medium",
+      "clip_id": "twitter-720p60",
+      "preset": "medium",
+      "settings": {
+        "width": 1280,
+        "height": 720,
+        "fps": 60,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "ssstwitter.com_1731881880284.mp4",
+        "source_sha256": "3191e8de186709b3d4b9383cd2116b09f7710bef8679916267088497bfec1609",
+        "clip_sha256": "4448ad3476c43341b1afe1c1a21b476e1003366f37389361716bd33b4acf6ab4",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          60.823,
+          63.298
+        ],
+        "median_ms": 62.061,
+        "mean_ms": 62.061,
+        "min_ms": 60.823,
+        "max_ms": 63.298,
+        "fps": 128.91,
+        "sizes_bytes": [
+          25339,
+          25339
+        ],
+        "hash_full": "7c6ea948e3edd46dac10eea9b93eec37898aa86b9b3d815f7589d9b193783a08",
+        "size_bytes": 25339,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-720p60_medium_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 48.0947,
+          "ssim": 0.9966,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          26.626,
+          27.65
+        ],
+        "availability": "present",
+        "median_ms": 27.138,
+        "mean_ms": 27.138,
+        "min_ms": 26.626,
+        "max_ms": 27.65,
+        "fps": 294.79,
+        "sizes_bytes": [
+          11116906,
+          11116906
+        ],
+        "hash_full": "86336919021d4f130251e90c88db5163e71ca89a187b4ca5e42fd33cf0e8431b",
+        "size_bytes": 11116906,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-720p60_medium_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 2.2869,
+      "size_delta_pct": 43772.71
+    },
+    {
+      "case_id": "twitter-720p60|slow",
+      "clip_id": "twitter-720p60",
+      "preset": "slow",
+      "settings": {
+        "width": 1280,
+        "height": 720,
+        "fps": 60,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "ssstwitter.com_1731881880284.mp4",
+        "source_sha256": "3191e8de186709b3d4b9383cd2116b09f7710bef8679916267088497bfec1609",
+        "clip_sha256": "4448ad3476c43341b1afe1c1a21b476e1003366f37389361716bd33b4acf6ab4",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          88.388,
+          86.808
+        ],
+        "median_ms": 87.598,
+        "mean_ms": 87.598,
+        "min_ms": 86.808,
+        "max_ms": 88.388,
+        "fps": 91.33,
+        "sizes_bytes": [
+          25213,
+          25213
+        ],
+        "hash_full": "4b1b98fa8466258a0649efaee5d7547606dbeb143a51a8ebba3e9a5925c1497e",
+        "size_bytes": 25213,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-720p60_slow_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 47.7956,
+          "ssim": 0.9964,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          30.138,
+          29.784
+        ],
+        "availability": "present",
+        "median_ms": 29.961,
+        "mean_ms": 29.961,
+        "min_ms": 29.784,
+        "max_ms": 30.138,
+        "fps": 267.01,
+        "sizes_bytes": [
+          11116906,
+          11116906
+        ],
+        "hash_full": "86336919021d4f130251e90c88db5163e71ca89a187b4ca5e42fd33cf0e8431b",
+        "size_bytes": 11116906,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-720p60_slow_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 2.9237,
+      "size_delta_pct": 43991.96
+    },
+    {
+      "case_id": "twitter-720p60|slower",
+      "clip_id": "twitter-720p60",
+      "preset": "slower",
+      "settings": {
+        "width": 1280,
+        "height": 720,
+        "fps": 60,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "ssstwitter.com_1731881880284.mp4",
+        "source_sha256": "3191e8de186709b3d4b9383cd2116b09f7710bef8679916267088497bfec1609",
+        "clip_sha256": "4448ad3476c43341b1afe1c1a21b476e1003366f37389361716bd33b4acf6ab4",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          92.078,
+          99.648
+        ],
+        "median_ms": 95.863,
+        "mean_ms": 95.863,
+        "min_ms": 92.078,
+        "max_ms": 99.648,
+        "fps": 83.45,
+        "sizes_bytes": [
+          25573,
+          25573
+        ],
+        "hash_full": "59c0920163412babfe94f4cb7f55220dc0a5bb18ae0f722f83f36cb7530e6d02",
+        "size_bytes": 25573,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-720p60_slower_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 48.1523,
+          "ssim": 0.9965,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          29.332,
+          28.516
+        ],
+        "availability": "present",
+        "median_ms": 28.924,
+        "mean_ms": 28.924,
+        "min_ms": 28.516,
+        "max_ms": 29.332,
+        "fps": 276.59,
+        "sizes_bytes": [
+          11116906,
+          11116906
+        ],
+        "hash_full": "86336919021d4f130251e90c88db5163e71ca89a187b4ca5e42fd33cf0e8431b",
+        "size_bytes": 11116906,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-720p60_slower_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 3.3143,
+      "size_delta_pct": 43371.263
+    },
+    {
+      "case_id": "twitter-720p60|veryslow",
+      "clip_id": "twitter-720p60",
+      "preset": "veryslow",
+      "settings": {
+        "width": 1280,
+        "height": 720,
+        "fps": 60,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "ssstwitter.com_1731881880284.mp4",
+        "source_sha256": "3191e8de186709b3d4b9383cd2116b09f7710bef8679916267088497bfec1609",
+        "clip_sha256": "4448ad3476c43341b1afe1c1a21b476e1003366f37389361716bd33b4acf6ab4",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          115.094,
+          116.813
+        ],
+        "median_ms": 115.953,
+        "mean_ms": 115.953,
+        "min_ms": 115.094,
+        "max_ms": 116.813,
+        "fps": 68.99,
+        "sizes_bytes": [
+          24621,
+          24621
+        ],
+        "hash_full": "cb67b26534aed9532910989dd347fd73c550e9e4c2a92fae6531a2a2139d4898",
+        "size_bytes": 24621,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-720p60_veryslow_rep1_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 47.7787,
+          "ssim": 0.9961,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          28.626,
+          29.028
+        ],
+        "availability": "present",
+        "median_ms": 28.827,
+        "mean_ms": 28.827,
+        "min_ms": 28.626,
+        "max_ms": 29.028,
+        "fps": 277.52,
+        "sizes_bytes": [
+          11116906,
+          11116906
+        ],
+        "hash_full": "86336919021d4f130251e90c88db5163e71ca89a187b4ca5e42fd33cf0e8431b",
+        "size_bytes": 11116906,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-720p60_veryslow_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 4.0224,
+      "size_delta_pct": 45052.13
+    }
+  ],
+  "summary": {
+    "total_cases": 36,
+    "oracle_measured_cases": 36,
+    "oracle_decoded_cases": 36,
+    "candidate_measured_cases": 36,
+    "certified_cases": 36,
+    "median_speedup": 2.2581,
+    "by_preset": {
+      "ultrafast": {
+        "oracle_fps_median": 202.19,
+        "candidate_fps_median": 234.88,
+        "certified_cases": 4
+      },
+      "superfast": {
+        "oracle_fps_median": 170.72,
+        "candidate_fps_median": 233.62,
+        "certified_cases": 4
+      },
+      "veryfast": {
+        "oracle_fps_median": 146.42,
+        "candidate_fps_median": 226.32,
+        "certified_cases": 4
+      },
+      "faster": {
+        "oracle_fps_median": 113.46,
+        "candidate_fps_median": 234.64,
+        "certified_cases": 4
+      },
+      "fast": {
+        "oracle_fps_median": 106.06,
+        "candidate_fps_median": 232.97,
+        "certified_cases": 4
+      },
+      "medium": {
+        "oracle_fps_median": 102.68,
+        "candidate_fps_median": 224.55,
+        "certified_cases": 4
+      },
+      "slow": {
+        "oracle_fps_median": 80.62,
+        "candidate_fps_median": 209.8,
+        "certified_cases": 4
+      },
+      "slower": {
+        "oracle_fps_median": 73.52,
+        "candidate_fps_median": 211.76,
+        "certified_cases": 4
+      },
+      "veryslow": {
+        "oracle_fps_median": 62.23,
+        "candidate_fps_median": 216.9,
+        "certified_cases": 4
+      }
+    }
+  },
+  "warnings": []
+}

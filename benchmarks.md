@@ -46,21 +46,23 @@ The other three clips (640×360, second 1080p, 720p60) and the full A/B table wi
 
 | Preset | Reference (fps) | x264++ (fps) | Speedup | ffmpeg decode | Notes |
 | --- | ---: | ---: | ---: | --- | --- |
-| ultrafast | 162.42 | 156.84 | **0.97×** | clean | 8×1920×1080 Fortnite, CRF 23, 6 threads |
-| superfast | — | — | — | not measured | — |
-| veryfast | — | — | — | not measured | — |
-| faster | — | — | — | not measured | — |
-| fast | — | — | — | not measured | — |
-| medium | 39.16 | 154.51 | **3.95×** | clean | same clip |
-| slow | — | — | — | not measured | — |
-| slower | — | — | — | not measured | — |
-| veryslow | 14.05 | 149.87 | **10.67×** | clean | same clip |
+| ultrafast | 162.22 | 160.71 | **0.99×** | clean | 8×1920×1080 Fortnite, CRF 23, 6 threads |
+| superfast | 93.99 | 155.48 | **1.65×** | clean | same clip |
+| veryfast | 69.08 | 164.06 | **2.38×** | clean | same clip |
+| faster | 47.63 | 152.22 | **3.20×** | clean | same clip |
+| fast | 40.28 | 161.74 | **4.02×** | clean | same clip |
+| medium | 39.65 | 154.31 | **3.89×** | clean | same clip |
+| slow | 24.17 | 152.59 | **6.31×** | clean | same clip |
+| slower | 19.84 | 146.93 | **7.41×** | clean | same clip |
+| veryslow | 13.91 | 147.95 | **10.64×** | clean | same clip |
 
-These are post-PR-#15 numbers. PR #15 removed redundant pre-PCM analysis and fixed SPS crop units (1080p is now exactly 1920×1080). Cumulative self-speedup at 1080p: ~12 fps → ~155 fps (**~13×**). Other clips: 640×360 reaches 549–605 fps (1.55× vs ultrafast, 5.6× vs veryslow); 1080p Twitter reaches ~159 fps (1.00× vs ultrafast, 2.96× vs veryslow); 720p60 reaches ~305 fps (1.20× vs ultrafast, 4.31× vs veryslow). Decoded output is byte-exact/lossless (PSNR reported as 99 dB sentinel for inf), but the file is ~126× larger than the oracle, so the quality/size envelope still fails. The CAVLC path is implemented and its writer is correct in isolation, but integration still desyncs ffmpeg at MB 0 residual.
+Full nine-preset run also covered three other real clips (640×360, 1080p, 720p60 Twitter sources); all 36 cases passed ffmpeg decode. Candidate is byte-exact/lossless (PSNR sentinel 99 dB) but ~126× larger than the oracle.
+
+These are full nine-preset numbers from the 2026-11-28 certification run (8 frames × 4 clips × 9 presets = 36 cases, all ffmpeg-clean). Cumulative self-speedup at 1080p: ~12 fps → ~155 fps (**~13×**), from bulk I_PCM writes, fast NAL escaping, buffered I/O, AVX2 frame copy, deterministic frame threading, removal of redundant pre-PCM analysis, and AVX2 SAD/DCT wiring. Decoded output is byte-exact/lossless (PSNR sentinel 99 dB), but the file is ~126× larger than the oracle, so the quality/size envelope still fails. The CAVLC writer is correct in isolation; integration remains blocked by the intra4x4 rem/predicted-mode divergence and partial-CBP residual desync (see `src/verification/cavlc-progress.md`).
 
 With `--threads 12` (all logical CPUs) the 1080p Fortnite case reaches 72 fps: 0.46× vs `ultrafast`, 1.54× vs `medium`, 4.38× vs `veryslow`. The 640×360 case reaches 340–407 fps: 0.90× vs `ultrafast`, 1.68× vs `medium`, 2.98× vs `veryslow`.
 
-**Honest summary:** 2× is reached on `medium`/`veryslow` for most clips but never on `ultrafast`; the ≥2×-on-every-preset goal is **not met**. Compression (CAVLC) remains the unresolved blocker; all attempts are documented in closed PRs #6–#8.
+**Honest summary:** 2× is reached from `veryfast` onward on the 1080p Fortnite clip, but `ultrafast` is 0.99× and `superfast` 1.65×; the ≥2×-on-every-preset goal is **not met**. Compression (CAVLC) remains the unresolved blocker; attempts are documented in closed PRs #6–#8, #14–#15 and `src/verification/cavlc-progress.md`.
 
 ## Reproduction
 
