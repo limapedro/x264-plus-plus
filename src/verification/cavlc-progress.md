@@ -225,3 +225,8 @@ Wiring `x264pp_intra16x16_avx2` into the gated I_16x16 path (passing the neighbo
 
 Section timers, 8x1920x1080 frames, 1 thread: pred=0.028s, DCT+quant=0.237s (62%), reconstruction=0.119s (31%), CAVLC=0.000s. Entropy coding is not the bottleneck; transform/quantisation is. Replacing `x264pp_idct4_add` with the AVX2 NASM IDCT plus the identical add/clip rule was tested and REJECTED: ffmpeg stayed clean but PSNR collapsed from 26.24 dB to 8.70 dB (size 444,280 B), so that kernel is not bit-equivalent to the C transform used by this encoder. Likewise the AVX2 16x16 predictor regressed Y PSNR 25.08 -> 18.94 dB and was rejected. Only SAD and forward DCT are safely wired; remaining SIMD work requires kernels with exactly matching semantics.
 
+
+## Quantiser precompute test (rejected)
+
+Precomputing num/den/bias in `x264pp_quant_init` changed gated 1080p QP45 output from SHA256 C4B51052... to B0DFC38D..., size 293,151 -> 1,622,162 bytes and PSNR 26.24 -> 11.59 dB. Cause: several call sites mutate `x264pp_quant_t.qp` without calling `quant_init` again, so cached values become stale (fallback path uses a different QP). The patch was rejected and not merged. Any SIMD quantiser must read qp dynamically or all call sites must be audited first.
+
