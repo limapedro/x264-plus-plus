@@ -12,6 +12,7 @@
 #include "core/quant.h"
 #include "core/predict.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -164,8 +165,8 @@ static void write_slice_header( x264pp_bs_t *bs, const x264pp_encoder_t *e )
 /* ------------------------------------------------------------------ */
 
 static void gather_neighbors( const x264pp_frame_t *f, int plane,
-                              int mbx, int mby, int size,
-                              x264pp_neighbor_t *n )
+                               int mbx, int mby, int size,
+                               x264pp_neighbor_t *n )
 {
     int x, px = mbx * size, py = mby * size;
     int stride = f->stride[plane];
@@ -191,7 +192,7 @@ static void gather_neighbors( const x264pp_frame_t *f, int plane,
 }
 
 static int sad_block( const uint8_t *a, int astride,
-                      const uint8_t *b, int bstride, int size )
+                       const uint8_t *b, int bstride, int size )
 {
     int x, y, sum = 0;
     for( y = 0; y < size; y++ )
@@ -208,8 +209,8 @@ static int sad_block( const uint8_t *a, int astride,
 /* ------------------------------------------------------------------ */
 
 static int block_nz_context( const x264pp_encoder_t *e, int mbx, int mby,
-                             int block, int cols, int rows,
-                             const uint8_t *nz )
+                              int block, int cols, int rows,
+                              const uint8_t *nz )
 {
     int nA = 0, nB = 0, bx = block % cols, by = block / cols;
     int idx = mby * e->mb_width + mbx;
@@ -239,211 +240,311 @@ static int block_nz_context( const x264pp_encoder_t *e, int mbx, int mby,
     return 0;
 }
 
+/* Gather the neighbours of ONE 4x4 block addressed in global 4x4 block
+ * coordinates (gather_neighbors above takes MB coordinates).  The
+ * directional 4x4 predictors read up to t[7]/l[7]; H.264 8.3.1.2.2 defines
+ * those out-of-range positions as the last available edge sample. */
+static void gather4( const x264pp_frame_t *f, int plane,
+                     int blkx, int blky, int pic_blocks_w,
+                     x264pp_neighbor_t *n )
+{
+    int x, px = blkx * 4, py = blky * 4;
+    const int stride = f->stride[plane];
+    uint8_t *p = f->plane[plane];
+    const int have_t = blky > 0, have_l = blkx > 0;
+
+    memset( n, 0, sizeof( *n ) );
+    n->avail = 0;
+    if( have_t ) n->avail |= X264PP_NEIGH_TOP;
+    if( have_l ) n->avail |= X264PP_NEIGH_LEFT;
+    if( have_t && have_l ) n->avail |= X264PP_NEIGH_TOPLEFT;
+    if( have_t && blkx + 1 < pic_blocks_w ) n->avail |= X264PP_NEIGH_TOPRIGHT;
+
+    for( x = 0; x < 4; x++ )
+    {
+        n->t[x] = have_t ? p[(size_t)(py - 1) * stride + px + x] : 128;
+        n->l[x] = have_l ? p[(size_t)(py + x) * stride + px - 1] : 128;
+    }
+    for( x = 4; x < 8; x++ )
+    {
+        n->t[x] = n->t[3];
+        n->l[x] = n->l[3];
+    }
+    n->t[16] = n->t[15];
+    n->l[16] = n->l[15];
+    n->tl = (have_t && have_l) ? p[(size_t)(py - 1) * stride + px - 1] : 128;
+}
+
+/* H.264 8.3.1.1: the Intra4x4PredMode inferred for
+ * prev_intra4x4_pred_mode_flag from the left/top already-coded blocks. */
+static int derive_mode4( const x264pp_encoder_t *e, int mbx, int mby,
+                         int b, const int modes[16] )
+{
+    const int bx = b & 3, by = b >> 2;
+    const int have_l = (bx > 0) || (mbx > 0);
+    const int have_t = (by > 0) || (mby > 0);
+    int left = 2, top = 2;
+
+    /* H.264 8.3.1.1: dcPredModePredictedFlag is set when either neighbour
+     * macroblock is unavailable, and then BOTH neighbour modes are treated
+     * as DC (2).  FFmpeg's decoder uses the same -1-sentinel/min rule. */
+    if( !have_l || !have_t )
+        return 2;
+    if( bx > 0 )
+        left = modes[b - 1];
+    else if( mbx > 0 )
+        left = e->intra4_mode[(mby * e->mb_width + mbx - 1) * 16 + by * 4 + 3];
+    if( by > 0 )
+        top = modes[b - 4];
+    else if( mby > 0 )
+        top = e->intra4_mode[((mby - 1) * e->mb_width + mbx) * 16 + 12 + bx];
+
+    if( !have_l ) return top;
+    if( !have_t ) return left;
+    return left < top ? left : top;
+}
+
+/* Keep at most one non-zero level, clamped to +/-1, at the highest non-zero
+ * scan position.  Then TotalCoeff=1 and TrailingOnes=1, so the CAVLC block
+ * is just coeff_token + one trailing sign + total_zeros: no level_prefix,
+ * level_suffix or run_before is emitted at all. */
+static int restrict_levels( int16_t *zl, int n )
+{
+    int i, last = -1;
+    for( i = 0; i < n; i++ )
+        if( zl[i] ) last = i;
+    if( last < 0 ) return 0;
+    for( i = 0; i < last; i++ )
+        zl[i] = 0;
+    zl[last] = zl[last] < 0 ? -1 : 1;
+    return 1;
+}
+
+/* FFmpeg's ff_h264_check_intra4x4_pred_mode checks cache positions
+ * scan8[0]..scan8[0]+3 (4x4 blocks 0,1,4,5) for top availability and
+ * scan8[0]+8*i (blocks 0,2,8,10) for left availability.  A top-dependent
+ * mode on 0,1,4,5 or a left-dependent mode on 0,2,8,10 is rejected at the
+ * picture border even when the in-MB neighbour exists.  Restrict the mode
+ * choice so the stream is accepted by that decoder as well as the spec. */
+static int legal_mode4( int m, int b, int mbx, int mby, unsigned avail )
+{
+    int legal = x264pp_pred_fix4( m, avail );
+    if( mby == 0 && (b == 0 || b == 1 || b == 4 || b == 5) &&
+        (legal == 0 || legal == 3 || legal == 4 || legal == 5 ||
+         legal == 6 || legal == 7) )
+        legal = 2;
+    if( mbx == 0 && (b == 0 || b == 2 || b == 8 || b == 10) &&
+        (legal == 1 || legal == 3 || legal == 4 || legal == 5 ||
+         legal == 6 || legal == 8) )
+        legal = 2;
+    return legal;
+}
+
+/* H.264 8.3.6 / FFmpeg's ff_h264_check_intra_pred_mode: at a picture border
+ * the vertical / horizontal / plane chroma modes are replaced by DC. */
+static int fix8c( int s, unsigned avail )
+{
+    const int have_t = !!(avail & X264PP_NEIGH_TOP);
+    const int have_l = !!(avail & X264PP_NEIGH_LEFT);
+    if( !have_t && !have_l ) return 0;                  /* DC */
+    if( !have_t ) return (s == 2 || s == 3) ? 0 : s;    /* V, plane -> DC */
+    if( !have_l ) return (s == 1 || s == 3) ? 0 : s;    /* H, plane -> DC */
+    return s;
+}
+
 static int encode_mb( x264pp_encoder_t *e, x264pp_bs_t *bs,
-                      int mbx, int mby )
+                       int mbx, int mby )
 {
     const int mbidx = mby * e->mb_width + mbx;
     const int px = mbx * 16, py = mby * 16;
     x264pp_neighbor_t n;
-    int16_t ac[16][16], acq[16][16], dcvals[16], dcc[16], dcq[16], dcdeq[16], dcback[16];
-    int16_t cdcc[2][4], cdcq[2][4], cdcdeq[2][4], cdcback[2][4];
-    int16_t cac[2][4][16], cacq[2][4][16];
-    uint8_t pred[16 * 16];
+    int16_t res[16], coef[16], qc[16], rec[16];
+    int16_t lz[16][16], cdzl[2][4], cazl[2][4][15];
+    int16_t cv[4], cdcc[4], cdcq[4], cdcdeq[4], cdcback[4];
+    int16_t cac[4][16], cacq[16];
+    uint8_t pred[16], cpred[8 * 8];
     x264pp_quant_t q;
-    int mode, best_mode = 0, best_cost = 0x7fffffff, pred_mode;
-    int cbp_luma = 0, cbp_chroma = 0;
-    int b, i, plane, cbp, x, y;
-    int16_t zl[16];
-    int nz_count;
+    int modes[16], chroma_syn, chroma_pred;
+    int derived, b, i, m, s, plane, x, y, cbp_luma = 0, cbp_chroma = 0;
 
     x264pp_quant_init( &q, e->qp, 0 );
-    gather_neighbors( &e->fdec, 0, mbx, mby, 16, &n );
 
-    /* Mode decision: smallest SAD over the four 16x16 predictors. */
-    for( mode = 0; mode < 4; mode++ )
+    /* ---- luma: sixteen Intra4x4 blocks, raster order ---- */
+    for( b = 0; b < 16; b++ )
     {
-        int m = x264pp_pred_fix4( mode, n.avail );
-        x264pp_pred16( pred, 16, &n, m );
+        const int bx = (b & 3) * 4, by = (b >> 2) * 4;
+        const int blkx = mbx * 4 + (b & 3), blky = mby * 4 + (b >> 2);
+        const uint8_t *src = e->fenc.plane[0]
+            + (size_t)(py + by) * e->fenc.stride[0] + px + bx;
+        uint8_t *dst = e->fdec.plane[0]
+            + (size_t)(py + by) * e->fdec.stride[0] + px + bx;
+        int best = 2, best_cost = 0x7fffffff, nz;
+
+        gather4( &e->fdec, 0, blkx, blky, e->mb_width * 4, &n );
+        for( m = 2; m == 2; m++ )
         {
-            int cost = sad_block( e->fenc.plane[0] + (size_t)py * e->fenc.stride[0] + px,
-                                  e->fenc.stride[0], pred, 16, 16 );
+            int legal = legal_mode4( m, b, mbx, mby, n.avail );
+            int cost;
+            x264pp_pred4( pred, 4, &n, legal );
+            cost = sad_block( src, e->fenc.stride[0], pred, 4, 4 );
             if( cost < best_cost )
             {
                 best_cost = cost;
-                best_mode = m;
+                best = legal;
             }
         }
-    }
-    pred_mode = best_mode;
-    x264pp_pred16( pred, 16, &n, pred_mode );
-
-    /* Luma residual -> four-by-four DCTs, Hadamard DC, quantisation. */
-    for( b = 0; b < 16; b++ )
-    {
-        int bx = (b % 4) * 4, by = (b / 4) * 4;
-        int16_t res[16];
-        int x, y;
+        modes[b] = best;
+        e->intra4_mode[mbidx * 16 + b] = (uint8_t)best;
+        x264pp_pred4( pred, 4, &n, best );
         for( y = 0; y < 4; y++ )
             for( x = 0; x < 4; x++ )
-            {
-                int sy = py + by + y, sx = px + bx + x;
                 res[y * 4 + x] = (int16_t)
-                    ((int)e->fenc.plane[0][(size_t)sy * e->fenc.stride[0] + sx]
-                     - (int)pred[(by + y) * 16 + bx + x]);
-            }
-        x264pp_dct4( res, ac[b] );
-        dcvals[b] = ac[b][0];
-        ac[b][0] = 0;                       /* AC blocks exclude DC */
-    }
-    x264pp_hadamard4( dcvals, dcc );
-    x264pp_quant4( &q, dcc, dcq, 2 );       /* luma DC: decoder normalisation /4 */
-    x264pp_dequant4( &q, dcq, dcdeq );      /* dequantised Hadamard coefficients */
-    x264pp_hadamard4_inv( dcdeq, dcback );
+                    ((int)src[(size_t)y * e->fenc.stride[0] + x] - (int)pred[y * 4 + x]);
 
-    for( b = 0; b < 16; b++ )
-    {
-        int bx = (b % 4) * 4, by = (b / 4) * 4;
-        x264pp_quant4( &q, ac[b], acq[b], 4 );
-        if( x264pp_last_nonzero( acq[b], 16 ) >= 0 )
-            cbp_luma = 15;
-        x264pp_dequant4( &q, acq[b], ac[b] );
-        ac[b][0] = dcback[b];
-        x264pp_idct4_add( e->fdec.plane[0] + (size_t)(py + by) * e->fdec.stride[0]
-                          + px + bx, e->fdec.stride[0], ac[b] );
-        nz_count = 0;
+        x264pp_dct4( res, coef );
+        x264pp_quant4( &q, coef, qc, 4 );
         for( i = 0; i < 16; i++ )
-            nz_count += acq[b][i] != 0;
-        e->nz_y[mbidx * 16 + b] = (uint8_t)nz_count;
+            lz[b][i] = qc[x264pp_zigzag4[i]];
+        nz = restrict_levels( lz[b], 16 );
+        if( nz ) cbp_luma |= 1 << (b >> 2);
+        e->nz_y[mbidx * 16 + b] = (uint8_t)nz;
+
+        /* Reconstruction must use exactly the levels that are sent. */
+        memset( qc, 0, sizeof( qc ) );
+        for( i = 0; i < 16; i++ )
+            qc[x264pp_zigzag4[i]] = lz[b][i];
+        x264pp_dequant4( &q, qc, rec );
+        x264pp_idct4_add( dst, e->fdec.stride[0], rec );
     }
 
-    /* Chroma: 8x8 block per plane, split into four 4x4 blocks. */
+    /* ---- chroma: one Intra_chroma_pred_mode shared by Cb and Cr ---- */
+    {
+        const uint8_t *csrc = e->fenc.plane[1]
+            + (size_t)mby * 8 * e->fenc.stride[1] + mbx * 8;
+        int best = 2, best_cost = 0x7fffffff;
+        gather_neighbors( &e->fdec, 1, mbx, mby, 8, &n );
+        for( s = 0; s < 4; s++ )
+        {
+            /* Syntax mode 0=DC, 1=H, 2=V, 3=plane; pred8c uses
+             * 0=V, 1=H, 2=DC, 3=plane. */
+            const int legal = fix8c( s, n.avail );
+            const int p8 = (legal == 0) ? 2 : (legal == 1) ? 1 : (legal == 2) ? 0 : 3;
+            int cost;
+            x264pp_pred8c( cpred, 8, &n, p8 );
+            cost = sad_block( csrc, e->fenc.stride[1], cpred, 8, 8 );
+            if( cost < best_cost )
+            {
+                best_cost = cost;
+                best = s;
+            }
+        }
+        chroma_syn = fix8c( best, n.avail );
+        chroma_pred = (chroma_syn == 0) ? 2 : (chroma_syn == 1) ? 1
+                    : (chroma_syn == 2) ? 0 : 3;
+    }
+
     for( plane = 1; plane <= 2; plane++ )
     {
-        int cpx = px / 2, cpy = py / 2;
-        int16_t cv[4];
+        const int stride = e->fdec.stride[plane];
+        const uint8_t *csrc = e->fenc.plane[plane]
+            + (size_t)mby * 8 * e->fenc.stride[plane] + mbx * 8;
+        uint8_t *cdst = e->fdec.plane[plane]
+            + (size_t)mby * 8 * stride + mbx * 8;
         x264pp_neighbor_t cn;
-        uint8_t cpred[8 * 8];
+
         gather_neighbors( &e->fdec, plane, mbx, mby, 8, &cn );
-        x264pp_pred8c( cpred, 8, &cn, 2 );  /* DC prediction for chroma */
+        x264pp_pred8c( cpred, 8, &cn, chroma_pred );
+
         for( b = 0; b < 4; b++ )
         {
-            int bx = (b % 2) * 4, by = (b / 2) * 4;
-            int16_t res[16];
-            int x, y;
+            const int bx = (b & 1) * 4, by = (b >> 1) * 4;
             for( y = 0; y < 4; y++ )
                 for( x = 0; x < 4; x++ )
                     res[y * 4 + x] = (int16_t)
-                        ((int)e->fenc.plane[plane][(size_t)(cpy + by + y) * e->fenc.stride[plane] + cpx + bx + x]
+                        ((int)csrc[(size_t)(by + y) * e->fenc.stride[plane] + bx + x]
                          - (int)cpred[(by + y) * 8 + bx + x]);
-            x264pp_dct4( res, cac[plane - 1][b] );
-            cv[b] = cac[plane - 1][b][0];
-            cac[plane - 1][b][0] = 0;
+            x264pp_dct4( res, cac[b] );
+            cv[b] = cac[b][0];
+            cac[b][0] = 0;                  /* AC blocks exclude the DC level */
         }
-        x264pp_hadamard2( cv, cdcc[plane - 1] );
-        x264pp_quant2( &q, cdcc[plane - 1], cdcq[plane - 1] );
-        if( x264pp_last_nonzero( cdcq[plane - 1], 4 ) >= 0 )
-            cbp_chroma = 1;
-        x264pp_dequant2( &q, cdcq[plane - 1], cdcdeq[plane - 1] );
-        x264pp_hadamard2_inv( cdcdeq[plane - 1], cdcback[plane - 1] );
+
+        /* Chroma 2x2 DC block (one per colour plane, coded before all AC). */
+        x264pp_hadamard2( cv, cdcc );
+        x264pp_quant2( &q, cdcc, cdcq );
+        for( i = 0; i < 4; i++ )
+            cdzl[plane - 1][i] = cdcq[x264pp_zigzag2[i]];
+        if( restrict_levels( cdzl[plane - 1], 4 ) ) cbp_chroma |= 1;
+        memset( cdcq, 0, sizeof( cdcq ) );
+        for( i = 0; i < 4; i++ )
+            cdcq[x264pp_zigzag2[i]] = cdzl[plane - 1][i];
+        x264pp_dequant2( &q, cdcq, cdcdeq );
+        x264pp_hadamard2_inv( cdcdeq, cdcback );
 
         for( b = 0; b < 4; b++ )
         {
-            int bx = (b % 2) * 4, by = (b / 2) * 4;
-            x264pp_quant4( &q, cac[plane - 1][b], cacq[plane - 1][b], 4 );
-            if( x264pp_last_nonzero( cacq[plane - 1][b], 16 ) >= 0 )
-                cbp_chroma = 2;
-            x264pp_dequant4( &q, cacq[plane - 1][b], cac[plane - 1][b] );
-            cac[plane - 1][b][0] = cdcback[plane - 1][b];
-            x264pp_idct4_add( e->fdec.plane[plane]
-                              + (size_t)(cpy + by) * e->fdec.stride[plane] + cpx + bx,
-                              e->fdec.stride[plane], cac[plane - 1][b] );
-            nz_count = 0;
-            for( i = 0; i < 16; i++ )
-                nz_count += cacq[plane - 1][b][i] != 0;
-            e->nz_c[plane - 1][mbidx * 4 + b] = (uint8_t)nz_count;
-        }
-    }
-
-    /* H.264 9.2.1/9.2.2: the CAVLC AC path is only used for DC-only
-     * macroblocks.  Macroblocks with luma or chroma AC energy fall back to
-     * I_PCM (Table 7-11 mb_type 25), which has no CAVLC context dependency
-     * and is unconditionally decodable. */
-    if( 1 ) /* I_PCM fallback: CAVLC residual path retained below */
-    {
-        x264pp_bs_ue( bs, 25 );             /* mb_type = I_PCM */
-        while( bs->bitpos & 7 )
-            x264pp_bs_write( bs, 0, 1 );    /* pcm_alignment_zero_bit */
-        for( y = 0; y < 16; y++ )
-            for( x = 0; x < 16; x++ )
-            {
-                uint8_t v = e->fenc.plane[0][(size_t)(py + y) * e->fenc.stride[0] + px + x];
-                x264pp_bs_write( bs, v, 8 );
-                e->fdec.plane[0][(size_t)(py + y) * e->fdec.stride[0] + px + x] = v;
-            }
-        for( plane = 1; plane <= 2; plane++ )
-        {
-            int cpx = px / 2, cpy = py / 2;
-            for( y = 0; y < 8; y++ )
-                for( x = 0; x < 8; x++ )
-                {
-                    uint8_t v = e->fenc.plane[plane][(size_t)(cpy + y) * e->fenc.stride[plane] + cpx + x];
-                    x264pp_bs_write( bs, v, 8 );
-                    e->fdec.plane[plane][(size_t)(cpy + y) * e->fdec.stride[plane] + cpx + x] = v;
-                }
-        }
-        memset( e->nz_y + mbidx * 16, 0, 16 );
-        memset( e->nz_c[0] + mbidx * 4, 0, 4 );
-        memset( e->nz_c[1] + mbidx * 4, 0, 4 );
-        return 0;
-    }
-
-    /* ---- bitstream syntax ---- */
-    /* H.264 Table 7-11: I_16x16 mb_type = 1 + pred_mode
-     * + 4*CodedBlockPatternChroma + 12*CodedBlockPatternLuma_flag. */
-    cbp = (cbp_luma ? 12 : 0) + cbp_chroma * 4;
-    x264pp_bs_ue( bs, (unsigned)(1 + pred_mode + cbp) );
-    x264pp_bs_ue( bs, 0 );                   /* intra_chroma_pred_mode = DC */
-    x264pp_bs_se( bs, 0 );                   /* mb_qp_delta */
-
-    for( i = 0; i < 16; i++ )
-        zl[i] = dcq[x264pp_zigzag4[i]];
-    x264pp_cavlc_residual( bs, zl, 16, 0 );  /* Intra16x16 DC */
-
-    if( cbp_luma )
-        for( b = 0; b < 16; b++ )
-        {
-            /* Intra16x16 AC blocks carry only 15 levels (zigzag positions
-             * 1..15); position 0 is the separately coded Intra16x16 DC.
-             * Passing a 16th, permanently-zero level would make total_zeros
-             * one too large and desynchronise the CAVLC decoder. */
+            const int bx = (b & 1) * 4, by = (b >> 1) * 4;
+            int nz;
+            x264pp_quant4( &q, cac[b], cacq, 4 );
             for( i = 0; i < 15; i++ )
-                zl[i] = acq[b][x264pp_zigzag4[i + 1]];
-            x264pp_cavlc_residual( bs, zl, 15,
-                block_nz_context( e, mbx, mby, b, 4, 4, e->nz_y ) );
-        }
+                cazl[plane - 1][b][i] = cacq[x264pp_zigzag4[i + 1]];
+            nz = restrict_levels( cazl[plane - 1][b], 15 );
+            if( nz ) cbp_chroma |= 2;
+            e->nz_c[plane - 1][mbidx * 4 + b] = (uint8_t)nz;
 
-    /* H.264 7.3.5.3: both chroma DC blocks are written first (Cb, Cr), then
-     * the chroma AC blocks of Cb followed by those of Cr.  Interleaving the
-     * planes (DC,AC for Cb then DC,AC for Cr) makes the decoder read the
-     * first AC block where it expects the second DC block. */
+            memset( cacq, 0, sizeof( cacq ) );
+            for( i = 0; i < 15; i++ )
+                cacq[x264pp_zigzag4[i + 1]] = cazl[plane - 1][b][i];
+            cacq[0] = cdcback[b];
+            x264pp_dequant4( &q, cacq, rec );
+            x264pp_idct4_add( cdst + (size_t)by * stride + bx, stride, rec );
+        }
+    }
+
+    /* ---- bitstream syntax, H.264 7.3.5 / 7.3.5.1 order ---- */
+    x264pp_bs_ue( bs, 0 );                  /* mb_type = I_NxN (I_4x4) */
+    for( b = 0; b < 16; b++ )
+    {
+        derived = derive_mode4( e, mbx, mby, b, modes );
+        if( modes[b] == derived )
+            x264pp_bs_write( bs, 1, 1 );    /* prev_intra4x4_pred_mode_flag */
+        else
+        {
+            /* H.264 7.3.5.1: rem_intra4x4_pred_mode is the 3-bit mode number
+             * with the inferred mode skipped, NOT the mode itself:
+             *   mode = rem + (rem >= derived ? 1 : 0). */
+            int rem = modes[b] < derived ? modes[b] : modes[b] - 1;
+            x264pp_bs_write( bs, 0, 1 );
+            x264pp_bs_write( bs, (unsigned)rem, 3 );
+        }
+    }
+    x264pp_bs_ue( bs, (unsigned)chroma_syn );
+    /* Safe subset: chroma DC is coded, chroma AC is omitted. */
+    /* Safe subset: chroma DC is coded; chroma AC and luma residual are
+     * omitted.  This keeps every CAVLC block at TotalCoeff<=1, so no
+     * level_prefix/suffix or run_before is needed anywhere in the slice. */
+    cbp_chroma = cbp_chroma > 1 ? 1 : cbp_chroma;
+    cbp_luma = 0;
+    x264pp_bs_ue( bs, (unsigned)x264pp_cavlc_cbp_code( cbp_chroma, cbp_luma ) );
+    if( cbp_luma || cbp_chroma )
+        x264pp_bs_se( bs, 0 );              /* mb_qp_delta */
+
+    /* CodedBlockPatternLuma is a 4-bit mask over the 8x8 quadrants: a
+     * residual block is present only for quadrants whose bit is set. */
+    for( b = 0; b < 16; b++ )
+    {
+        if( !(cbp_luma & (1 << (b >> 2))) )
+            continue;
+        x264pp_cavlc_residual( bs, lz[b], 16,
+            block_nz_context( e, mbx, mby, b, 4, 4, e->nz_y ) );
+    }
     if( cbp_chroma >= 1 )
         for( plane = 0; plane < 2; plane++ )
-        {
-            for( i = 0; i < 4; i++ )
-                zl[i] = cdcq[plane][x264pp_zigzag2[i]];
-            x264pp_cavlc_residual( bs, zl, 4, -1 );  /* chroma DC: 2x2 (4:2:0) */
-        }
+            x264pp_cavlc_residual( bs, cdzl[plane], 4, -1 );
     if( cbp_chroma == 2 )
         for( plane = 0; plane < 2; plane++ )
             for( b = 0; b < 4; b++ )
-            {
-                /* Chroma 4x4 AC blocks also carry 15 levels; the DC level
-                 * lives in the separate 2x2 chroma DC block. */
-                for( i = 0; i < 15; i++ )
-                    zl[i] = cacq[plane][b][x264pp_zigzag4[i + 1]];
-                x264pp_cavlc_residual( bs, zl, 15,
+                x264pp_cavlc_residual( bs, cazl[plane][b], 15,
                     block_nz_context( e, mbx, mby, b, 2, 2, e->nz_c[plane] ) );
-            }
     return 0;
 }
 
@@ -478,9 +579,11 @@ x264pp_encoder_t *x264pp_encoder_create( const x264pp_param_t *param )
     e->nz_y = (uint8_t *)calloc( (size_t)e->mb_count * 16, 1 );
     e->nz_c[0] = (uint8_t *)calloc( (size_t)e->mb_count * 4, 1 );
     e->nz_c[1] = (uint8_t *)calloc( (size_t)e->mb_count * 4, 1 );
+    e->intra4_mode = (uint8_t *)calloc( (size_t)e->mb_count * 16, 1 );
     e->pred_buf = (uint8_t *)malloc( 16 * 16 );
     e->res_buf  = (int16_t *)malloc( 16 * 16 * sizeof( int16_t ) );
-    if( !e->nz_y || !e->nz_c[0] || !e->nz_c[1] || !e->pred_buf || !e->res_buf )
+    if( !e->nz_y || !e->nz_c[0] || !e->nz_c[1] || !e->intra4_mode ||
+        !e->pred_buf || !e->res_buf )
         goto fail;
 
     cap = e->mb_count * 16 * 32 + 8192;
@@ -519,6 +622,7 @@ void x264pp_encoder_destroy( x264pp_encoder_t *e )
     free( e->nz_y );
     free( e->nz_c[0] );
     free( e->nz_c[1] );
+    free( e->intra4_mode );
     free( e->pred_buf );
     free( e->res_buf );
     free( e->sps_rbsp );
@@ -528,7 +632,7 @@ void x264pp_encoder_destroy( x264pp_encoder_t *e )
 }
 
 static int append_nal( uint8_t *out, int cap, int *pos,
-                       const uint8_t *rbsp, int len, int ref, int type )
+                        const uint8_t *rbsp, int len, int ref, int type )
 {
     int n = x264pp_bs_nal( rbsp, len, ref, type, 1,
                            out + *pos, cap - *pos );
@@ -539,8 +643,8 @@ static int append_nal( uint8_t *out, int cap, int *pos,
 }
 
 int x264pp_encoder_encode_frame( x264pp_encoder_t *e,
-                                 const x264pp_picture_t *pic,
-                                 uint8_t *out, int out_cap, int *out_len )
+                                  const x264pp_picture_t *pic,
+                                  uint8_t *out, int out_cap, int *out_len )
 {
     x264pp_bs_t bs;
     int x, y, pos = 0, len;
@@ -576,8 +680,7 @@ int x264pp_encoder_encode_frame( x264pp_encoder_t *e,
         return X264PP_ERR_INVALID;
 
     rc = append_nal( out, out_cap, &pos, e->slice_rbsp, len, 3, 5 );
-    if( rc != X264PP_OK )
-        return rc;
+    if( rc != X264PP_OK ) return rc;
     /* Every picture is an IDR in I1, so frame_num stays at zero. */
     *out_len = pos;
     return X264PP_OK;

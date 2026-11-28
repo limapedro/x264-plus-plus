@@ -218,8 +218,12 @@ void x264pp_sps_init( x264pp_sps_t *sps, const x264pp_param_t *param )
     sps->direct8x8 = 1;
 
     sps->crop[0] = sps->crop[1] = sps->crop[2] = sps->crop[3] = 0;
-    sps->crop[1] = sps->mb_width  * 16 - param->width;
-    sps->crop[3] = sps->mb_height * 16 - param->height;
+    /* H.264 7.4.2.1.3: for 4:2:0 (SubWidthC = SubHeightC = 2) the crop
+     * offsets are expressed in units of two luma samples, not in luma
+     * samples.  E.g. 1080p is coded as 68 MB rows (1088 lines) and needs
+     * frame_crop_bottom_offset = (1088 - 1080) / 2 = 4. */
+    sps->crop[1] = (sps->mb_width  * 16 - param->width)  / 2;
+    sps->crop[3] = (sps->mb_height * 16 - param->height) / 2;
     sps->b_crop = (sps->crop[0] || sps->crop[1] || sps->crop[2] || sps->crop[3]);
 
     sps->level_idc = x264pp_level_auto( param, sps );

@@ -402,17 +402,30 @@ void x264pp_cavlc_residual( x264pp_bs_t *bs, const int16_t *levels,
 
 int x264pp_cavlc_cbp_code( int cbp_chroma, int cbp_luma )
 {
-    /* Intra 4:2:0 CBP mapping (H.264 Table 9-4).  The first four combined
-     * patterns use the compact code numbers; the remaining luma masks
-     * follow in raster order. */
-    if( cbp_luma == 0 )
-        return cbp_chroma;                   /* 0,1,2 */
-    if( cbp_luma == 15 )
-        return 3 + cbp_chroma;               /* 3,4,5 */
-    if( cbp_chroma == 0 )
-    {
-        static const int idx[16] = { 0, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20 };
-        return idx[cbp_luma & 15];
-    }
-    return 6 + cbp_chroma * 15 + (cbp_luma & 15);
+    /* Inverse of H.264 Table 9-4, I-slice column (me(v) codeNum -> CBP).
+     * Published codeNum order for 4:2:0 (CodedBlockPatternChroma in the
+     * high two bits, CodedBlockPatternLuma in the low four):
+     *   codeNum 0..2  : (2,15) (1,15) (0,15)
+     *   codeNum 3     : (0,0)
+     *   codeNum 4..7  : (1,7) (1,11) (1,13) (1,14)
+     *   codeNum 8..11 : (0,7) (0,11) (0,13) (0,14)
+     *   codeNum 12..15: (2,7) (2,11) (2,13) (2,14)
+     *   codeNum 16    : (1,0)
+     *   codeNum 17..20: (0,3) (0,5) (0,10) (0,12)
+     *   codeNum 21..24: (1,3) (1,5) (1,10) (1,12)
+     *   codeNum 25..28: (2,3) (2,5) (2,10) (2,12)
+     *   codeNum 29..32: (0,1) (0,2) (0,4) (0,8)
+     *   codeNum 33..36: (1,1) (1,2) (1,4) (1,8)
+     *   codeNum 37..40: (0,6) (0,9) (1,6) (1,9)
+     *   codeNum 41..47: (2,0) (2,1) (2,2) (2,4) (2,8) (2,6) (2,9)
+     * A simple lookup is used so the writer cannot disagree with the
+     * decoder's me(v) mapping on any legal CBP. */
+    static const int code[3][16] = {
+        {  3, 29, 30, 17, 31, 18, 37,  8, 32, 38, 19,  9, 20, 10, 11,  2 },
+        { 16, 33, 34, 21, 35, 22, 39,  4, 36, 40, 23,  5, 24,  6,  7,  1 },
+        { 41, 42, 43, 25, 44, 26, 46, 12, 45, 47, 27, 13, 28, 14, 15,  0 }
+    };
+    int c = cbp_chroma < 0 ? 0 : (cbp_chroma > 2 ? 2 : cbp_chroma);
+    int l = cbp_luma & 15;
+    return code[c][l];
 }
