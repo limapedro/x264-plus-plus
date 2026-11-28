@@ -4,6 +4,7 @@
  */
 
 #include "core/dct.h"
+#include <immintrin.h>
 
 const uint8_t x264pp_zigzag4[16] = {
      0,  1,  4,  8,  5,  2,  3,  6,
@@ -69,8 +70,52 @@ static void inv1( int a, int b, int c, int d, int out[4] )
     out[3] = u - w;
 }
 
+/* AVX2 implementation of the scalar IDCT + add + clip.  The arithmetic is
+ * identical to inv1() followed by ((t + 32) >> 6) and clip_pixel(). */
+__attribute__((target("avx2")))
+static void idct4_add_avx2( uint8_t *dst, int stride, const int16_t coef[16] )
+{
+    int tmp[16];
+    int r, y;
+    const __m128i c0 = _mm_cvtepi16_epi32( _mm_loadl_epi64( (__m128i *)( coef ) ) );
+    const __m128i c1 = _mm_cvtepi16_epi32( _mm_loadl_epi64( (__m128i *)( coef + 4 ) ) );
+    const __m128i c2 = _mm_cvtepi16_epi32( _mm_loadl_epi64( (__m128i *)( coef + 8 ) ) );
+    const __m128i c3 = _mm_cvtepi16_epi32( _mm_loadl_epi64( (__m128i *)( coef + 12 ) ) );
+    __m128i o0, o1, o2, o3;
+    {
+        __m128i u = _mm_add_epi32( c0, c2 );
+        __m128i v = _mm_sub_epi32( c0, c2 );
+        __m128i w = _mm_add_epi32( c1, _mm_srai_epi32( c3, 1 ) );
+        __m128i z = _mm_sub_epi32( _mm_srai_epi32( c1, 1 ), c3 );
+        o0 = _mm_add_epi32( u, w );
+        o1 = _mm_add_epi32( v, z );
+        o2 = _mm_sub_epi32( v, z );
+        o3 = _mm_sub_epi32( u, w );
+    }
+    _mm_storeu_si128( (__m128i *)( tmp ),      o0 );
+    _mm_storeu_si128( (__m128i *)( tmp + 4 ),  o1 );
+    _mm_storeu_si128( (__m128i *)( tmp + 8 ),  o2 );
+    _mm_storeu_si128( (__m128i *)( tmp + 12 ), o3 );
+    for( y = 0; y < 4; y++ )
+    {
+        int t[4];
+        inv1( tmp[4 * y], tmp[4 * y + 1], tmp[4 * y + 2], tmp[4 * y + 3], t );
+        for( r = 0; r < 4; r++ )
+        {
+            int v = dst[r * stride + y] + ((t[r] + 32) >> 6);
+            dst[r * stride + y] = (uint8_t)( v < 0 ? 0 : (v > 255 ? 255 : v) );
+        }
+    }
+}
+
 void x264pp_idct4_add( uint8_t *dst, int stride, const int16_t coef[16] )
 {
+    if( __builtin_cpu_supports( "avx2" ) )
+    {
+        idct4_add_avx2( dst, stride, coef );
+        return;
+    }
+    {
     int16_t tmp[16];
     int x, y;
     for( x = 0; x < 4; x++ )
@@ -90,6 +135,7 @@ void x264pp_idct4_add( uint8_t *dst, int stride, const int16_t coef[16] )
         dst[1 * stride + y] = (uint8_t)clip_pixel( dst[1 * stride + y] + ((t[1] + 32) >> 6) );
         dst[2 * stride + y] = (uint8_t)clip_pixel( dst[2 * stride + y] + ((t[2] + 32) >> 6) );
         dst[3 * stride + y] = (uint8_t)clip_pixel( dst[3 * stride + y] + ((t[3] + 32) >> 6) );
+    }
     }
 }
 
