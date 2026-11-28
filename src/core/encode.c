@@ -36,16 +36,11 @@ static const int8_t dc_sign[16][16] = {
     { 1, -1, -1, -1, 1, -1, 1, 1, 1, 1, -1, 1, -1, -1, -1, 1 },
     { 1, -1, -1, -1, 1, 1, -1, -1, 1, 1, -1, -1, 1, 1, 1, -1 },
     { 1, 1, -1, 1, -1, 1, 1, -1, 1, -1, -1, 1, -1, 1, -1, -1 },
-    { 1, 1, -1, 1, -1, -1, -1, 1, 1, -1, -1, 1, -1, 1, 1, 1 },
+    /* Row 13 was the only entry inconsistent with Eq. 8-320 for a raster
+     * block index (i = b/4, j = b%4): four signs were mirrored. */
+    { 1, 1, -1, 1, -1, -1, -1, 1, 1, -1, -1, -1, 1, -1, 1, 1 },
     { 1, -1, -1, 1, 1, -1, 1, 1, -1, -1, 1, -1, -1, 1, 1, -1 },
     { 1, -1, -1, 1, 1, 1, -1, -1, -1, -1, 1, 1, 1, -1, -1, 1 },
-};
-
-/* Decoder coefficient produced by one AC level at each zigzag position,
- * measured at QP 48 (dequant(1) = 160); scales linearly with dequant(1). */
-static const int ac_scale48[16] = {
-      0, 1040, 1040,  640, 1600,  640, 1040, 1040,
-   1040, 1600,  640, 1600, 1040, 1040, 1600, 1600
 };
 
 /* Sign-preserving rounding for division by a positive divisor. */
@@ -53,6 +48,66 @@ static int round_div( int num, int den )
 {
     return num >= 0 ? (num + den / 2) / den
                     : -((-num + den / 2) / den);
+}
+
+/* ITU-T H.264 Table 8-16 / Eq. 8-315: normAdjust4x4(m,i,j) selects one of
+ * three entries of v[m] by coefficient parity.  LevelScale4x4 also includes
+ * the default ScalingList4x4 value 16 (clause 8.5.9). */
+static const int8_t norm_v[6][3] = {
+    { 10, 16, 13 }, { 11, 18, 14 }, { 13, 20, 16 },
+    { 14, 23, 18 }, { 16, 25, 20 }, { 18, 29, 23 }
+};
+
+static int ac_norm_index( int idx )
+{
+    int row = idx >> 2, col = idx & 3;
+    if( !(row & 1) && !(col & 1) ) return 0;   /* v[m0] */
+    if(  (row & 1) &&  (col & 1) ) return 1;   /* v[m1] */
+    return 2;                                  /* v[m2] */
+}
+
+/* Decoder scaling of ONE 4x4 AC level, clause 8.5.12.1 Eq. 8-336/8-337:
+ *   d = (level * LevelScale4x4(qp%6,i,j)) << (qp/6 - 4)        (qp >= 24)
+ *   d = (level * LevelScale4x4(qp%6,i,j) + 2^(3-qp/6)) >> (4-qp/6) (qp < 24)
+ * with LevelScale4x4 = 16 * normAdjust4x4. */
+static int ac_dequant_one( int qp, int idx, int level )
+{
+    int shift = qp / 6 - 4;
+    int64_t ls = (int64_t)16 * norm_v[qp % 6][ac_norm_index( idx )];
+    int64_t v = (int64_t)level * ls;
+    if( shift >= 0 )
+        v <<= shift;
+    else
+    {
+        int s = -shift;
+        v = ( v + ( (int64_t)1 << ( s - 1 ) ) ) >> s;
+    }
+    if( v > 32767 ) v = 32767;
+    if( v < -32768 ) v = -32768;
+    return (int)v;
+}
+
+/* Ideal decoder coefficient for a forward DCT coefficient F: the transform
+ * round trip needs d = 4*F for DC-class positions and 4*F*v0/vk for the two
+ * odd classes (their forward gain is scaled by vk/v0 in H.264). */
+static int ac_ideal_dequant( int qp, int idx, int f )
+{
+    int v0 = norm_v[qp % 6][0];
+    int vk = norm_v[qp % 6][ac_norm_index( idx )];
+    return round_div( 4 * f * v0, vk );
+}
+
+/* Choose the level whose decoder reconstruction is closest to ideal.
+ * dequant(level) == level * vk * 2^(qp/6), so invert that directly. */
+static int ac_quant_level( int qp, int idx, int f )
+{
+    int ideal = ac_ideal_dequant( qp, idx, f );
+    int vk = norm_v[qp % 6][ac_norm_index( idx )];
+    int shift = qp / 6;
+    int num = ideal, den = vk;
+    if( shift >= 0 ) den <<= shift;
+    else num <<= -shift;
+    return round_div( num, den );
 }
 
 /* ITU-T H.264 Table 8-15: QPC = f(Clip3(0,51, QPY + chroma_qp_index_offset)).
@@ -140,10 +195,6 @@ static void chroma_dc_cavlc_fix( int16_t q[4] )
 #define X264PP_SLICE_QP_DELTA 22
 #endif
 #endif
-
-/* Encoder-side quantiser gain: finer levels than the decoder's native step.
- * Raises quality at a modest bit cost. */
-#define X264PP_QUANT_GAIN 1
 
 /* ------------------------------------------------------------------ */
 /* Parameter set writers                                               */
@@ -318,6 +369,133 @@ static void gather_neighbors( const x264pp_frame_t *f, int plane,
           ? p[(size_t)(py - 1) * stride + px - 1] : 128;
 }
 
+/* Normative intra predictors (8.3.3 / 8.3.5).  The shared library helpers
+ * index p[6-i] / p[2-i] in their plane modes instead of p[7-i] / p[3-i],
+ * which makes the encoder's fdec disagree with what a decoder builds. */
+static int clip255( int v )
+{
+    return v < 0 ? 0 : (v > 255 ? 255 : v);
+}
+
+static void pred16_norm( uint8_t *dst, int stride,
+                         const x264pp_neighbor_t *n, int mode )
+{
+    int x, y, sum, h = 0, v = 0, a, b, c, i;
+    const uint8_t *t = n->t, *l = n->l;
+    if( mode == 0 )
+    {
+        for( y = 0; y < 16; y++ )
+            for( x = 0; x < 16; x++ ) dst[y * stride + x] = t[x];
+        return;
+    }
+    if( mode == 1 )
+    {
+        for( y = 0; y < 16; y++ )
+            for( x = 0; x < 16; x++ ) dst[y * stride + x] = l[y];
+        return;
+    }
+    if( mode == 2 )
+    {
+        int have_t = !!(n->avail & X264PP_NEIGH_TOP);
+        int have_l = !!(n->avail & X264PP_NEIGH_LEFT);
+        sum = 0;
+        if( have_t ) for( i = 0; i < 16; i++ ) sum += t[i];
+        if( have_l ) for( i = 0; i < 16; i++ ) sum += l[i];
+        if( have_t && have_l ) sum = (sum + 16) >> 5;
+        else if( have_t || have_l ) sum = (sum + 8) >> 4;
+        else sum = 128;
+        for( y = 0; y < 16; y++ )
+            for( x = 0; x < 16; x++ ) dst[y * stride + x] = (uint8_t)sum;
+        return;
+    }
+    for( i = 0; i < 8; i++ )
+    {
+        h += (i + 1) * ((int)t[8 + i] - (int)t[7 - i]);
+        v += (i + 1) * ((int)l[8 + i] - (int)l[7 - i]);
+    }
+    a = 16 * ((int)l[15] + (int)t[15]);
+    b = (5 * h + 32) >> 6;
+    c = (5 * v + 32) >> 6;
+    for( y = 0; y < 16; y++ )
+        for( x = 0; x < 16; x++ )
+            dst[y * stride + x] = (uint8_t)clip255(
+                (a - 7 * b - 7 * c + 16 + x * b + y * c) >> 5 );
+}
+
+static void pred8c_norm( uint8_t *dst, int stride,
+                         const x264pp_neighbor_t *n, int mode )
+{
+    int x, y, s0 = 0, s1 = 0, s2 = 0, s3 = 0, i, h = 0, v = 0, a, b, c;
+    const uint8_t *t = n->t, *l = n->l;
+    int have_t = !!(n->avail & X264PP_NEIGH_TOP);
+    int have_l = !!(n->avail & X264PP_NEIGH_LEFT);
+    if( mode == 0 )
+    {
+        for( y = 0; y < 8; y++ )
+            for( x = 0; x < 8; x++ ) dst[y * stride + x] = t[x];
+        return;
+    }
+    if( mode == 1 )
+    {
+        for( y = 0; y < 8; y++ )
+            for( x = 0; x < 8; x++ ) dst[y * stride + x] = l[y];
+        return;
+    }
+    if( have_t )
+    {
+        for( i = 0; i < 4; i++ ) s0 += t[i];
+        for( i = 4; i < 8; i++ ) s1 += t[i];
+    }
+    if( have_l )
+    {
+        for( i = 0; i < 4; i++ ) s2 += l[i];
+        for( i = 4; i < 8; i++ ) s3 += l[i];
+    }
+    if( mode == 2 )
+    {
+        int dc00, dc01, dc10, dc11;
+        if( !have_t && !have_l ) dc00 = dc01 = dc10 = dc11 = 128;
+        else if( !have_t )
+        {
+            dc00 = dc10 = (s2 + 2) >> 2;
+            dc01 = dc11 = (s3 + 2) >> 2;
+        }
+        else if( !have_l )
+        {
+            dc00 = dc01 = (s0 + 2) >> 2;
+            dc10 = dc11 = (s1 + 2) >> 2;
+        }
+        else
+        {
+            dc00 = (s0 + s2 + 4) >> 3;
+            dc01 = (s1 + 2) >> 2;
+            dc10 = (s3 + 2) >> 2;
+            dc11 = (s1 + s3 + 4) >> 3;
+        }
+        for( y = 0; y < 4; y++ )
+            for( x = 0; x < 4; x++ ) dst[y * stride + x] = (uint8_t)dc00;
+        for( y = 0; y < 4; y++ )
+            for( x = 4; x < 8; x++ ) dst[y * stride + x] = (uint8_t)dc01;
+        for( y = 4; y < 8; y++ )
+            for( x = 0; x < 4; x++ ) dst[y * stride + x] = (uint8_t)dc10;
+        for( y = 4; y < 8; y++ )
+            for( x = 4; x < 8; x++ ) dst[y * stride + x] = (uint8_t)dc11;
+        return;
+    }
+    for( i = 0; i < 4; i++ )
+    {
+        h += (i + 1) * ((int)t[4 + i] - (int)t[3 - i]);
+        v += (i + 1) * ((int)l[4 + i] - (int)l[3 - i]);
+    }
+    a = 16 * ((int)l[7] + (int)t[7]);
+    b = (17 * h + 16) >> 5;
+    c = (17 * v + 16) >> 5;
+    for( y = 0; y < 8; y++ )
+        for( x = 0; x < 8; x++ )
+            dst[y * stride + x] = (uint8_t)clip255(
+                (a - 3 * b - 3 * c + 16 + x * b + y * c) >> 5 );
+}
+
 static int sad_block( const uint8_t *a, int astride,
                        const uint8_t *b, int bstride, int size )
 {
@@ -337,7 +515,7 @@ static int sad_block( const uint8_t *a, int astride,
     return sum;
 }
 
-/* x264pp_pred8c uses the predictor-library order V,H,DC,plane.  H.264
+/* pred8c_norm uses the predictor-library order V,H,DC,plane.  H.264
  * intra_chroma_pred_mode uses DC,H,V,plane. */
 static int chroma_signal_mode( int m )
 {
@@ -534,7 +712,7 @@ static int encode_mb( x264pp_encoder_t *e, x264pp_bs_t *bs,
         int m = mode, cost;
         if( (m == 0 || m == 3) && !(n.avail & X264PP_NEIGH_TOP) ) m = 2;
         if( (m == 1 || m == 3) && !(n.avail & X264PP_NEIGH_LEFT) ) m = 2;
-        x264pp_pred16( pred, 16, &n, m );
+        pred16_norm( pred, 16, &n, m );
         cost = sad_block( e->fenc.plane[0] + (size_t)py * e->fenc.stride[0] + px,
                           e->fenc.stride[0], pred, 16, 16 );
         if( cost < best_cost )
@@ -543,7 +721,7 @@ static int encode_mb( x264pp_encoder_t *e, x264pp_bs_t *bs,
             pred_mode = m;
         }
     }
-    x264pp_pred16( pred, 16, &n, pred_mode );
+    pred16_norm( pred, 16, &n, pred_mode );
     for( y = 0; y < 16; y++ )
         memcpy( e->fdec.plane[0] + (size_t)(py + y) * e->fdec.stride[0] + px,
                 pred + y * 16, 16 );
@@ -578,7 +756,7 @@ static int encode_mb( x264pp_encoder_t *e, x264pp_bs_t *bs,
             int sum = 0;
             for( b = 0; b < 16; b++ )
                 sum += 4 * dc_sign[b][k] * (int)dcv[b];
-            dcq[k] = (int16_t)round_div( sum * X264PP_QUANT_GAIN, 16 * dc_k );
+            dcq[k] = (int16_t)round_div( sum, 16 * dc_k );
         }
         for( b = 0; b < 16; b++ )
         {
@@ -593,18 +771,14 @@ static int encode_mb( x264pp_encoder_t *e, x264pp_bs_t *bs,
     {
         const int bx = (b % 4) * 4, by = (b / 4) * 4;
         {
-            int16_t one[16], oneq[16], j;
-            for( i = 0; i < 16; i++ ) one[i] = 0;
-            one[0] = 1;
-            x264pp_dequant4( &q, one, oneq );
+            int j;
             for( i = 0; i < 16; i++ ) { acq[b][i] = 0; acr[b][i] = 0; }
             for( j = 1; j < 16; j++ )
             {
-                int sc = round_div( ac_scale48[j] * oneq[0], 160 );
                 int idx = x264pp_zigzag4[j];
-                int lvl = round_div( (int)ac[b][idx] * X264PP_QUANT_GAIN, sc );
+                int lvl = ac_quant_level( qp, idx, (int)ac[b][idx] );
                 acq[b][idx] = (int16_t)lvl;
-                acr[b][idx] = (int16_t)(lvl * sc);
+                acr[b][idx] = (int16_t)ac_dequant_one( qp, idx, lvl );
                 if( lvl ) cbp_luma = 1;
             }
         }
@@ -635,7 +809,7 @@ static int encode_mb( x264pp_encoder_t *e, x264pp_bs_t *bs,
             if( (m == 0 || m == 3) && !(cn[0].avail & X264PP_NEIGH_TOP) ) m = 2;
             for( plane = 1; plane <= 2; plane++ )
             {
-                x264pp_pred8c( cpredc[plane - 1], 8, &cn[plane - 1], m );
+                pred8c_norm( cpredc[plane - 1], 8, &cn[plane - 1], m );
                 cost += sad_block( e->fenc.plane[plane]
                                    + (size_t)cpy * e->fenc.stride[plane] + cpx,
                                    e->fenc.stride[plane], cpredc[plane - 1], 8, 8 );
@@ -692,20 +866,19 @@ static int encode_mb( x264pp_encoder_t *e, x264pp_bs_t *bs,
             {
                 const int bx = (b % 2) * 4, by = (b / 2) * 4;
                 {
-                    int16_t one[16], oneq[16], j;
-                    for( i = 0; i < 16; i++ ) one[i] = 0;
-                    one[0] = 1;
-                    x264pp_dequant4( &qc, one, oneq );
+                    int j;
                     for( i = 0; i < 16; i++ )
                     { cacq[plane - 1][b][i] = 0; cacback[plane - 1][b][i] = 0; }
                     for( j = 1; j < 16; j++ )
                     {
-                        int sc = round_div( ac_scale48[j] * oneq[0], 160 );
                         int idx = x264pp_zigzag4[j];
-                        int lvl = round_div( (int)cac[plane - 1][b][idx] *
-                                             X264PP_QUANT_GAIN, sc );
+                        int cqp = chroma_qp_normative( qp,
+                                              e->pps.chroma_qp_index_offset );
+                        int lvl = ac_quant_level( cqp, idx,
+                                                  (int)cac[plane - 1][b][idx] );
                         cacq[plane - 1][b][idx] = (int16_t)lvl;
-                        cacback[plane - 1][b][idx] = (int16_t)(lvl * sc);
+                        cacback[plane - 1][b][idx] =
+                            (int16_t)ac_dequant_one( cqp, idx, lvl );
                         if( lvl ) chroma_ac = 1;
                     }
                 }
