@@ -7,6 +7,34 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* -------------------------------------------------------------------------
+ * Optional AVX2 fast path for frame loading.
+ *
+ * Loading a picture copies one strided row at a time and then replicates the
+ * border of every plane; both happen for each plane of every frame, so they
+ * are worth vectorising.  The project builds with plain `gcc -O2` and we may
+ * not change the Makefile, so the AVX2 helpers below are compiled with GCC's
+ * per-function `target("avx2")` attribute and are only reached after a
+ * runtime CPUID check.  A compiler/target without that attribute keeps the
+ * original scalar code, so this file stays portable.
+ *
+ * Byte identity is preserved deliberately:
+ *   - the row copy transfers exactly `w` bytes (tail done with memcpy);
+ *   - the edge fill writes only the `padx` padding bytes on each side, with
+ *     the same value the scalar loop would store there;
+ *   - the vertical pass copies exactly `pw + 2*padx` bytes from the already
+ *     padded source row, in the same order (horizontal first, then vertical).
+ * No padding byte outside those ranges is ever read or written.
+ * ---------------------------------------------------------------------- */
+
+#if (defined(__GNUC__) || defined(__clang__)) && \
+    (defined(__x86_64__) || defined(__i386__) || defined(_M_X64) || defined(_M_IX86))
+#define X264PP_FRAME_HAVE_AVX2_TARGET 1
+#include <immintrin.h>
+#else
+#define X264PP_FRAME_HAVE_AVX2_TARGET 0
+#endif
+
 #define PAD_Y 8
 #define PAD_X 16
 
@@ -14,6 +42,148 @@ static int align16( int x )
 {
     return (x + 15) & ~15;
 }
+
+static int frame_avx2_available( void )
+{
+#if X264PP_FRAME_HAVE_AVX2_TARGET
+    static int cached = -1;
+    if( cached < 0 )
+    {
+        __builtin_cpu_init();
+        cached = __builtin_cpu_supports( "avx2" ) ? 1 : 0;
+    }
+    return cached;
+#else
+    return 0;
+#endif
+}
+
+/* --- Scalar reference path ------------------------------------------------ */
+
+static void copy_rows_scalar( uint8_t *dst, int ds, const uint8_t *src,
+                              int ss, int w, int h )
+{
+    int y;
+    for( y = 0; y < h; y++ )
+        memcpy( dst + (size_t)y * ds, src + (size_t)y * ss, (size_t)w );
+}
+
+/* Replicate the border of the coded area into the padding of one plane. */
+static void pad_plane_scalar( uint8_t *plane, int stride, int w, int h, int shift )
+{
+    int x, y;
+    int pw = w >> shift;
+    int ph = h >> shift;
+    int padx = PAD_X >> shift;
+    int pady = PAD_Y >> shift;
+
+    for( y = 0; y < ph; y++ )
+    {
+        uint8_t *row = plane + (size_t)y * stride;
+        for( x = 1; x <= padx; x++ )
+        {
+            row[-x] = row[0];
+            row[pw - 1 + x] = row[pw - 1];
+        }
+    }
+    for( y = 1; y <= pady; y++ )
+    {
+        uint8_t *dst = plane - (size_t)y * stride;
+        uint8_t *src = plane;
+        uint8_t *dst2 = plane + (size_t)(ph - 1 + y) * stride;
+        uint8_t *src2 = plane + (size_t)(ph - 1) * stride;
+        memcpy( dst, src, (size_t)(pw + 2 * padx) );
+        memcpy( dst2, src2, (size_t)(pw + 2 * padx) );
+    }
+}
+
+/* --- AVX2 path (compiled per-function, dispatched at runtime) ------------- */
+
+#if X264PP_FRAME_HAVE_AVX2_TARGET
+
+/* Copy exactly n bytes with 32-byte vector moves plus a byte-exact tail. */
+__attribute__((target("avx2")))
+static void copy_bytes_avx2( uint8_t *dst, const uint8_t *src, int n )
+{
+    int i = 0;
+    for( ; i + 32 <= n; i += 32 )
+    {
+        __m256i v = _mm256_loadu_si256( (const __m256i *)(src + i) );
+        _mm256_storeu_si256( (__m256i *)(dst + i), v );
+    }
+    if( i < n )
+        memcpy( dst + i, src + i, (size_t)(n - i) );
+}
+
+/* Fill exactly n bytes with one byte value.  Only called with the small
+ * constant padx (16 luma / 8 chroma), but written generically. */
+__attribute__((target("avx2")))
+static void fill_bytes_avx2( uint8_t *dst, int value, int n )
+{
+    __m256i v = _mm256_set1_epi8( (char)(unsigned char)value );
+    __m128i lo = _mm256_castsi256_si128( v );
+    int i = 0;
+    for( ; i + 32 <= n; i += 32 )
+        _mm256_storeu_si256( (__m256i *)(dst + i), v );
+    if( n - i >= 16 )
+    {
+        _mm_storeu_si128( (__m128i *)(dst + i), lo );
+        i += 16;
+    }
+    if( n - i >= 8 )
+    {
+        _mm_storel_epi64( (__m128i *)(dst + i), lo );
+        i += 8;
+    }
+    if( n - i >= 4 )
+    {
+        uint32_t w = 0x01010101u * (unsigned int)(unsigned char)value;
+        memcpy( dst + i, &w, 4 );
+        i += 4;
+    }
+    for( ; i < n; i++ )
+        dst[i] = (uint8_t)value;
+}
+
+__attribute__((target("avx2")))
+static void copy_rows_avx2( uint8_t *dst, int ds, const uint8_t *src,
+                            int ss, int w, int h )
+{
+    int y;
+    for( y = 0; y < h; y++ )
+        copy_bytes_avx2( dst + (size_t)y * ds, src + (size_t)y * ss, w );
+}
+
+__attribute__((target("avx2")))
+static void pad_plane_avx2( uint8_t *plane, int stride, int w, int h, int shift )
+{
+    int y;
+    int pw = w >> shift;
+    int ph = h >> shift;
+    int padx = PAD_X >> shift;
+    int pady = PAD_Y >> shift;
+
+    for( y = 0; y < ph; y++ )
+    {
+        uint8_t *row = plane + (size_t)y * stride;
+        /* Same bytes as `row[-x] = row[0]` / `row[pw-1+x] = row[pw-1]`. */
+        fill_bytes_avx2( row - padx, row[0], padx );
+        fill_bytes_avx2( row + pw, row[pw - 1], padx );
+    }
+    for( y = 1; y <= pady; y++ )
+    {
+        uint8_t *dst  = plane - (size_t)y * stride;
+        uint8_t *src  = plane;
+        uint8_t *dst2 = plane + (size_t)(ph - 1 + y) * stride;
+        uint8_t *src2 = plane + (size_t)(ph - 1) * stride;
+        copy_bytes_avx2( dst, src, pw + 2 * padx );
+        copy_bytes_avx2( dst2, src2, pw + 2 * padx );
+    }
+}
+
+#endif /* X264PP_FRAME_HAVE_AVX2_TARGET */
+
+/* --- Public API ----------------------------------------------------------- */
 
 int x264pp_frame_alloc( x264pp_frame_t *f, int width, int height )
 {
@@ -75,38 +245,12 @@ void x264pp_frame_fill( x264pp_frame_t *f, int value )
     }
 }
 
-/* Replicate the border of the coded area into the padding of one plane. */
-static void pad_plane( uint8_t *plane, int stride, int w, int h, int shift )
-{
-    int x, y;
-    int pw = w >> shift;
-    int ph = h >> shift;
-    int padx = PAD_X >> shift;
-    int pady = PAD_Y >> shift;
-
-    for( y = 0; y < ph; y++ )
-    {
-        uint8_t *row = plane + (size_t)y * stride;
-        for( x = 1; x <= padx; x++ )
-        {
-            row[-x] = row[0];
-            row[pw - 1 + x] = row[pw - 1];
-        }
-    }
-    for( y = 1; y <= pady; y++ )
-    {
-        uint8_t *dst = plane - (size_t)y * stride;
-        uint8_t *src = plane;
-        uint8_t *dst2 = plane + (size_t)(ph - 1 + y) * stride;
-        uint8_t *src2 = plane + (size_t)(ph - 1) * stride;
-        memcpy( dst, src, (size_t)(pw + 2 * padx) );
-        memcpy( dst2, src2, (size_t)(pw + 2 * padx) );
-    }
-}
-
 int x264pp_frame_load( x264pp_frame_t *f, const x264pp_picture_t *pic )
 {
     int p;
+#if X264PP_FRAME_HAVE_AVX2_TARGET
+    int avx2;
+#endif
     if( !f || !f->base || !pic )
         return X264PP_ERR_INVALID;
     if( pic->csp != X264PP_CSP_I420 && pic->csp != X264PP_CSP_YV12 )
@@ -115,17 +259,29 @@ int x264pp_frame_load( x264pp_frame_t *f, const x264pp_picture_t *pic )
         pic->width > f->width || pic->height > f->height )
         return X264PP_ERR_INVALID;
 
+#if X264PP_FRAME_HAVE_AVX2_TARGET
+    avx2 = frame_avx2_available();
+#endif
+
     for( p = 0; p < 3; p++ )
     {
         int shift = (p == 0) ? 0 : 1;
         int w = pic->width >> shift;
         int h = pic->height >> shift;
-        int y;
-        for( y = 0; y < h; y++ )
-            memcpy( f->plane[p] + (size_t)y * f->stride[p],
-                    pic->plane[p] + (size_t)y * pic->stride[p],
-                    (size_t)w );
-        pad_plane( f->plane[p], f->stride[p], f->width, f->height, shift );
+#if X264PP_FRAME_HAVE_AVX2_TARGET
+        if( avx2 )
+        {
+            copy_rows_avx2( f->plane[p], f->stride[p],
+                            pic->plane[p], pic->stride[p], w, h );
+            pad_plane_avx2( f->plane[p], f->stride[p],
+                            f->width, f->height, shift );
+            continue;
+        }
+#endif
+        copy_rows_scalar( f->plane[p], f->stride[p],
+                          pic->plane[p], pic->stride[p], w, h );
+        pad_plane_scalar( f->plane[p], f->stride[p],
+                          f->width, f->height, shift );
     }
     return X264PP_OK;
 }
