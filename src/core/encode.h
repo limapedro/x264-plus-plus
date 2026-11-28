@@ -2,8 +2,10 @@
 #define X264PP_CORE_ENCODE_H
 
 /*
- * I/P-slice CAVLC encoder core (I1 intra path plus the I2 inter increment).
- * Original code for x264++.
+ * I/P-slice CAVLC encoder core.  The I2 inter path is compile-time gated:
+ * the default build is the known-good I1 all-IDR encoder, and a build with
+ * -DX264PP_INTER_P=1 enables the P-slice implementation.  Original code for
+ * x264++.
  */
 
 #include "core/api.h"
@@ -14,11 +16,17 @@
 extern "C" {
 #endif
 
+/* Default OFF: certified speed is better without motion estimation. */
+#ifndef X264PP_INTER_P
+#define X264PP_INTER_P 0
+#endif
+
 /* I2 searches whole-pel displacements in [-8,+8] on each axis.  Motion
  * vectors are stored in quarter-luma units, so every value is a multiple of
  * four and no interpolation filter is needed on luma. */
 #define X264PP_INTER_MV_RANGE 8
 
+#if X264PP_INTER_P
 /* Per-macroblock decision for a P picture.  Analysis (motion search, motion
  * compensation, transform, quantisation and reconstruction) runs before the
  * slice is written so that CAVLC mb_skip_run counts can be emitted in one
@@ -34,6 +42,7 @@ typedef struct x264pp_mb_inter
     int16_t chroma_dcq[2][4];          /* 2x2 chroma DC levels */
     int16_t chroma_acq[2][4][16];      /* chroma 4x4 AC levels */
 } x264pp_mb_inter_t;
+#endif
 
 typedef struct x264pp_encoder
 {
@@ -43,10 +52,12 @@ typedef struct x264pp_encoder
 
     x264pp_frame_t fenc;       /* padded source */
     x264pp_frame_t fdec;       /* padded reconstruction (current picture) */
+#if X264PP_INTER_P
     x264pp_frame_t ref;        /* previous reconstructed picture, padded */
+#endif
 
     int   mb_width, mb_height, mb_count;
-    int   frame_num;
+    int   frame_num;           /* only advanced when X264PP_INTER_P */
     int   wrote_headers;
     int   qp;
 
@@ -54,8 +65,10 @@ typedef struct x264pp_encoder
     uint8_t *nz_c[2];          /* mb_count * 4 nonzero counts (chroma 4x4) */
     uint8_t *i4_mode;          /* mb_count * 16 Intra_4x4 prediction modes */
 
+#if X264PP_INTER_P
     int16_t (*mv_cache)[2];    /* mb_count MVs for the next picture's MVP */
     x264pp_mb_inter_t *inter_mbs;
+#endif
 
     uint8_t *sps_rbsp;
     uint8_t *pps_rbsp;
@@ -71,9 +84,10 @@ typedef struct x264pp_encoder
 /* Create an encoder from a fully validated parameter block. */
 x264pp_encoder_t *x264pp_encoder_create( const x264pp_param_t *param );
 
-/* Encode one picture.  On the first call the output contains SPS, PPS and
- * the IDR slice (byte-identical to the I1 baseline); later calls contain one
- * non-IDR P slice each with a single reference: the previous reconstruction. */
+/* Encode one picture.  The first call always contains SPS, PPS and an IDR
+ * slice.  With X264PP_INTER_P=0 every later call is another IDR (I1
+ * behaviour); with X264PP_INTER_P=1 it is a non-IDR P slice referencing the
+ * previous reconstruction. */
 int x264pp_encoder_encode_frame( x264pp_encoder_t *enc,
                                  const x264pp_picture_t *pic,
                                  uint8_t *out, int out_cap, int *out_len );

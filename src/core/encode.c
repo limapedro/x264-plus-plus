@@ -979,6 +979,7 @@ static int encode_mb( x264pp_encoder_t *e, x264pp_bs_t *bs,
     return 0;
 }
 
+#if X264PP_INTER_P
 /* ------------------------------------------------------------------ */
 /* I2: inter (P) picture coding                                        */
 /* ------------------------------------------------------------------ */
@@ -1406,6 +1407,7 @@ static void write_inter_slice_data( x264pp_bs_t *bs, x264pp_encoder_t *e )
     if( skip_run )
         x264pp_bs_ue( bs, (unsigned)skip_run );
 }
+#endif /* X264PP_INTER_P */
 
 /* ------------------------------------------------------------------ */
 /* Frame and lifecycle                                                 */
@@ -1431,24 +1433,33 @@ x264pp_encoder_t *x264pp_encoder_create( const x264pp_param_t *param )
     e->qp = e->pps.pic_init_qp;
 
     if( x264pp_frame_alloc( &e->fenc, param->width, param->height ) != X264PP_OK ||
-        x264pp_frame_alloc( &e->fdec, param->width, param->height ) != X264PP_OK ||
-        x264pp_frame_alloc( &e->ref,  param->width, param->height ) != X264PP_OK )
+        x264pp_frame_alloc( &e->fdec, param->width, param->height ) != X264PP_OK )
         goto fail;
     x264pp_frame_fill( &e->fdec, 128 );
+#if X264PP_INTER_P
+    if( x264pp_frame_alloc( &e->ref, param->width, param->height ) != X264PP_OK )
+        goto fail;
     x264pp_frame_fill( &e->ref, 128 );       /* frame 0 is an IDR: no reference */
+#endif
 
     e->nz_y = (uint8_t *)calloc( (size_t)e->mb_count * 16, 1 );
     e->nz_c[0] = (uint8_t *)calloc( (size_t)e->mb_count * 4, 1 );
     e->nz_c[1] = (uint8_t *)calloc( (size_t)e->mb_count * 4, 1 );
     e->i4_mode = (uint8_t *)malloc( (size_t)e->mb_count * 16 );
+#if X264PP_INTER_P
     e->mv_cache = (int16_t (*)[2])calloc( (size_t)e->mb_count * 2,
                                           sizeof( int16_t ) );
     e->inter_mbs = (x264pp_mb_inter_t *)calloc( (size_t)e->mb_count,
                                                 sizeof( x264pp_mb_inter_t ) );
+#endif
     e->pred_buf = (uint8_t *)malloc( 16 * 16 );
     e->res_buf  = (int16_t *)malloc( 16 * 16 * sizeof( int16_t ) );
     if( !e->nz_y || !e->nz_c[0] || !e->nz_c[1] || !e->i4_mode ||
-        !e->mv_cache || !e->inter_mbs || !e->pred_buf || !e->res_buf )
+        !e->pred_buf || !e->res_buf
+#if X264PP_INTER_P
+        || !e->mv_cache || !e->inter_mbs
+#endif
+      )
         goto fail;
     memset( e->i4_mode, 2, (size_t)e->mb_count * 16 );
 
@@ -1485,13 +1496,17 @@ void x264pp_encoder_destroy( x264pp_encoder_t *e )
         return;
     x264pp_frame_free( &e->fenc );
     x264pp_frame_free( &e->fdec );
+#if X264PP_INTER_P
     x264pp_frame_free( &e->ref );
+#endif
     free( e->nz_y );
     free( e->nz_c[0] );
     free( e->nz_c[1] );
     free( e->i4_mode );
+#if X264PP_INTER_P
     free( e->mv_cache );
     free( e->inter_mbs );
+#endif
     free( e->pred_buf );
     free( e->res_buf );
     free( e->sps_rbsp );
@@ -1537,8 +1552,13 @@ int x264pp_encoder_encode_frame( x264pp_encoder_t *e,
         e->wrote_headers = 1;
     }
 
+#if X264PP_INTER_P
     is_idr = ( e->frame_num == 0 );
     nal_type = is_idr ? 5 : 1;
+#else
+    is_idr = 1;                 /* certified all-IDR mode */
+    nal_type = 5;
+#endif
 
     x264pp_bs_init( &bs, e->slice_rbsp, e->slice_cap );
     write_slice_header( &bs, e, is_idr );
@@ -1549,8 +1569,10 @@ int x264pp_encoder_encode_frame( x264pp_encoder_t *e,
             for( x = 0; x < e->mb_width; x++ )
                 encode_mb( e, &bs, x, y );
     }
+#if X264PP_INTER_P
     else
         write_inter_slice_data( &bs, e );
+#endif
     if( bs.overflow )
         return X264PP_ERR_INVALID;
     len = x264pp_bs_trailing( &bs );
@@ -1561,12 +1583,14 @@ int x264pp_encoder_encode_frame( x264pp_encoder_t *e,
     if( rc != X264PP_OK )
         return rc;
 
+#if X264PP_INTER_P
     /* The next picture references this reconstruction.  frame_num wraps at
      * 2^log2_max_frame_num, exactly as the slice header writer assumes. */
     copy_ref_frame( e );
     /* Every coded picture advances frame_num, including the IDR; the next
      * picture then uses 1, 2, ... and the writer masks to the SPS width. */
     e->frame_num++;
+#endif
     *out_len = pos;
     return X264PP_OK;
 }
