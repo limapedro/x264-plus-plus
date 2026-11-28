@@ -92,3 +92,8 @@ python cert\real_bench.py --frames 128 --reps 5
 Built with `CPPFLAGS=-DX264PP_FORCE_PCM=0` (QP45): ffmpeg-clean 1920x1080 H.264, **293,151 B** for 8 frames (vs oracle 200,535 B), PSNR **26.24 dB** (Y 25.08 / U 30.61 / V 30.19; oracle 42.64 dB). Default build remains all-I_PCM and bit-identical (`83C71EBC...`). Compressed speed measured 0.41x ultrafast / 1.60x medium / 4.23x veryslow, so it is not the default. See `src/verification/{chroma-recon,luma-ac}.md`.
 
 
+
+### I2 inter-prediction increment (gated, opt-in)
+
+PR #26 adds real P-slices (one reference, full-pel +/-8 SAD ME, P_Skip, MV/CBP/CAVLC) behind `-DX264PP_INTER_P=1`. Default build remains bit-identical to the all-IDR baseline. With the gate on, 8x1920x1080 decodes cleanly, output is 3,267,400 B (size ratio 0.94 vs oracle) and PSNR ~27 dB; speed is lower than all-IDR because of motion estimation (0.53x/2.01x/6.01x ultrafast/medium/veryslow). Luma residual remains disabled pending CAVLC fixes; see `src/verification/I2.md`.
+
