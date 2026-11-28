@@ -230,3 +230,8 @@ Section timers, 8x1920x1080 frames, 1 thread: pred=0.028s, DCT+quant=0.237s (62%
 
 Precomputing num/den/bias in `x264pp_quant_init` changed gated 1080p QP45 output from SHA256 C4B51052... to B0DFC38D..., size 293,151 -> 1,622,162 bytes and PSNR 26.24 -> 11.59 dB. Cause: several call sites mutate `x264pp_quant_t.qp` without calling `quant_init` again, so cached values become stale (fallback path uses a different QP). The patch was rejected and not merged. Any SIMD quantiser must read qp dynamically or all call sites must be audited first.
 
+
+## AVX2 quantiser reciprocal test (rejected on performance)
+
+Replacing double division by reciprocal multiplication in `quant4_avx2` was proven bit-exact by an exhaustive C test over all 48 QP-derived denominators and every coefficient value 0..2,130,304 (102,233,136 cases, 0 mismatches). Gated 1080p SHA256 stayed C4B51052... . However alternating A/B timings showed no gain: division median 429 ms, reciprocal median 436 ms for 8 frames at 1920x1080. The patch was rejected; the division-based AVX2 quantiser remains, with honest neutral-speed status.
+
