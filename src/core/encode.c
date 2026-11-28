@@ -1,4 +1,4 @@
-/*
+﻿/*
  * I-slice / IDR encoder core for I1.  Original code for x264++ written from
  * spec/h264-syntax.md, docs/rebuild/encoder/{set,encoder,cavlc}.c.md and the
  * published H.264 standard.  No reference source was consulted.
@@ -446,7 +446,7 @@ static int encode_mb( x264pp_encoder_t *e, x264pp_bs_t *bs,
             for( x = 0; x < 4; x++ )
                 res[y * 4 + x] = (int16_t)((int)src[y * e->fenc.stride[0] + x]
                                             - (int)pred[y * 4 + x]);
-        x264pp_dct4( res, ac[b] );
+        x264pp_dct4x4_avx2( res, ac[b] );
         x264pp_quant4( &q, ac[b], acq[b], 4 );
         if( x264pp_last_nonzero( acq[b], 16 ) >= 0 )
             cbp_luma |= 1 << (b / 4);
@@ -498,7 +498,7 @@ static int encode_mb( x264pp_encoder_t *e, x264pp_bs_t *bs,
                         res[y * 4 + x] = (int16_t)
                             ((int)csrc[(by + y) * e->fenc.stride[plane] + bx + x]
                              - (int)cpred[(by + y) * 8 + bx + x]);
-                x264pp_dct4( res, cac[plane - 1][b] );
+                x264pp_dct4x4_avx2( res, cac[plane - 1][b] );
                 cv[b] = cac[plane - 1][b][0];
                 cac[plane - 1][b][0] = 0;
             }
@@ -728,3 +728,4 @@ int x264pp_encoder_encode_frame( x264pp_encoder_t *e,
     *out_len = pos;
     return X264PP_OK;
 }
+
