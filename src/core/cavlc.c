@@ -301,6 +301,7 @@ void x264pp_cavlc_residual( x264pp_bs_t *bs, const int16_t *levels,
 {
     int i, total = 0, last = -1, trailing = 0;
     int cat, suffix = 0, first_non_t1 = 1;
+    int non_t1_start = -1;
     int zeros_left, run;
 
     if( !bs || !levels || n <= 0 )
@@ -321,20 +322,32 @@ void x264pp_cavlc_residual( x264pp_bs_t *bs, const int16_t *levels,
         return;
     }
 
-    /* TrailingOnes: at most three ±1 levels at the highest scan indices. */
-    for( i = last; i >= 0 && trailing < 3 && levels[i]; i-- )
+    /* TrailingOnes are counted over the sequence of NON-ZERO levels, not over
+     * raw scan positions: a zero between two ±1 coefficients is described by
+     * total_zeros/run_before and must not break the run (clause 9.2.1).
+     * non_t1_start is the highest scan index that is not a trailing one; all
+     * levels below it are coded with level_prefix/level_suffix. */
+    for( i = last; i >= 0; i-- )
     {
-        int abs_level = levels[i] < 0 ? -levels[i] : levels[i];
-        if( abs_level != 1 )
-            break;
-        trailing++;
+        int abs_level;
+        if( levels[i] == 0 )
+            continue;                       /* gap: not part of the level list */
+        abs_level = levels[i] < 0 ? -levels[i] : levels[i];
+        if( abs_level == 1 && trailing < 3 )
+        {
+            trailing++;
+            continue;
+        }
+        non_t1_start = i;
+        break;
     }
     if( total > 16 ) total = 16;
     write_vlc( bs, coeff_token_tbl[cat][total][trailing] );
 
     /* Clause 9.2.2: T1 signs directly after coeff_token, high index first. */
-    for( i = 0; i < trailing; i++ )
-        x264pp_bs_write( bs, levels[last - i] < 0 ? 1 : 0, 1 );
+    for( i = last; i > non_t1_start; i-- )
+        if( levels[i] )
+            x264pp_bs_write( bs, levels[i] < 0 ? 1 : 0, 1 );
 
     suffix = (total > 10 && trailing < 3) ? 1 : 0;
 
@@ -343,7 +356,7 @@ void x264pp_cavlc_residual( x264pp_bs_t *bs, const int16_t *levels,
      * by total_zeros/run_before, so iterating over every scan position here
      * would emit a spurious level code for each gap and desynchronise the
      * decoder. */
-    for( i = last - trailing; i >= 0; i-- )
+    for( i = non_t1_start; i >= 0; i-- )
     {
         int level = levels[i];
         int abs_level;
@@ -402,17 +415,15 @@ void x264pp_cavlc_residual( x264pp_bs_t *bs, const int16_t *levels,
 
 int x264pp_cavlc_cbp_code( int cbp_chroma, int cbp_luma )
 {
-    /* Intra 4:2:0 CBP mapping (H.264 Table 9-4).  The first four combined
-     * patterns use the compact code numbers; the remaining luma masks
-     * follow in raster order. */
-    if( cbp_luma == 0 )
-        return cbp_chroma;                   /* 0,1,2 */
-    if( cbp_luma == 15 )
-        return 3 + cbp_chroma;               /* 3,4,5 */
-    if( cbp_chroma == 0 )
-    {
-        static const int idx[16] = { 0, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20 };
-        return idx[cbp_luma & 15];
-    }
-    return 6 + cbp_chroma * 15 + (cbp_luma & 15);
+    /* Inverse of H.264 Table 9-4 (coded_block_pattern, Intra 4:2:0 slice):
+     * index = (CodedBlockPatternChroma << 4) | CodedBlockPatternLuma,
+     * value = the Exp-Golomb codeNum written for me(v). */
+    static const uint8_t cbp_code[48] = {
+         3, 29, 30, 17, 31, 18, 37,  8, 32, 38, 19,  9,
+        20, 10, 11,  2, 16, 33, 34, 21, 35, 22, 39,  4,
+        36, 40, 23,  5, 24,  6,  7,  1, 41, 42, 43, 25,
+        44, 26, 46, 12, 45, 47, 27, 13, 28, 14, 15,  0,
+    };
+    int cbp = ((cbp_chroma & 3) << 4) | (cbp_luma & 15);
+    return cbp_code[cbp];
 }
