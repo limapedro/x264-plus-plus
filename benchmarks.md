@@ -46,17 +46,17 @@ The other three clips (640×360, second 1080p, 720p60) and the full A/B table wi
 
 | Preset | Reference (fps) | x264++ (fps) | Speedup | ffmpeg decode | Notes |
 | --- | ---: | ---: | ---: | --- | --- |
-| ultrafast | 149.15 | 29.32 | **0.20×** | clean | 8×1920×1080 Fortnite, CRF 23, 6 threads |
+| ultrafast | 158.63 | 62.20 | **0.39×** | clean | 8×1920×1080 Fortnite, CRF 23, 6 threads |
 | superfast | — | — | — | not measured | — |
 | veryfast | — | — | — | not measured | — |
 | faster | — | — | — | not measured | — |
 | fast | — | — | — | not measured | — |
-| medium | 38.37 | 28.64 | **0.75×** | clean | same clip |
+| medium | 38.39 | 63.04 | **1.64×** | clean | same clip |
 | slow | — | — | — | not measured | — |
 | slower | — | — | — | not measured | — |
-| veryslow | 13.28 | 29.27 | **2.20×** | clean | same clip |
+| veryslow | 13.90 | 62.83 | **4.52×** | clean | same clip |
 
-These are post-PR-#11 numbers (bulk I_PCM writes + fast NAL escaping + buffered CLI I/O). The candidate went from ~12 fps to ~29 fps at 1080p — a **2.4× self-speedup** — with bit-identical output at every step (SHA256 verified) and ffmpeg decoding cleanly. PRs #10/#11 added only ~1 fps on top of PR #9, so the remaining bottleneck is elsewhere (the ~126× larger output volume itself). Decoded output is byte-exact/lossless (PSNR = inf with matching timestamps), but the file is ~126× larger than the oracle, so the quality/size envelope still fails.
+These are post-PR-#13 numbers. Cumulative self-speedup at 1080p: ~12 fps → 62 fps (**~5.2×**), from bulk I_PCM writes (#9), fast NAL escaping (#10), buffered CLI I/O (#11), AVX2 frame copy (#12) and deterministic frame-level threading (#13). Every step was SHA256 bit-identical and ffmpeg-clean. Other clips: 640×360 reaches 368 fps (0.94× vs ultrafast, 3.5× vs veryslow); 720p60 reaches 145 fps (0.57× vs ultrafast, 2.2× vs veryslow). Decoded output is byte-exact/lossless (PSNR = inf with matching timestamps), but the file is ~126× larger than the oracle, so the quality/size envelope still fails.
 
 **Honest summary:** 2× is reached only against `veryslow`; `ultrafast` is ~5.6× faster than us. The ≥2×-on-every-preset goal is **not met**. Compression (CAVLC) remains the unresolved blocker; all attempts are documented in closed PRs #6–#8.
 

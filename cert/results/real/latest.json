@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-11-28T02:31:24+00:00",
-  "run_id": "20261128T023124Z",
+  "generated_at_utc": "2026-11-28T02:45:21+00:00",
+  "run_id": "20261128T024521Z",
   "status": "ok",
   "candidate_certified": true,
   "blocked_reason": null,
@@ -26,7 +26,7 @@
       "path": "E:\\__PROJECTS__\\x264++\\build\\x264pp.exe",
       "exists": true,
       "version": "x264 0.164.x",
-      "sha256": "3f93309b4e664e27a3798aa72f8c7dac2d2607c3fe7e7ca0b815ad108bdf37d9"
+      "sha256": "a2b55448ad4ac490968d045a8b23f99d5991f8761d8d8847f7ee28ec596fcb1a"
     }
   },
   "reference_anchors": [
@@ -188,15 +188,15 @@
       "certified": true,
       "oracle": {
         "times_ms": [
-          53.638,
-          54.345,
-          52.952
+          53.302,
+          50.43,
+          49.826
         ],
-        "median_ms": 53.638,
-        "mean_ms": 53.645,
-        "min_ms": 52.952,
-        "max_ms": 54.345,
-        "fps": 149.15,
+        "median_ms": 50.43,
+        "mean_ms": 51.186,
+        "min_ms": 49.826,
+        "max_ms": 53.302,
+        "fps": 158.63,
         "sizes_bytes": [
           493055,
           493055,
@@ -218,16 +218,16 @@
       },
       "candidate": {
         "times_ms": [
-          275.526,
-          272.877,
-          271.804
+          128.625,
+          127.551,
+          132.191
         ],
         "availability": "present",
-        "median_ms": 272.877,
-        "mean_ms": 273.402,
-        "min_ms": 271.804,
-        "max_ms": 275.526,
-        "fps": 29.32,
+        "median_ms": 128.625,
+        "mean_ms": 129.456,
+        "min_ms": 127.551,
+        "max_ms": 132.191,
+        "fps": 62.2,
         "sizes_bytes": [
           25287468,
           25287468,
@@ -244,13 +244,13 @@
         "quality": {
           "psnr_db": null,
           "ssim": null,
-          "error": "ssim failed: fec0] Terminating thread with error: Invalid argument\r\n[out#0/null @ 00000275949f0280] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
+          "error": "ssim failed: f040] Terminating thread with error: Invalid argument\r\n[out#0/null @ 000002643eab3ec0] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.01    \r\nConversion failed!"
         }
       },
       "warnings": [
-        "candidate_quality: ssim failed: fec0] Terminating thread with error: Invalid argument\r\n[out#0/null @ 00000275949f0280] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
+        "candidate_quality: ssim failed: f040] Terminating thread with error: Invalid argument\r\n[out#0/null @ 000002643eab3ec0] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.01    \r\nConversion failed!"
       ],
-      "speedup": 0.1966,
+      "speedup": 0.3921,
       "size_delta_pct": 5028.732
     },
     {
@@ -277,15 +277,15 @@
       "certified": true,
       "oracle": {
         "times_ms": [
-          204.534,
-          208.511,
-          210.204
+          215.631,
+          208.378,
+          204.255
         ],
-        "median_ms": 208.511,
-        "mean_ms": 207.749,
-        "min_ms": 204.534,
-        "max_ms": 210.204,
-        "fps": 38.37,
+        "median_ms": 208.378,
+        "mean_ms": 209.421,
+        "min_ms": 204.255,
+        "max_ms": 215.631,
+        "fps": 38.39,
         "sizes_bytes": [
           200535,
           200535,
@@ -307,16 +307,16 @@
       },
       "candidate": {
         "times_ms": [
-          280.678,
-          270.797,
-          279.327
+          131.837,
+          123.609,
+          126.903
         ],
         "availability": "present",
-        "median_ms": 279.327,
-        "mean_ms": 276.934,
-        "min_ms": 270.797,
-        "max_ms": 280.678,
-        "fps": 28.64,
+        "median_ms": 126.903,
+        "mean_ms": 127.45,
+        "min_ms": 123.609,
+        "max_ms": 131.837,
+        "fps": 63.04,
         "sizes_bytes": [
           25287468,
           25287468,
@@ -333,13 +333,13 @@
         "quality": {
           "psnr_db": null,
           "ssim": null,
-          "error": "ssim failed: 93c0] Terminating thread with error: Invalid argument\r\n[out#0/null @ 0000018186590140] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.01    \r\nConversion failed!"
+          "error": "ssim failed: 1b80] Terminating thread with error: Invalid argument\r\n[out#0/null @ 0000028e94ac2840] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
         }
       },
       "warnings": [
-        "candidate_quality: ssim failed: 93c0] Terminating thread with error: Invalid argument\r\n[out#0/null @ 0000018186590140] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.01    \r\nConversion failed!"
+        "candidate_quality: ssim failed: 1b80] Terminating thread with error: Invalid argument\r\n[out#0/null @ 0000028e94ac2840] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
       ],
-      "speedup": 0.7465,
+      "speedup": 1.642,
       "size_delta_pct": 12510.002
     },
     {
@@ -366,15 +366,15 @@
       "certified": true,
       "oracle": {
         "times_ms": [
-          615.624,
-          602.415,
-          583.363
+          580.465,
+          572.281,
+          575.731
         ],
-        "median_ms": 602.415,
-        "mean_ms": 600.467,
-        "min_ms": 583.363,
-        "max_ms": 615.624,
-        "fps": 13.28,
+        "median_ms": 575.731,
+        "mean_ms": 576.159,
+        "min_ms": 572.281,
+        "max_ms": 580.465,
+        "fps": 13.9,
         "sizes_bytes": [
           186685,
           186685,
@@ -396,16 +396,16 @@
       },
       "candidate": {
         "times_ms": [
-          273.364,
-          271.765,
-          273.735
+          127.32,
+          126.093,
+          130.748
         ],
         "availability": "present",
-        "median_ms": 273.364,
-        "mean_ms": 272.955,
-        "min_ms": 271.765,
-        "max_ms": 273.735,
-        "fps": 29.27,
+        "median_ms": 127.32,
+        "mean_ms": 128.054,
+        "min_ms": 126.093,
+        "max_ms": 130.748,
+        "fps": 62.83,
         "sizes_bytes": [
           25287468,
           25287468,
@@ -422,13 +422,13 @@
         "quality": {
           "psnr_db": null,
           "ssim": null,
-          "error": "ssim failed: 2480] Terminating thread with error: Invalid argument\r\n[out#0/null @ 00000219fb4b39c0] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
+          "error": "ssim failed: 1040] Terminating thread with error: Invalid argument\r\n[out#0/null @ 000001c6df155780] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.01    \r\nConversion failed!"
         }
       },
       "warnings": [
-        "candidate_quality: ssim failed: 2480] Terminating thread with error: Invalid argument\r\n[out#0/null @ 00000219fb4b39c0] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
+        "candidate_quality: ssim failed: 1040] Terminating thread with error: Invalid argument\r\n[out#0/null @ 000001c6df155780] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.01    \r\nConversion failed!"
       ],
-      "speedup": 2.2037,
+      "speedup": 4.5219,
       "size_delta_pct": 13445.527
     },
     {
@@ -455,15 +455,15 @@
       "certified": true,
       "oracle": {
         "times_ms": [
-          21.256,
-          21.55,
-          21.053
+          20.566,
+          19.874,
+          20.409
         ],
-        "median_ms": 21.256,
-        "mean_ms": 21.286,
-        "min_ms": 21.053,
-        "max_ms": 21.55,
-        "fps": 376.36,
+        "median_ms": 20.409,
+        "mean_ms": 20.283,
+        "min_ms": 19.874,
+        "max_ms": 20.566,
+        "fps": 391.99,
         "sizes_bytes": [
           59902,
           59902,
@@ -485,16 +485,16 @@
       },
       "candidate": {
         "times_ms": [
-          36.635,
-          35.496,
-          35.184
+          23.706,
+          21.707,
+          21.576
         ],
         "availability": "present",
-        "median_ms": 35.496,
-        "mean_ms": 35.772,
-        "min_ms": 35.184,
-        "max_ms": 36.635,
-        "fps": 225.38,
+        "median_ms": 21.707,
+        "mean_ms": 22.33,
+        "min_ms": 21.576,
+        "max_ms": 23.706,
+        "fps": 368.54,
         "sizes_bytes": [
           2870828,
           2870828,
@@ -511,13 +511,13 @@
         "quality": {
           "psnr_db": null,
           "ssim": null,
-          "error": "ssim failed: 5a00] Terminating thread with error: Invalid argument\r\n[out#0/null @ 000001b33f690980] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
+          "error": "ssim failed: bd00] Terminating thread with error: Invalid argument\r\n[out#0/null @ 0000026f9be6fb80] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
         }
       },
       "warnings": [
-        "candidate_quality: ssim failed: 5a00] Terminating thread with error: Invalid argument\r\n[out#0/null @ 000001b33f690980] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
+        "candidate_quality: ssim failed: bd00] Terminating thread with error: Invalid argument\r\n[out#0/null @ 0000026f9be6fb80] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
       ],
-      "speedup": 0.5988,
+      "speedup": 0.9402,
       "size_delta_pct": 4692.541
     },
     {
@@ -544,15 +544,15 @@
       "certified": true,
       "oracle": {
         "times_ms": [
-          34.152,
-          33.615,
-          33.252
+          33.37,
+          33.34,
+          32.556
         ],
-        "median_ms": 33.615,
-        "mean_ms": 33.673,
-        "min_ms": 33.252,
-        "max_ms": 34.152,
-        "fps": 237.99,
+        "median_ms": 33.34,
+        "mean_ms": 33.089,
+        "min_ms": 32.556,
+        "max_ms": 33.37,
+        "fps": 239.95,
         "sizes_bytes": [
           19383,
           19383,
@@ -574,16 +574,16 @@
       },
       "candidate": {
         "times_ms": [
-          35.98,
-          35.932,
-          35.941
+          21.93,
+          21.972,
+          22.29
         ],
         "availability": "present",
-        "median_ms": 35.941,
-        "mean_ms": 35.951,
-        "min_ms": 35.932,
-        "max_ms": 35.98,
-        "fps": 222.59,
+        "median_ms": 21.972,
+        "mean_ms": 22.064,
+        "min_ms": 21.93,
+        "max_ms": 22.29,
+        "fps": 364.1,
         "sizes_bytes": [
           2870828,
           2870828,
@@ -600,13 +600,13 @@
         "quality": {
           "psnr_db": null,
           "ssim": null,
-          "error": "ssim failed: 4900] Terminating thread with error: Invalid argument\r\n[out#0/null @ 000002718db403c0] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
+          "error": "ssim failed: 7b40] Terminating thread with error: Invalid argument\r\n[out#0/null @ 0000018e4e3f2e00] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
         }
       },
       "warnings": [
-        "candidate_quality: ssim failed: 4900] Terminating thread with error: Invalid argument\r\n[out#0/null @ 000002718db403c0] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
+        "candidate_quality: ssim failed: 7b40] Terminating thread with error: Invalid argument\r\n[out#0/null @ 0000018e4e3f2e00] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
       ],
-      "speedup": 0.9353,
+      "speedup": 1.5174,
       "size_delta_pct": 14711.061
     },
     {
@@ -633,15 +633,15 @@
       "certified": true,
       "oracle": {
         "times_ms": [
-          79.472,
-          76.696,
-          85.245
+          77.336,
+          76.006,
+          75.676
         ],
-        "median_ms": 79.472,
-        "mean_ms": 80.471,
-        "min_ms": 76.696,
-        "max_ms": 85.245,
-        "fps": 100.66,
+        "median_ms": 76.006,
+        "mean_ms": 76.339,
+        "min_ms": 75.676,
+        "max_ms": 77.336,
+        "fps": 105.25,
         "sizes_bytes": [
           18306,
           18306,
@@ -663,16 +663,16 @@
       },
       "candidate": {
         "times_ms": [
-          37.116,
-          36.261,
-          35.111
+          19.571,
+          21.661,
+          22.709
         ],
         "availability": "present",
-        "median_ms": 36.261,
-        "mean_ms": 36.163,
-        "min_ms": 35.111,
-        "max_ms": 37.116,
-        "fps": 220.62,
+        "median_ms": 21.661,
+        "mean_ms": 21.314,
+        "min_ms": 19.571,
+        "max_ms": 22.709,
+        "fps": 369.33,
         "sizes_bytes": [
           2870828,
           2870828,
@@ -689,13 +689,13 @@
         "quality": {
           "psnr_db": null,
           "ssim": null,
-          "error": "ssim failed: d680] Terminating thread with error: Invalid argument\r\n[out#0/null @ 000002510d222440] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
+          "error": "ssim failed: 3640] Terminating thread with error: Invalid argument\r\n[out#0/null @ 0000020dcb003a80] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
         }
       },
       "warnings": [
-        "candidate_quality: ssim failed: d680] Terminating thread with error: Invalid argument\r\n[out#0/null @ 000002510d222440] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
+        "candidate_quality: ssim failed: 3640] Terminating thread with error: Invalid argument\r\n[out#0/null @ 0000020dcb003a80] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
       ],
-      "speedup": 2.1917,
+      "speedup": 3.5089,
       "size_delta_pct": 15582.443
     },
     {
@@ -722,15 +722,15 @@
       "certified": true,
       "oracle": {
         "times_ms": [
-          51.555,
-          50.93,
-          50.391
+          46.727,
+          46.158,
+          46.446
         ],
-        "median_ms": 50.93,
-        "mean_ms": 50.958,
-        "min_ms": 50.391,
-        "max_ms": 51.555,
-        "fps": 157.08,
+        "median_ms": 46.446,
+        "mean_ms": 46.444,
+        "min_ms": 46.158,
+        "max_ms": 46.727,
+        "fps": 172.24,
         "sizes_bytes": [
           30728,
           30728,
@@ -752,16 +752,16 @@
       },
       "candidate": {
         "times_ms": [
-          178.45,
-          174.114,
-          172.763
+          97.968,
+          86.824,
+          93.144
         ],
         "availability": "present",
-        "median_ms": 174.114,
-        "mean_ms": 175.109,
-        "min_ms": 172.763,
-        "max_ms": 178.45,
-        "fps": 45.95,
+        "median_ms": 93.144,
+        "mean_ms": 92.645,
+        "min_ms": 86.824,
+        "max_ms": 97.968,
+        "fps": 85.89,
         "sizes_bytes": [
           25287468,
           25287468,
@@ -778,13 +778,13 @@
         "quality": {
           "psnr_db": null,
           "ssim": null,
-          "error": "ssim failed: f040] Terminating thread with error: Invalid argument\r\n[out#0/null @ 0000021b855b0c40] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
+          "error": "ssim failed: 0d80] Terminating thread with error: Invalid argument\r\n[out#0/null @ 000001c25fde1e80] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
         }
       },
       "warnings": [
-        "candidate_quality: ssim failed: f040] Terminating thread with error: Invalid argument\r\n[out#0/null @ 0000021b855b0c40] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
+        "candidate_quality: ssim failed: 0d80] Terminating thread with error: Invalid argument\r\n[out#0/null @ 000001c25fde1e80] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
       ],
-      "speedup": 0.2925,
+      "speedup": 0.4986,
       "size_delta_pct": 82194.546
     },
     {
@@ -811,15 +811,15 @@
       "certified": true,
       "oracle": {
         "times_ms": [
-          114.493,
-          103.995,
-          112.455
+          109.616,
+          108.628,
+          100.857
         ],
-        "median_ms": 112.455,
-        "mean_ms": 110.314,
-        "min_ms": 103.995,
-        "max_ms": 114.493,
-        "fps": 71.14,
+        "median_ms": 108.628,
+        "mean_ms": 106.367,
+        "min_ms": 100.857,
+        "max_ms": 109.616,
+        "fps": 73.65,
         "sizes_bytes": [
           15584,
           15584,
@@ -841,16 +841,16 @@
       },
       "candidate": {
         "times_ms": [
-          204.254,
-          178.16,
-          174.197
+          95.244,
+          104.493,
+          99.951
         ],
         "availability": "present",
-        "median_ms": 178.16,
-        "mean_ms": 185.537,
-        "min_ms": 174.197,
-        "max_ms": 204.254,
-        "fps": 44.9,
+        "median_ms": 99.951,
+        "mean_ms": 99.896,
+        "min_ms": 95.244,
+        "max_ms": 104.493,
+        "fps": 80.04,
         "sizes_bytes": [
           25287468,
           25287468,
@@ -867,13 +867,13 @@
         "quality": {
           "psnr_db": null,
           "ssim": null,
-          "error": "ssim failed: 98c0] Terminating thread with error: Invalid argument\r\n[out#0/null @ 000001cabaa51280] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
+          "error": "ssim failed: 0340] Terminating thread with error: Invalid argument\r\n[out#0/null @ 00000216d6860880] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
         }
       },
       "warnings": [
-        "candidate_quality: ssim failed: 98c0] Terminating thread with error: Invalid argument\r\n[out#0/null @ 000001cabaa51280] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
+        "candidate_quality: ssim failed: 0340] Terminating thread with error: Invalid argument\r\n[out#0/null @ 00000216d6860880] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
       ],
-      "speedup": 0.6312,
+      "speedup": 1.0868,
       "size_delta_pct": 162165.58
     },
     {
@@ -900,15 +900,15 @@
       "certified": true,
       "oracle": {
         "times_ms": [
-          153.672,
-          140.304,
-          141.845
+          141.007,
+          135.404,
+          141.75
         ],
-        "median_ms": 141.845,
-        "mean_ms": 145.274,
-        "min_ms": 140.304,
-        "max_ms": 153.672,
-        "fps": 56.4,
+        "median_ms": 141.007,
+        "mean_ms": 139.387,
+        "min_ms": 135.404,
+        "max_ms": 141.75,
+        "fps": 56.73,
         "sizes_bytes": [
           13729,
           13729,
@@ -930,16 +930,16 @@
       },
       "candidate": {
         "times_ms": [
-          178.984,
-          180.48,
-          175.842
+          95.585,
+          110.647,
+          103.293
         ],
         "availability": "present",
-        "median_ms": 178.984,
-        "mean_ms": 178.435,
-        "min_ms": 175.842,
-        "max_ms": 180.48,
-        "fps": 44.7,
+        "median_ms": 103.293,
+        "mean_ms": 103.175,
+        "min_ms": 95.585,
+        "max_ms": 110.647,
+        "fps": 77.45,
         "sizes_bytes": [
           25287468,
           25287468,
@@ -956,13 +956,13 @@
         "quality": {
           "psnr_db": null,
           "ssim": null,
-          "error": "ssim failed: ea40] Terminating thread with error: Invalid argument\r\n[out#0/null @ 0000024737480a40] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
+          "error": "ssim failed: 00c0] Terminating thread with error: Invalid argument\r\n[out#0/null @ 0000017136adf640] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
         }
       },
       "warnings": [
-        "candidate_quality: ssim failed: ea40] Terminating thread with error: Invalid argument\r\n[out#0/null @ 0000024737480a40] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
+        "candidate_quality: ssim failed: 00c0] Terminating thread with error: Invalid argument\r\n[out#0/null @ 0000017136adf640] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
       ],
-      "speedup": 0.7925,
+      "speedup": 1.3651,
       "size_delta_pct": 184090.167
     },
     {
@@ -989,15 +989,15 @@
       "certified": true,
       "oracle": {
         "times_ms": [
-          31.465,
-          31.555,
-          33.258
+          31.538,
+          32.018,
+          31.448
         ],
-        "median_ms": 31.555,
-        "mean_ms": 32.093,
-        "min_ms": 31.465,
-        "max_ms": 33.258,
-        "fps": 253.53,
+        "median_ms": 31.538,
+        "mean_ms": 31.668,
+        "min_ms": 31.448,
+        "max_ms": 32.018,
+        "fps": 253.66,
         "sizes_bytes": [
           76124,
           76124,
@@ -1019,16 +1019,16 @@
       },
       "candidate": {
         "times_ms": [
-          104.027,
-          103.339,
-          101.043
+          57.956,
+          54.917,
+          55.214
         ],
         "availability": "present",
-        "median_ms": 103.339,
-        "mean_ms": 102.803,
-        "min_ms": 101.043,
-        "max_ms": 104.027,
-        "fps": 77.41,
+        "median_ms": 55.214,
+        "mean_ms": 56.029,
+        "min_ms": 54.917,
+        "max_ms": 57.956,
+        "fps": 144.89,
         "sizes_bytes": [
           11116906,
           11116906,
@@ -1048,7 +1048,7 @@
           "error": null
         }
       },
-      "speedup": 0.3054,
+      "speedup": 0.5712,
       "size_delta_pct": 14503.681
     },
     {
@@ -1075,15 +1075,15 @@
       "certified": true,
       "oracle": {
         "times_ms": [
-          60.207,
-          62.971,
-          70.654
+          61.696,
+          57.071,
+          57.975
         ],
-        "median_ms": 62.971,
-        "mean_ms": 64.611,
-        "min_ms": 60.207,
-        "max_ms": 70.654,
-        "fps": 127.04,
+        "median_ms": 57.975,
+        "mean_ms": 58.914,
+        "min_ms": 57.071,
+        "max_ms": 61.696,
+        "fps": 137.99,
         "sizes_bytes": [
           25339,
           25339,
@@ -1105,16 +1105,16 @@
       },
       "candidate": {
         "times_ms": [
-          100.295,
-          101.863,
-          103.254
+          57.656,
+          58.474,
+          53.862
         ],
         "availability": "present",
-        "median_ms": 101.863,
-        "mean_ms": 101.804,
-        "min_ms": 100.295,
-        "max_ms": 103.254,
-        "fps": 78.54,
+        "median_ms": 57.656,
+        "mean_ms": 56.664,
+        "min_ms": 53.862,
+        "max_ms": 58.474,
+        "fps": 138.75,
         "sizes_bytes": [
           11116906,
           11116906,
@@ -1134,7 +1134,7 @@
           "error": null
         }
       },
-      "speedup": 0.6182,
+      "speedup": 1.0055,
       "size_delta_pct": 43772.71
     },
     {
@@ -1161,15 +1161,15 @@
       "certified": true,
       "oracle": {
         "times_ms": [
-          119.476,
-          118.805,
-          126.389
+          116.387,
+          116.498,
+          115.212
         ],
-        "median_ms": 119.476,
-        "mean_ms": 121.557,
-        "min_ms": 118.805,
-        "max_ms": 126.389,
-        "fps": 66.96,
+        "median_ms": 116.387,
+        "mean_ms": 116.032,
+        "min_ms": 115.212,
+        "max_ms": 116.498,
+        "fps": 68.74,
         "sizes_bytes": [
           24621,
           24621,
@@ -1191,16 +1191,16 @@
       },
       "candidate": {
         "times_ms": [
-          103.929,
-          101.692,
-          105.681
+          53.271,
+          55.27,
+          53.905
         ],
         "availability": "present",
-        "median_ms": 103.929,
-        "mean_ms": 103.767,
-        "min_ms": 101.692,
-        "max_ms": 105.681,
-        "fps": 76.98,
+        "median_ms": 53.905,
+        "mean_ms": 54.149,
+        "min_ms": 53.271,
+        "max_ms": 55.27,
+        "fps": 148.41,
         "sizes_bytes": [
           11116906,
           11116906,
@@ -1220,7 +1220,7 @@
           "error": null
         }
       },
-      "speedup": 1.1496,
+      "speedup": 2.1591,
       "size_delta_pct": 45052.13
     }
   ],
@@ -1230,21 +1230,21 @@
     "oracle_decoded_cases": 12,
     "candidate_measured_cases": 12,
     "certified_cases": 12,
-    "median_speedup": 0.6888,
+    "median_speedup": 1.226,
     "by_preset": {
       "ultrafast": {
-        "oracle_fps_median": 205.31,
-        "candidate_fps_median": 61.68,
+        "oracle_fps_median": 212.95,
+        "candidate_fps_median": 115.39,
         "certified_cases": 4
       },
       "medium": {
-        "oracle_fps_median": 99.09,
-        "candidate_fps_median": 61.72,
+        "oracle_fps_median": 105.82,
+        "candidate_fps_median": 109.4,
         "certified_cases": 4
       },
       "veryslow": {
-        "oracle_fps_median": 61.68,
-        "candidate_fps_median": 60.84,
+        "oracle_fps_median": 62.73,
+        "candidate_fps_median": 112.93,
         "certified_cases": 4
       }
     }
