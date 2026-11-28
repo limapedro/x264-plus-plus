@@ -533,6 +533,11 @@ static int encode_mb( x264pp_encoder_t *e, x264pp_bs_t *bs,
         }
     }
     x264pp_bs_ue( bs, (unsigned)chroma_signal_mode( chroma_mode ) );
+    /* CodedBlockPatternChroma only has 0/1/2 (2 means DC and AC).
+     * Both bits set from the residual loop must be collapsed to 2 before
+     * indexing the Table 9-4 mapping (48 entries, chroma 0..2). */
+    if( cbp_chroma == 3 )
+        cbp_chroma = 2;
     cbp = x264pp_cavlc_cbp_code( cbp_chroma, cbp_luma );
     x264pp_bs_ue( bs, (unsigned)cbp );         /* coded_block_pattern, me(v) */
     if( cbp_luma || cbp_chroma )
