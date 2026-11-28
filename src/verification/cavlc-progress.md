@@ -43,3 +43,9 @@ The compressed path is not enabled by default because the constrained valid
 configuration is not close enough in quality to x264. No speculative patch was
 merged. See `docs/rebuild/` and `cert/bitstream_diag.py` for the normative
 references used.
+
+## 2026-11-28 follow-up: predicted-mode inference
+
+Encoder-intended MB0 modes and raw `rem` values were captured together:
+`MODE 1 1 2, `MODE 5 2 1`, `MODE 10 2 3`; `rem = P,1,P,P,P,1,3,1,6,2,2,4,P,P,P,5`. Every `rem` is consistent with the single-available-neighbour predictor rule, yet re-testing that rule (with the CBP fix and full luma CBP in place) still produced `left block unavailable for requested intra4x4 mode -1` from MB 0. The only remaining special case at MB 0 block 0 is that BOTH neighbours are unavailable, so ffmpeg's predicted mode there is evidently not 2 but an invalid/-1 sentinel that our encoder cannot reproduce with a `prev=1` flag. Fixing this requires signalling that block explicitly or modelling ffmpeg's exact cache sentinel rather than a standards-level predictor rule.
+
