@@ -218,8 +218,11 @@ void x264pp_sps_init( x264pp_sps_t *sps, const x264pp_param_t *param )
     sps->direct8x8 = 1;
 
     sps->crop[0] = sps->crop[1] = sps->crop[2] = sps->crop[3] = 0;
-    sps->crop[1] = sps->mb_width  * 16 - param->width;
-    sps->crop[3] = sps->mb_height * 16 - param->height;
+    /* For 4:2:0, CropUnitX and CropUnitY are both 2 samples.  Writing the
+     * raw pixel difference here reported e.g. 1920x1072 for a 1920x1080
+     * source; divide by two so ffprobe recovers the requested geometry. */
+    sps->crop[1] = ( sps->mb_width  * 16 - param->width ) / 2;
+    sps->crop[3] = ( sps->mb_height * 16 - param->height ) / 2;
     sps->b_crop = (sps->crop[0] || sps->crop[1] || sps->crop[2] || sps->crop[3]);
 
     sps->level_idc = x264pp_level_auto( param, sps );

@@ -5,9 +5,12 @@
 
 #include "core/dct.h"
 
+/* Coefficients are stored column-major (dct[col*4+row]); ffmpeg's CAVLC
+ * scan applies the same row/column transpose.  These are the published
+ * 4x4 zigzag positions expressed in that storage order. */
 const uint8_t x264pp_zigzag4[16] = {
-     0,  1,  4,  8,  5,  2,  3,  6,
-     9, 12, 13, 10,  7, 11, 14, 15
+     0,  4,  1,  2,  5,  8, 12,  9,
+     6,  3,  7, 10, 13, 14, 11, 15
 };
 /* (row,col) -> raster for the 4x4 scan:
  * (0,0)(0,1)(1,0)(2,0)(1,1)(0,2)(0,3)(1,2)(2,1)(3,0)(3,1)(2,2)(1,3)(2,3)(3,2)(3,3)

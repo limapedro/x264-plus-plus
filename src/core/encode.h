@@ -29,6 +29,7 @@ typedef struct x264pp_encoder
 
     uint8_t *nz_y;             /* mb_count * 16 nonzero counts (luma 4x4) */
     uint8_t *nz_c[2];          /* mb_count * 4 nonzero counts (chroma 4x4) */
+    uint8_t *mb_modes;         /* mb_count * 16 intra4x4 prediction modes */
 
     uint8_t *sps_rbsp;
     uint8_t *pps_rbsp;

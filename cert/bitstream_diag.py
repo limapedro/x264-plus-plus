@@ -374,6 +374,12 @@ RUN_BEFORE = {k: _vlc(v) for k, v in {
 
 
 def nc_table(nc):
+    # nC=-1/-2 are the dedicated chroma-DC contexts (Table 9-5), not
+    # ordinary neighbour counts; they must map to CT_4 / CT_5.
+    if nc == -1:
+        return COEFF_TOKEN[4]
+    if nc == -2:
+        return COEFF_TOKEN[5]
     if nc < 2:
         return COEFF_TOKEN[0]
     if nc < 4:
@@ -939,10 +945,17 @@ class MbContext:
         self.prev_chroma_tc = [[0] * 4, [0] * 4]
         self.prev_pcm = False
         self.mb_addr = 0
+        # nC needs the MB to the left (addr-1) AND the MB above
+        # (addr-PicWidthInMbs); a single "previous MB" cache cannot serve
+        # both.  Keep the completed count arrays of every MB in the slice.
+        self.tc_hist = {}
 
     def finish_mb(self, pcm=False, luma=None, chroma=None):
-        self.prev_luma_tc = list(luma if luma is not None else self.luma_tc)
-        self.prev_chroma_tc = [list(c) for c in (chroma if chroma is not None else self.chroma_tc)]
+        luma = list(luma if luma is not None else self.luma_tc)
+        chroma = [list(c) for c in (chroma if chroma is not None else self.chroma_tc)]
+        self.prev_luma_tc = luma
+        self.prev_chroma_tc = chroma
+        self.tc_hist[self.mb_addr] = (luma, chroma)
         self.prev_pcm = pcm
 
 
@@ -950,31 +963,41 @@ def neighbour_nc(ctx, kind, idx, mb_addr, comp=0):
     """nC per H.264 9.2.1 / 6.4.11.4-6 for progressive 4:2:0 frames."""
     width = ctx.sps["PicWidthInMbs"]
     if kind == "chroma_ac":
-        cur, prev = ctx.chroma_tc[comp], ctx.prev_chroma_tc[comp]
+        cur = ctx.chroma_tc[comp]
         side = 2
-        left_idx = (1, 3, 1, 3)[idx]
-        top_idx = (2, 3, 2, 3)[idx]
+        # 4:2:0 chroma blocks are laid out 0 1 / 2 3.  The left neighbour
+        # of 0 and 2 is the right column of the MB to the left (1 and 3);
+        # the left neighbour of 1 and 3 is 0 and 2 of the current MB.
+        left_idx = (1, 0, 3, 2)[idx]
+        # Bottom-row blocks (2,3) look up to 0,1 of the current MB;
+        # top-row blocks look up to 2,3 of the MB above.
+        top_idx = (2, 3, 0, 1)[idx]
+
+        def hist_block(addr, block):
+            h = ctx.tc_hist.get(addr)
+            return h[1][comp][block] if h is not None else 0
     else:
-        cur, prev = ctx.luma_tc, ctx.prev_luma_tc
+        cur = ctx.luma_tc
         side = 4
         row, col = divmod(idx, side)
         left_idx = (idx - 1) if col else (row * side + side - 1)
         top_idx = (idx - side) if row else ((side - 1) * side + idx)
-    left_avail = (idx % side != 0) or (mb_addr % width != 0)
-    top_avail = (idx >= side) or (mb_addr >= width)
+
+        def hist_block(addr, block):
+            h = ctx.tc_hist.get(addr)
+            return h[0][block] if h is not None else 0
+
     n = []
-    left_in_prev = idx % side == 0
-    top_in_prev = idx < side
-    for available, neighbour_idx, in_prev in (
-        (left_avail, left_idx, left_in_prev), (top_avail, top_idx, top_in_prev),
-    ):
-        if not available:
-            continue
-        if in_prev:
-            value = 16 if ctx.prev_pcm else prev[neighbour_idx]
+    if (idx % side != 0) or (mb_addr % width != 0):
+        if idx % side == 0:                      # MB to the left
+            n.append(16 if ctx.prev_pcm else hist_block(mb_addr - 1, left_idx))
         else:
-            value = cur[neighbour_idx]
-        n.append(value)
+            n.append(cur[left_idx])
+    if (idx >= side) or (mb_addr >= width):
+        if idx < side:                           # MB above
+            n.append(16 if ctx.prev_pcm else hist_block(mb_addr - width, top_idx))
+        else:
+            n.append(cur[top_idx])
     if len(n) == 2:
         return (n[0] + n[1] + 1) >> 1
     return n[0] if n else 0
@@ -1089,7 +1112,9 @@ def parse_residual(br, ctx, mb_type, cbp_luma, cbp_chroma):
         ctx.luma_tc[blk] = decode_residual_block(br, ctx, nc, 16, "Luma4x4[%d]" % blk)
     if chroma_type == 0:
         return
-    if cbp_chroma & 1:
+    # Chroma DC is present whenever CodedBlockPatternChroma is non-zero
+    # (values 1, 2 and 3), not just when its low bit is set.
+    if cbp_chroma != 0:
         for comp in (0, 1):
             decode_residual_block(br, ctx, -1 if chroma_type == 1 else -2, 4,
                                   "%sDC" % ("Cb" if comp == 0 else "Cr"))
