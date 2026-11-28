@@ -55,6 +55,71 @@ static int round_div( int num, int den )
                     : -((-num + den / 2) / den);
 }
 
+/* ITU-T H.264 Table 8-15: QPC = f(Clip3(0,51, QPY + chroma_qp_index_offset)).
+ * quant.c carries a slightly different high-QP table; use the normative one
+ * here so the levels we emit are priced at exactly QP'C (clause 8.5.8). */
+static int chroma_qp_normative( int luma_qp, int offset )
+{
+    static const int8_t qpc[52] = {
+         0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,
+        16,17,18,19,20,21,22,23,24,25,26,27,28,29,29,30,
+        31,32,32,33,33,34,34,35,35,36,36,37,37,37,38,38,
+        38,39,39,39
+    };
+    int q = luma_qp + offset;
+    if( q < 0 ) q = 0;
+    if( q > 51 ) q = 51;
+    return qpc[q];
+}
+
+/* The generic 2x2 butterfly in dct.c emits [f00, f10, f01, f11], because its
+ * second output is the column difference and its third the row difference.
+ * H.264 8.5.11.1 orders the 2x2 chroma DC array as [f00, f01, f10, f11],
+ * and figure 8-7 maps that raster straight onto chroma4x4BlkIdx 0..3.
+ * Wrap both directions so the coefficients we write and the reconstruction
+ * we add to fdec use the decoder's ordering. */
+static void hadamard2_dc( const int16_t in[4], int16_t out[4] )
+{
+    int16_t t[4];
+    x264pp_hadamard2( in, t );
+    out[0] = t[0];
+    out[1] = t[2];
+    out[2] = t[1];
+    out[3] = t[3];
+}
+
+static void hadamard2_dc_inv( const int16_t in[4], int16_t out[4] )
+{
+    int16_t t[4];
+    x264pp_hadamard2_inv( in, t );
+    out[0] = t[0];
+    out[1] = t[2];
+    out[2] = t[1];
+    out[3] = t[3];
+}
+
+/* CAVLC clause 9.2.1: a 2x2 chroma DC block with TotalCoeff == 1 always has
+ * TrailingOnes == 1, so its single level is decoded as +1/-1 regardless of
+ * the level_prefix that was written.  A lone large level (typical of a
+ * nearly uniform V plane) therefore collapses to +/-1 in the decoder.
+ * Add one opposite-signed trailing one so the large level is coded as the
+ * first non-T1 coefficient; the reconstruction error is about one sample. */
+static void chroma_dc_cavlc_fix( int16_t q[4] )
+{
+    int i, nz = 0, only = -1;
+    for( i = 0; i < 4; i++ )
+        if( q[i] )
+        {
+            nz++;
+            only = i;
+        }
+    if( nz == 1 && ( q[only] > 1 || q[only] < -1 ) )
+    {
+        int j = only == 0 ? 1 : 0;
+        q[j] = (int16_t)(q[only] > 0 ? -1 : 1);
+    }
+}
+
 /* The DEFAULT build keeps the known-good all-I_PCM path: it is lossless,
  * decodes cleanly, and is substantially faster than the experimental CAVLC
  * path.  The I_16x16 CAVLC path below is valid H.264 but is not competitive
@@ -68,10 +133,12 @@ static int round_div( int num, int den )
 /* The I_16x16 path needs a high QP to meet the compressed-size envelope.
  * The I_PCM default keeps slice_qp_delta = 0 so the certified baseline
  * bitstream is byte-for-byte unchanged. */
+#ifndef X264PP_SLICE_QP_DELTA
 #if X264PP_FORCE_PCM
 #define X264PP_SLICE_QP_DELTA 0
 #else
 #define X264PP_SLICE_QP_DELTA 22
+#endif
 #endif
 
 /* Encoder-side quantiser gain: finer levels than the decoder's native step.
@@ -436,7 +503,7 @@ static int encode_mb( x264pp_encoder_t *e, x264pp_bs_t *bs,
     int16_t dcv[16], dcq[16], dcb[16];
     int16_t cdcc[2][4], cdcq[2][4], cdcdeq[2][4], cdcback[2][4];
     int16_t cac[2][4][16], cacq[2][4][16], cacback[2][4][16];
-    uint8_t pred[16 * 16], cpred[8 * 8];
+    uint8_t pred[16 * 16];
     x264pp_quant_t q, qc;
     int cbp_luma = 0, cbp_chroma = 0;
     int chroma_dc = 0, chroma_ac = 0;
@@ -455,7 +522,7 @@ static int encode_mb( x264pp_encoder_t *e, x264pp_bs_t *bs,
     if( qp < 0 ) qp = 0;
     if( qp > 51 ) qp = 51;
     x264pp_quant_init( &q, qp, 0 );
-    x264pp_quant_init( &qc, x264pp_chroma_qp( qp,
+    x264pp_quant_init( &qc, chroma_qp_normative( qp,
                                              e->pps.chroma_qp_index_offset ), 0 );
 
     /* ---- 16x16 luma prediction (8.3.3) ------------------------------- */
@@ -553,33 +620,44 @@ static int encode_mb( x264pp_encoder_t *e, x264pp_bs_t *bs,
     /* ---- chroma 8x8 prediction + 2x2 DC / 4x4 AC (8.5.11) ------------- */
     {
         const int cpx = px / 2, cpy = py / 2;
-        gather_neighbors( &e->fdec, 1, mbx, mby, 8, &n );
+        /* Cb and Cr must predict from their OWN reconstructed neighbours.
+         * Reusing the U neighbour array for V made every directional/DC
+         * prediction of V source its samples from U, which inflated the Cr
+         * residual and compounded across macroblocks. */
+        x264pp_neighbor_t cn[2];
+        uint8_t cpredc[2][8 * 8], bestc[2][8 * 8];
+        gather_neighbors( &e->fdec, 1, mbx, mby, 8, &cn[0] );
+        gather_neighbors( &e->fdec, 2, mbx, mby, 8, &cn[1] );
         for( mode = 0; mode < 4; mode++ )
         {
             int m = mode, cost = 0;
-            if( (m == 1 || m == 3) && !(n.avail & X264PP_NEIGH_LEFT) ) m = 2;
-            if( (m == 0 || m == 3) && !(n.avail & X264PP_NEIGH_TOP) ) m = 2;
-            x264pp_pred8c( cpred, 8, &n, m );
+            if( (m == 1 || m == 3) && !(cn[0].avail & X264PP_NEIGH_LEFT) ) m = 2;
+            if( (m == 0 || m == 3) && !(cn[0].avail & X264PP_NEIGH_TOP) ) m = 2;
             for( plane = 1; plane <= 2; plane++ )
+            {
+                x264pp_pred8c( cpredc[plane - 1], 8, &cn[plane - 1], m );
                 cost += sad_block( e->fenc.plane[plane]
                                    + (size_t)cpy * e->fenc.stride[plane] + cpx,
-                                   e->fenc.stride[plane], cpred, 8, 8 );
+                                   e->fenc.stride[plane], cpredc[plane - 1], 8, 8 );
+            }
             if( cost < chroma_cost )
             {
                 chroma_cost = cost;
                 chroma_mode = m;
+                memcpy( bestc[0], cpredc[0], sizeof( bestc[0] ) );
+                memcpy( bestc[1], cpredc[1], sizeof( bestc[1] ) );
             }
         }
-        x264pp_pred8c( cpred, 8, &n, chroma_mode );
 
         for( plane = 1; plane <= 2; plane++ )
         {
             const uint8_t *csrc = e->fenc.plane[plane]
                                 + (size_t)cpy * e->fenc.stride[plane] + cpx;
+            const uint8_t *cp = bestc[plane - 1];
             int16_t cv[4];
             for( y = 0; y < 8; y++ )
                 memcpy( e->fdec.plane[plane] + (size_t)(cpy + y) * e->fdec.stride[plane] + cpx,
-                        cpred + y * 8, 8 );
+                        cp + y * 8, 8 );
             for( b = 0; b < 4; b++ )
             {
                 const int bx = (b % 2) * 4, by = (b / 2) * 4;
@@ -588,25 +666,28 @@ static int encode_mb( x264pp_encoder_t *e, x264pp_bs_t *bs,
                     for( x = 0; x < 4; x++ )
                         res[y * 4 + x] = (int16_t)
                             ((int)csrc[(by + y) * e->fenc.stride[plane] + bx + x]
-                             - (int)cpred[(by + y) * 8 + bx + x]);
+                             - (int)cp[(by + y) * 8 + bx + x]);
                 x264pp_dct4x4_avx2( res, cac[plane - 1][b] );
                 cv[b] = cac[plane - 1][b][0];
                 cac[plane - 1][b][0] = 0;
             }
-            x264pp_hadamard2( cv, cdcc[plane - 1] );
-            /* Chroma DC is quantised with the 2x2 DC factor; independent
-             * decoders scale it 4x harder than the scalar dequantiser. */
+            /* 8.5.11.1/8.5.11.2: W = H(DC)/2 is quantised with the 2x2 DC
+             * multiplier; the decoder multiplies the levels by the default
+             * ScalingList4x4 value 16 (8.5.9) before the >>5.  quant.c omits
+             * that factor of 16, so the encoder's mirror of the decoder must
+             * apply it explicitly on reconstruction. */
+            hadamard2_dc( cv, cdcc[plane - 1] );
             for( i = 0; i < 4; i++ )
                 cdcc[plane - 1][i] =
-                    (int16_t)((cdcc[plane - 1][i] +
-                               (cdcc[plane - 1][i] < 0 ? -8 : 8)) >> 4);
+                    (int16_t)round_div( cdcc[plane - 1][i], 16 );
             x264pp_quant2( &qc, cdcc[plane - 1], cdcq[plane - 1] );
+            chroma_dc_cavlc_fix( cdcq[plane - 1] );
             if( x264pp_last_nonzero( cdcq[plane - 1], 4 ) >= 0 )
                 chroma_dc = 1;
             x264pp_dequant2( &qc, cdcq[plane - 1], cdcdeq[plane - 1] );
             for( i = 0; i < 4; i++ )
                 cdcdeq[plane - 1][i] = (int16_t)(cdcdeq[plane - 1][i] * 16);
-            x264pp_hadamard2_inv( cdcdeq[plane - 1], cdcback[plane - 1] );
+            hadamard2_dc_inv( cdcdeq[plane - 1], cdcback[plane - 1] );
             for( b = 0; b < 4; b++ )
             {
                 const int bx = (b % 2) * 4, by = (b / 2) * 4;
