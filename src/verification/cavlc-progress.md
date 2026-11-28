@@ -220,3 +220,8 @@ With the gated I_16x16 path (-DX264PP_FORCE_PCM=0) at slice_qp_delta=0 (QP 23), 
 
 Wiring `x264pp_intra16x16_avx2` into the gated I_16x16 path (passing the neighbour cache as raw above/left arrays) kept the default PCM build bit-identical and ffmpeg-clean, but regressed gated 1080p QP45 luma PSNR from 25.08 dB to 18.94 dB (average 26.24 -> 20.55 dB) while size changed from 293,151 to 312,559 bytes. The NASM predictor's plane-mode/sample convention differs from the normative `pred16_norm` used by this encoder, so the patch was rejected and not merged. Further assembly work must preserve exact predictor semantics.
 
+
+## Gated CAVLC profile (2026-11-28)
+
+Section timers, 8x1920x1080 frames, 1 thread: pred=0.028s, DCT+quant=0.237s (62%), reconstruction=0.119s (31%), CAVLC=0.000s. Entropy coding is not the bottleneck; transform/quantisation is. Replacing `x264pp_idct4_add` with the AVX2 NASM IDCT plus the identical add/clip rule was tested and REJECTED: ffmpeg stayed clean but PSNR collapsed from 26.24 dB to 8.70 dB (size 444,280 B), so that kernel is not bit-equivalent to the C transform used by this encoder. Likewise the AVX2 16x16 predictor regressed Y PSNR 25.08 -> 18.94 dB and was rejected. Only SAD and forward DCT are safely wired; remaining SIMD work requires kernels with exactly matching semantics.
+
