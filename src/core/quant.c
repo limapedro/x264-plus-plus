@@ -14,6 +14,14 @@ void x264pp_quant_init( x264pp_quant_t *q, int qp, int deadzone )
     q->q6 = q->qp % 6;
     q->level_scale = level_scale6[q->q6];
     q->deadzone = deadzone < 0 ? 0 : (deadzone > 32 ? 32 : deadzone);
+    {
+        int s = q->qp / 6 - 4;
+        if( s >= 0 ) { q->num = (int64_t)q->level_scale << s; q->den = 1; }
+        else { q->num = q->level_scale; q->den = (int64_t)1 << (-s); }
+        q->bias = q->num / 2;
+        q->bias -= (q->bias * q->deadzone) / 64;
+        if( q->bias < 0 ) q->bias = 0;
+    }
 }
 
 /* level = round( factor * |coef| * qstep_den / (levelScale<<shift) ), with a
@@ -21,30 +29,13 @@ void x264pp_quant_init( x264pp_quant_t *q, int qp, int deadzone )
  * arithmetic well defined for every QP including the q/6 == 4 boundary. */
 static int quant_one( const x264pp_quant_t *q, int coef, int factor )
 {
-    int shift = q->qp / 6 - 4;
-    int64_t num, den, bias, val;
+    int64_t val;
     int m = coef < 0 ? -coef : coef;
     int sign = coef < 0 ? -1 : 1;
 
     if( m == 0 )
         return 0;
-    if( shift >= 0 )
-    {
-        num = (int64_t)q->level_scale << shift;
-        den = 1;
-    }
-    else
-    {
-        num = q->level_scale;
-        den = (int64_t)1 << ( -shift );
-    }
-    /* Half-unit bias for round-to-nearest; the dead zone narrows it. */
-    bias = num / 2;
-    bias -= ( bias * q->deadzone ) / 64;
-    if( bias < 0 )
-        bias = 0;
-
-    val = ( (int64_t)factor * m * den + bias ) / num;
+    val = ( (int64_t)factor * m * q->den + q->bias ) / q->num;
     if( val > 32767 )
         val = 32767;
     return sign * (int)val;

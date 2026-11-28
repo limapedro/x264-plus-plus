@@ -19,6 +19,7 @@ typedef struct x264pp_quant
     int q6;           /* qp % 6 */
     int level_scale;  /* H.264 levelScale(q6): {10,11,13,14,16,18} */
     int deadzone;     /* 0..32; larger means a wider dead zone */
+    int64_t num, den, bias;  /* precomputed by quant_init */
 } x264pp_quant_t;
 
 void x264pp_quant_init( x264pp_quant_t *q, int qp, int deadzone );
