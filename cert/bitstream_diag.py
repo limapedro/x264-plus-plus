@@ -374,6 +374,8 @@ RUN_BEFORE = {k: _vlc(v) for k, v in {
 
 
 def nc_table(nc):
+    if nc in (-1, -2):
+        return COEFF_TOKEN[4 if nc == -1 else 5]
     if nc < 2:
         return COEFF_TOKEN[0]
     if nc < 4:
@@ -1081,7 +1083,8 @@ def parse_residual(br, ctx, mb_type, cbp_luma, cbp_chroma):
             nc = neighbour_nc(ctx, "luma", blk, ctx.mb_addr)
             ctx.luma_tc[blk] = decode_residual_block(br, ctx, nc, 15, "Intra16x16AC[%d]" % blk)
         return
-    for blk in range(16):
+    # H.264 residual blocks are coded in scan8 order, not raster order.
+    for blk in (0, 1, 4, 5, 2, 3, 6, 7, 8, 9, 12, 13, 10, 11, 14, 15):
         if not ((cbp_luma >> (blk // 4)) & 1):
             ctx.luma_tc[blk] = 0
             continue
@@ -1089,7 +1092,7 @@ def parse_residual(br, ctx, mb_type, cbp_luma, cbp_chroma):
         ctx.luma_tc[blk] = decode_residual_block(br, ctx, nc, 16, "Luma4x4[%d]" % blk)
     if chroma_type == 0:
         return
-    if cbp_chroma & 1:
+    if cbp_chroma > 0:
         for comp in (0, 1):
             decode_residual_block(br, ctx, -1 if chroma_type == 1 else -2, 4,
                                   "%sDC" % ("Cb" if comp == 0 else "Cr"))
