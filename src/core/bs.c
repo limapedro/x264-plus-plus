@@ -62,6 +62,27 @@ void x264pp_bs_se( x264pp_bs_t *bs, int value )
     x264pp_bs_ue( bs, code_num );
 }
 
+void x264pp_bs_write_bytes( x264pp_bs_t *bs, const uint8_t *src, int n )
+{
+    int byte, need;
+    if( !bs || n <= 0 )
+        return;
+    if( bs->bitpos & 7 )
+    {
+        bs->overflow = 1;
+        return;
+    }
+    byte = bs->bitpos >> 3;
+    need = byte + n;
+    if( byte < 0 || need > bs->cap )
+    {
+        bs->overflow = 1;
+        return;
+    }
+    memcpy( bs->buf + byte, src, (size_t)n );
+    bs->bitpos += n * 8;
+}
+
 int x264pp_bs_bytes( const x264pp_bs_t *bs )
 {
     return (bs->bitpos + 7) >> 3;

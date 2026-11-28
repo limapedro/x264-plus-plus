@@ -29,6 +29,10 @@ void x264pp_bs_u( x264pp_bs_t *bs, unsigned value, int n );
 void x264pp_bs_ue( x264pp_bs_t *bs, unsigned code_num );
 void x264pp_bs_se( x264pp_bs_t *bs, int value );
 
+/* Bulk-append whole bytes.  The writer must be byte-aligned (bitpos % 8 == 0),
+ * as it is for I_PCM samples after pcm_alignment_zero_bit. */
+void x264pp_bs_write_bytes( x264pp_bs_t *bs, const uint8_t *src, int n );
+
 /* Append rbsp_stop_one_bit and zero padding to the next byte boundary.
  * Returns the number of bytes occupied by the RBSP (0 on overflow). */
 int  x264pp_bs_trailing( x264pp_bs_t *bs );
