@@ -157,3 +157,56 @@ an ordering error.  Overall PSNR still misses the 25 dB target, mainly because
 chroma V and the remaining DC/AC quantisation step at the size-compliant QP
 are too coarse.  No success is claimed; the I_PCM fallback remains available
 via `X264PP_FORCE_PCM`.
+
+
+## Default path decision (same PR, final state)
+
+The all-I_PCM path is the DEFAULT again:
+
+```
+#ifndef X264PP_FORCE_PCM
+#define X264PP_FORCE_PCM 1
+#endif
+```
+
+The complete I_16x16 CAVLC implementation remains in the tree and is enabled
+only with `-DX264PP_FORCE_PCM=0` (which also raises `slice_qp_delta` to 22 for
+the size envelope).  It produces valid H.264 and a clean ffmpeg decode, but it
+is not competitive:
+
+| Path | ultrafast | medium | veryslow |
+| --- | --- | --- | --- |
+| all-I_PCM (default) | 0.99x | 3.89x | 10.64x |
+| I_16x16 CAVLC | 0.41x | 1.60x | 4.23x |
+
+PSNR on the 8x1080p clip is 12.96 dB for the compressed path vs the 42.64 dB
+oracle, so the compressed path cannot be the default on either quality or
+speed grounds.
+
+### Default-build byte-for-byte check
+
+Build command (MSYS2 mingw64 GCC + NASM on PATH, run from the worktree root):
+
+```
+make -f src/Makefile
+# clean, no warnings/errors
+```
+
+Tiny clip and encode:
+
+```
+ffmpeg -y -f lavfi -i 'testsrc2=size=64x64:rate=30' -frames:v 8 \
+  -pix_fmt yuv420p -f rawvideo tiny.yuv
+build/x264pp.exe --demuxer raw --input-csp i420 --input-res 64x64 \
+  --fps 30 --preset medium --threads 1 --frames 8 --no-progress \
+  -o baseline.264 tiny.yuv
+```
+
+```
+SHA256(baseline.264) =
+  83C71EBCC7A01E991F052CDDFC8BFE8E7B4BA27DC7A498A103DC7EE8C00F0DB1
+# equals the certified baseline hash
+
+ffmpeg -hide_banner -v error -i baseline.264 -f null -
+# exit 0, EMPTY stderr
+```
