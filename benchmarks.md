@@ -97,3 +97,6 @@ Built with `CPPFLAGS=-DX264PP_FORCE_PCM=0` (QP45): ffmpeg-clean 1920x1080 H.264,
 
 PR #26 adds real P-slices (one reference, full-pel +/-8 SAD ME, P_Skip, MV/CBP/CAVLC) behind `-DX264PP_INTER_P=1`. Default build remains bit-identical to the all-IDR baseline. With the gate on, 8x1920x1080 decodes cleanly, output is 3,267,400 B (size ratio 0.94 vs oracle) and PSNR ~27 dB; speed is lower than all-IDR because of motion estimation (0.53x/2.01x/6.01x ultrafast/medium/veryslow). Luma residual remains disabled pending CAVLC fixes; see `src/verification/I2.md`.
 
+
+Coarse-to-fine ME (PR #27) improved the gated inter path from 0.53x/2.01x/6.01x to 0.56x/2.44x/6.86x ultrafast/medium/veryslow; single-thread 1080p ME 343ms -> 251ms. Output stays ffmpeg-clean, 3,265,957 B, PSNR 27.10 dB, size ratio 0.94. Default build remains SHA256 83C71EBC... and is unchanged.
+
