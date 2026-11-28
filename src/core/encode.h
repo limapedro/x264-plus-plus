@@ -1,4 +1,4 @@
-#ifndef X264PP_CORE_ENCODE_H
+﻿#ifndef X264PP_CORE_ENCODE_H
 #define X264PP_CORE_ENCODE_H
 
 /*
@@ -99,3 +99,5 @@ void x264pp_encoder_destroy( x264pp_encoder_t *enc );
 #endif
 
 #endif /* X264PP_CORE_ENCODE_H */
+
+
