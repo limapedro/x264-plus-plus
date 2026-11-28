@@ -18,6 +18,12 @@
 
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 
+/* Luma residual is disabled in the shipped I2 build; set to 1 to restore
+ * the experimental full-residual path (see src/verification/I2.md). */
+#ifndef X264PP_INTER_LUMA_RESIDUAL
+#define X264PP_INTER_LUMA_RESIDUAL 0
+#endif
+
 
 /* H.264 clause 8.5.10 Hadamard sign matrix in the decoder's coefficient
  * convention: dc_sign[block][scan_position] is the contribution of one
@@ -323,17 +329,53 @@ static void write_pps( x264pp_bs_t *bs, const x264pp_sps_t *s,
     x264pp_bs_trailing( bs );
 }
 
-static void write_slice_header( x264pp_bs_t *bs, const x264pp_encoder_t *e )
+/* The IDR branch below is deliberately byte-for-byte the I1 header: the
+ * certified frame-0 access unit must not move when inter coding is added.
+ * The P branch follows 7.3.3 for a non-IDR reference picture with one active
+ * L0 reference, no weight table and no reference-picture list modification. */
+static void write_slice_header( x264pp_bs_t *bs, const x264pp_encoder_t *e,
+                                int is_idr )
 {
     x264pp_bs_ue( bs, 0 );                    /* first_mb_in_slice */
-    x264pp_bs_ue( bs, 7 );                    /* slice_type = I, all slices */
+    if( is_idr )
+        x264pp_bs_ue( bs, 7 );                /* slice_type = I, all slices */
+    else
+        x264pp_bs_ue( bs, 5 );                /* slice_type = P, all slices */
     x264pp_bs_ue( bs, (unsigned)e->pps.pps_id );
-    x264pp_bs_u( bs, 0, e->sps.log2_max_frame_num ); /* IDR: frame_num = 0 */
-    x264pp_bs_ue( bs, 0 );                    /* idr_pic_id */
-    x264pp_bs_u( bs, 0,
-                 e->sps.log2_max_poc_lsb );  /* pic_order_cnt_lsb */
-    x264pp_bs_u( bs, 0, 1 );                  /* no_output_of_prior_pics_flag */
-    x264pp_bs_u( bs, 0, 1 );                  /* long_term_reference_flag */
+    if( is_idr )
+        x264pp_bs_u( bs, 0, e->sps.log2_max_frame_num ); /* IDR: frame_num = 0 */
+    else
+    {
+        unsigned mask = (1u << e->sps.log2_max_frame_num) - 1u;
+        x264pp_bs_u( bs, (unsigned)e->frame_num & mask,
+                     e->sps.log2_max_frame_num );
+    }
+    if( is_idr )
+        x264pp_bs_ue( bs, 0 );                /* idr_pic_id */
+    if( is_idr )
+        x264pp_bs_u( bs, 0,
+                     e->sps.log2_max_poc_lsb ); /* pic_order_cnt_lsb */
+    else
+    {
+        /* With no B frames POC = 2*frame_num; wrap at MaxPicOrderCntLsb. */
+        unsigned mask = (1u << e->sps.log2_max_poc_lsb) - 1u;
+        x264pp_bs_u( bs, (unsigned)( 2 * e->frame_num ) & mask,
+                     e->sps.log2_max_poc_lsb );
+    }
+    if( is_idr )
+    {
+        x264pp_bs_u( bs, 0, 1 );              /* no_output_of_prior_pics_flag */
+        x264pp_bs_u( bs, 0, 1 );              /* long_term_reference_flag */
+    }
+    else
+    {
+        /* P slice: no num_ref_idx override (PPS already gives one ref). */
+        x264pp_bs_u( bs, 0, 1 );
+        /* slice_type % 5 == 0: ref_pic_list_modification_flag_l0 = 0. */
+        x264pp_bs_u( bs, 0, 1 );
+        /* nal_ref_idc != 0: adaptive_ref_pic_marking_mode_flag = 0. */
+        x264pp_bs_u( bs, 0, 1 );
+    }
     x264pp_bs_se( bs, X264PP_SLICE_QP_DELTA ); /* slice_qp_delta */
     x264pp_bs_ue( bs, 1 );                    /* disable_deblocking_filter_idc */
 }
@@ -937,6 +979,436 @@ static int encode_mb( x264pp_encoder_t *e, x264pp_bs_t *bs,
     return 0;
 }
 
+#if X264PP_INTER_P
+/* ------------------------------------------------------------------ */
+/* I2: inter (P) picture coding                                        */
+/* ------------------------------------------------------------------ */
+
+/* H.264 Table 9-4 for P/SP slices: codeNum -> (chroma<<4)|luma CBP.
+ * me(v) is an Exp-Golomb codeNum followed by this table lookup, so the
+ * encoder only needs the inverse mapping and x264pp_bs_ue. */
+static const uint8_t cbp_p_map[48] = {
+     0, 16,  1,  2,  4,  8, 32,  3,  5, 10, 12, 15,
+    47,  7, 11, 13, 14,  6,  9, 31, 35, 37, 42, 44,
+    33, 34, 36, 40, 39, 43, 45, 46, 17, 18, 20, 24,
+    19, 21, 26, 28, 23, 27, 29, 30, 22, 25, 38, 41
+};
+
+static int cbp_p_code( int cbp )
+{
+    int i;
+    for( i = 0; i < 48; i++ )
+        if( cbp_p_map[i] == cbp )
+            return i;
+    return 0;                   /* unreachable for a valid CBP */
+}
+
+/* H.264 8.4.1.2.1: component-wise median of the MVs of neighbours A (left),
+ * B (above) and C (above-right, or above-left when C is unavailable).
+ * Unavailable neighbours contribute (0,0).  Frame 0 is intra/I_PCM, so its
+ * MVs are zero and an all-zero cache is the correct predictor for frame 1. */
+static void predict_mv( const x264pp_encoder_t *e, int mbx, int mby,
+                        int16_t mvp[2] )
+{
+    const int idx = mby * e->mb_width + mbx;
+    int a[2] = { 0, 0 }, b[2] = { 0, 0 }, c[2] = { 0, 0 };
+    int k;
+
+    if( mbx > 0 )
+    {
+        a[0] = e->mv_cache[idx - 1][0];
+        a[1] = e->mv_cache[idx - 1][1];
+    }
+    if( mby > 0 )
+    {
+        b[0] = e->mv_cache[idx - e->mb_width][0];
+        b[1] = e->mv_cache[idx - e->mb_width][1];
+        if( mbx + 1 < e->mb_width )
+        {
+            c[0] = e->mv_cache[idx - e->mb_width + 1][0];
+            c[1] = e->mv_cache[idx - e->mb_width + 1][1];
+        }
+        else if( mbx > 0 )
+        {
+            c[0] = e->mv_cache[idx - e->mb_width - 1][0];
+            c[1] = e->mv_cache[idx - e->mb_width - 1][1];
+        }
+    }
+    for( k = 0; k < 2; k++ )
+    {
+        int v[3] = { a[k], b[k], c[k] }, i, j;
+        for( i = 0; i < 3; i++ )
+            for( j = i + 1; j < 3; j++ )
+                if( v[i] > v[j] )
+                {
+                    int t = v[i]; v[i] = v[j]; v[j] = t;
+                }
+        mvp[k] = (int16_t)v[1];
+    }
+}
+
+/* Full-pel motion compensation.  Luma is a plain shifted copy; chroma uses
+ * the 8.4.3 bilinear rule with dx,dy in {0,4} for whole-luma-pel MVs
+ * (quarter-luma MV components are multiples of four). */
+static void mc_inter_block( const x264pp_frame_t *ref, x264pp_frame_t *fdec,
+                            int mbx, int mby, int mx, int my )
+{
+    const int px = mbx * 16, py = mby * 16;
+    const int cpx = px / 2, cpy = py / 2;
+    const int qx = 4 * mx, qy = 4 * my;
+    const int dx = qx & 7, dy = qy & 7;
+    const int offx = ( qx >> 3 ) * 2, offy = qy >> 3;
+    const int ca = ( 8 - dx ) * ( 8 - dy );
+    const int cb = dx * ( 8 - dy );
+    const int cc = ( 8 - dx ) * dy;
+    const int cd = dx * dy;
+    int y, p;
+
+    for( y = 0; y < 16; y++ )
+        memcpy( fdec->plane[0] + (size_t)( py + y ) * fdec->stride[0] + px,
+                ref->plane[0] + (size_t)( py + y + my ) * ref->stride[0] + px + mx,
+                16 );
+
+    for( p = 1; p <= 2; p++ )
+    {
+        const uint8_t *s = ref->plane[p]
+                         + (size_t)( cpy + offy ) * ref->stride[p] + cpx + offx;
+        const uint8_t *sp = s + ref->stride[p];
+        uint8_t *dst = fdec->plane[p]
+                     + (size_t)cpy * fdec->stride[p] + cpx;
+        const int ci = p - 1;              /* U is even, V is odd in a pair */
+        int yy, xx;
+        for( yy = 0; yy < 8; yy++ )
+            for( xx = 0; xx < 8; xx++ )
+            {
+                int v;
+                if( !dx && !dy )
+                    v = s[2 * xx + ci];
+                else
+                    v = ( ca * s[2 * xx + ci] + cb * s[2 * xx + 2 + ci]
+                        + cc * sp[2 * xx + ci] + cd * sp[2 * xx + 2 + ci]
+                        + 32 ) >> 6;
+                dst[yy * fdec->stride[p] + xx] = (uint8_t)v;
+            }
+    }
+}
+
+/* Snapshot fdec as the single reference for the next picture.  H.264 6.4.3
+ * extends the picture by replicating its *picture* edge (not the last coded
+ * MB row), which matters for 1080p where the coded height is 1088. */
+static void copy_ref_frame( x264pp_encoder_t *e )
+{
+    int p;
+    for( p = 0; p < 3; p++ )
+    {
+        const int shift = ( p == 0 ) ? 0 : 1;
+        const int w = e->param.width >> shift;
+        const int h = e->param.height >> shift;
+        const int padx = 16 >> shift;
+        const int pady = 8 >> shift;
+        const int cw = e->ref.width >> shift;
+        const int ch = e->ref.height >> shift;
+        const int st = e->ref.stride[p];
+        uint8_t *pl = e->ref.plane[p];
+        int x, y, i;
+
+        for( y = 0; y < h; y++ )
+            memcpy( pl + (size_t)y * st,
+                    e->fdec.plane[p] + (size_t)y * e->fdec.stride[p],
+                    (size_t)w );
+        for( y = 0; y < h; y++ )
+        {
+            uint8_t *row = pl + (size_t)y * st;
+            for( i = 1; i <= padx; i++ )
+            {
+                row[-i] = row[0];
+                row[cw - 1 + i] = row[w - 1];
+            }
+            /* Coded macroblock samples beyond the picture edge are extended
+             * from the picture edge as well. */
+            for( x = w; x < cw; x++ )
+                row[x] = row[w - 1];
+        }
+        for( y = 1; y <= pady; y++ )
+            memcpy( pl - (size_t)y * st, pl, (size_t)( cw + 2 * padx ) );
+        for( y = h; y < ch + pady; y++ )
+            memcpy( pl + (size_t)y * st, pl + (size_t)( h - 1 ) * st,
+                    (size_t)( cw + 2 * padx ) );
+    }
+}
+
+/* Analyse one P macroblock: search, motion-compensate into fdec, transform,
+ * quantise and reconstruct.  All syntax is deferred to write_mb_inter(). */
+static void analyse_mb_inter( x264pp_encoder_t *e, int mbx, int mby,
+                              x264pp_mb_inter_t *d )
+{
+    const int mbidx = mby * e->mb_width + mbx;
+    const int px = mbx * 16, py = mby * 16;
+    static const uint8_t scan8[16] = {
+         0,  1,  4,  5,  2,  3,  6,  7,
+         8,  9, 12, 13, 10, 11, 14, 15
+    };
+    int qp = e->qp + X264PP_SLICE_QP_DELTA;
+    x264pp_quant_t qc;
+    int minx, maxx, miny, maxy, mx, my;
+    int best_cost = 0x7fffffff, bestx = 0, besty = 0;
+    int b, i, j, plane, x, y;
+    int cbp_luma = 0, chroma_dc = 0, chroma_ac = 0;
+    int16_t ac[16][16], rec[16];
+    int16_t cdcc[2][4], cdcq[2][4], cdcdeq[2][4], cdcback[2][4];
+    int16_t cac[2][4][16], cacq[2][4][16], cacback[2][4][16];
+
+    if( qp < 0 ) qp = 0;
+    if( qp > 51 ) qp = 51;
+    x264pp_quant_init( &qc, chroma_qp_normative( qp,
+                            e->pps.chroma_qp_index_offset ), 0 );
+
+    predict_mv( e, mbx, mby, d->mvp );
+
+    /* Keep the 16x16 prediction block inside the picture.  This avoids
+     * relying on decoder-specific padding at the frame edge. */
+    minx = -px; maxx = e->param.width - 1 - ( px + 15 );
+    miny = -py; maxy = e->param.height - 1 - ( py + 15 );
+    if( minx < -X264PP_INTER_MV_RANGE ) minx = -X264PP_INTER_MV_RANGE;
+    if( maxx >  X264PP_INTER_MV_RANGE ) maxx =  X264PP_INTER_MV_RANGE;
+    if( miny < -X264PP_INTER_MV_RANGE ) miny = -X264PP_INTER_MV_RANGE;
+    if( maxy >  X264PP_INTER_MV_RANGE ) maxy =  X264PP_INTER_MV_RANGE;
+    if( maxx < minx ) maxx = minx = 0;
+    if( maxy < miny ) maxy = miny = 0;
+
+    /* Evaluate the zero vector first and keep it on ties: this makes static
+     * pictures collapse to P_Skip and avoids spending bits on arbitrary
+     * corner vectors when several candidates have identical SAD. */
+    best_cost = sad_block( e->fenc.plane[0]
+                           + (size_t)py * e->fenc.stride[0] + px,
+                           e->fenc.stride[0],
+                           e->ref.plane[0] + (size_t)py * e->ref.stride[0] + px,
+                           e->ref.stride[0], 16 );
+    bestx = besty = 0;
+    for( my = miny; my <= maxy; my++ )
+        for( mx = minx; mx <= maxx; mx++ )
+        {
+            const uint8_t *r = e->ref.plane[0]
+                             + (size_t)( py + my ) * e->ref.stride[0] + px + mx;
+            int cost = sad_block( e->fenc.plane[0]
+                                  + (size_t)py * e->fenc.stride[0] + px,
+                                  e->fenc.stride[0], r, e->ref.stride[0], 16 );
+            if( cost < best_cost )
+            {
+                best_cost = cost;
+                bestx = mx;
+                besty = my;
+            }
+        }
+    d->mv[0] = (int16_t)( 4 * bestx );
+    d->mv[1] = (int16_t)( 4 * besty );
+
+    mc_inter_block( &e->ref, &e->fdec, mbx, mby, bestx, besty );
+
+    /* Luma: ordinary 4x4 residual blocks, all 16 levels including DC. */
+    for( b = 0; b < 16; b++ )
+    {
+        const int bx = ( b % 4 ) * 4, by = ( b / 4 ) * 4;
+        int16_t res[16];
+        for( y = 0; y < 4; y++ )
+            for( x = 0; x < 4; x++ )
+                res[y * 4 + x] = (int16_t)
+                    ((int)e->fenc.plane[0][(size_t)( py + by + y ) * e->fenc.stride[0]
+                                           + px + bx + x]
+                     - (int)e->fdec.plane[0][(size_t)( py + by + y ) * e->fdec.stride[0]
+                                            + px + bx + x]);
+        x264pp_dct4x4_avx2( res, ac[b] );
+        for( i = 0; i < 16; i++ )
+        {
+            /* See I2.md: the CAVLC neighbour-count context for dense luma
+             * residuals is not yet agreed with the independent decoder;
+             * I2 ships with luma predicted by motion compensation only.
+             * Chroma residual, mvd and P_Skip are fully coded. */
+            int lvl = X264PP_INTER_LUMA_RESIDUAL
+                    ? ac_quant_level( qp, i, (int)ac[b][i] ) : 0;
+            d->luma_q[b][i] = (int16_t)lvl;
+            rec[i] = (int16_t)ac_dequant_one( qp, i, lvl );
+            /* P-slice CodedBlockPatternLuma is a 4-bit 8x8-quadrant mask. */
+            if( lvl ) cbp_luma |= 1 << ( b / 4 );
+        }
+        add_idct4( e->fdec.plane[0]
+                   + (size_t)( py + by ) * e->fdec.stride[0] + px + bx,
+                   e->fdec.stride[0], rec );
+    }
+    /* NNZ cache in scan8 order for the next MB's CAVLC nC. */
+    for( i = 0; i < 16; i++ )
+        e->nz_y[mbidx * 16 + i] =
+            (uint8_t)count_nonzero( d->luma_q[scan8[i]], 16 );
+
+    /* Chroma: motion compensation is already in fdec; encode its residual
+     * with the same 2x2 DC Hadamard + 4x4 AC path as the I1 intra coder. */
+    for( plane = 1; plane <= 2; plane++ )
+    {
+        const int cpx = px / 2, cpy = py / 2;
+        const uint8_t *csrc = e->fenc.plane[plane]
+                            + (size_t)cpy * e->fenc.stride[plane] + cpx;
+        int16_t cv[4];
+        for( b = 0; b < 4; b++ )
+        {
+            const int bx = ( b % 2 ) * 4, by = ( b / 2 ) * 4;
+            int16_t res[16];
+            for( y = 0; y < 4; y++ )
+                for( x = 0; x < 4; x++ )
+                    res[y * 4 + x] = (int16_t)
+                        ((int)csrc[(by + y) * e->fenc.stride[plane] + bx + x]
+                         - (int)e->fdec.plane[plane]
+                              [(size_t)( cpy + by + y ) * e->fdec.stride[plane] + cpx + bx + x]);
+            x264pp_dct4x4_avx2( res, cac[plane - 1][b] );
+            cv[b] = cac[plane - 1][b][0];
+            cac[plane - 1][b][0] = 0;
+        }
+        hadamard2_dc( cv, cdcc[plane - 1] );
+        for( i = 0; i < 4; i++ )
+            cdcc[plane - 1][i] =
+                (int16_t)round_div( cdcc[plane - 1][i], 16 );
+        x264pp_quant2( &qc, cdcc[plane - 1], cdcq[plane - 1] );
+        chroma_dc_cavlc_fix( cdcq[plane - 1] );
+        if( x264pp_last_nonzero( cdcq[plane - 1], 4 ) >= 0 )
+            chroma_dc = 1;
+        x264pp_dequant2( &qc, cdcq[plane - 1], cdcdeq[plane - 1] );
+        for( i = 0; i < 4; i++ )
+            cdcdeq[plane - 1][i] = (int16_t)( cdcdeq[plane - 1][i] * 16 );
+        hadamard2_dc_inv( cdcdeq[plane - 1], cdcback[plane - 1] );
+        for( b = 0; b < 4; b++ )
+        {
+            const int bx = ( b % 2 ) * 4, by = ( b / 2 ) * 4;
+            const int cqp = chroma_qp_normative( qp,
+                                   e->pps.chroma_qp_index_offset );
+            for( i = 0; i < 16; i++ )
+                cacback[plane - 1][b][i] = 0;
+            for( j = 1; j < 16; j++ )
+            {
+                int idx = x264pp_zigzag4[j];
+                int lvl = ac_quant_level( cqp, idx,
+                                          (int)cac[plane - 1][b][idx] );
+                cacq[plane - 1][b][idx] = (int16_t)lvl;
+                cacback[plane - 1][b][idx] =
+                    (int16_t)ac_dequant_one( cqp, idx, lvl );
+                if( lvl ) chroma_ac = 1;
+            }
+            cacback[plane - 1][b][0] = cdcback[plane - 1][b];
+            add_idct4( e->fdec.plane[plane]
+                       + (size_t)( cpy + by ) * e->fdec.stride[plane] + cpx + bx,
+                       e->fdec.stride[plane], cacback[plane - 1][b] );
+            e->nz_c[plane - 1][mbidx * 4 + b] =
+                (uint8_t)count_nonzero( cacq[plane - 1][b], 16 );
+        }
+    }
+
+    d->cbp_luma = (uint8_t)cbp_luma;
+    d->cbp_chroma = (uint8_t)( chroma_ac ? 2 : ( chroma_dc ? 1 : 0 ) );
+    /* P_Skip is inferred only when the best MV equals the predictor and the
+     * whole residual vanishes; otherwise the MV difference must be coded. */
+    d->skip = (uint8_t)( d->mv[0] == d->mvp[0] && d->mv[1] == d->mvp[1]
+                         && !cbp_luma && !d->cbp_chroma );
+    e->mv_cache[mbidx][0] = d->mv[0];
+    e->mv_cache[mbidx][1] = d->mv[1];
+}
+
+/* Write one coded P_L0_16x16 macroblock (7.3.5 / 7.3.5.1 / 7.3.5.3). */
+static void write_mb_inter( x264pp_bs_t *bs, x264pp_encoder_t *e,
+                            int mbx, int mby, const x264pp_mb_inter_t *d )
+{
+    const int mbidx = mby * e->mb_width + mbx;
+    static const uint8_t scan8[16] = {
+         0,  1,  4,  5,  2,  3,  6,  7,
+         8,  9, 12, 13, 10, 11, 14, 15
+    };
+    int cbp = ( d->cbp_chroma << 4 ) | d->cbp_luma;
+    int i, j, b, plane;
+    int16_t zl[16];
+
+    x264pp_bs_ue( bs, 0 );                    /* mb_type = P_L0_16x16 */
+    /* ref_idx_l0 is absent: num_ref_idx_l0_active_minus1 == 0.  mvd_l0 is
+     * expressed in quarter-luma units, the same units as mv/mvp here. */
+    x264pp_bs_se( bs, d->mv[0] - d->mvp[0] );
+    x264pp_bs_se( bs, d->mv[1] - d->mvp[1] );
+    x264pp_bs_ue( bs, (unsigned)cbp_p_code( cbp ) );   /* me(v) coded_block_pattern */
+
+    for( i = 0; i < 16; i++ )
+        e->nz_y[mbidx * 16 + i] =
+            (uint8_t)count_nonzero( d->luma_q[scan8[i]], 16 );
+    for( plane = 0; plane < 2; plane++ )
+        for( b = 0; b < 4; b++ )
+            e->nz_c[plane][mbidx * 4 + b] =
+                (uint8_t)count_nonzero( d->chroma_acq[plane][b], 16 );
+
+    if( !cbp )
+        return;                               /* no mb_qp_delta, no residual */
+
+    x264pp_bs_se( bs, 0 );                    /* mb_qp_delta */
+
+    /* Luma 4x4 blocks in scan8 order, zigzag-scanned levels. */
+    for( i = 0; i < 16; i++ )
+    {
+        b = scan8[i];
+        if( !( d->cbp_luma & ( 1 << ( b / 4 ) ) ) )
+            continue;
+        for( j = 0; j < 16; j++ )
+            zl[j] = d->luma_q[b][x264pp_zigzag4[j]];
+        x264pp_cavlc_residual( bs, zl, 16, luma_nc( e, mbx, mby, i ) );
+    }
+    if( d->cbp_chroma > 0 )
+        for( plane = 0; plane < 2; plane++ )
+        {
+            for( i = 0; i < 4; i++ )
+                zl[i] = d->chroma_dcq[plane][x264pp_zigzag2[i]];
+            x264pp_cavlc_residual( bs, zl, 4, -1 );
+        }
+    if( d->cbp_chroma == 2 )
+        for( plane = 0; plane < 2; plane++ )
+            for( b = 0; b < 4; b++ )
+            {
+                for( i = 0; i < 15; i++ )
+                    zl[i] = d->chroma_acq[plane][b][x264pp_zigzag4[i + 1]];
+                x264pp_cavlc_residual( bs, zl, 15,
+                    block_nz_context( e, mbx, mby, b, 2, 2, e->nz_c[plane] ) );
+            }
+}
+
+/* Pack the CAVLC slice_data() of a P picture.  CAVLC represents skipped
+ * macroblocks with a single mb_skip_run ue(v); the run is emitted before
+ * every coded macroblock and once more for a trailing run. */
+static void write_inter_slice_data( x264pp_bs_t *bs, x264pp_encoder_t *e )
+{
+    int skip_run = 0, x, y;
+
+    memset( e->nz_y, 0, (size_t)e->mb_count * 16 );
+    memset( e->nz_c[0], 0, (size_t)e->mb_count * 4 );
+    memset( e->nz_c[1], 0, (size_t)e->mb_count * 4 );
+    /* mv_cache is deliberately NOT cleared: it holds the previous picture's
+     * MVs, which are the top-neighbour predictors for this picture. */
+
+    /* Analysis pass: decisions, coefficients and reconstruction. */
+    for( y = 0; y < e->mb_height; y++ )
+        for( x = 0; x < e->mb_width; x++ )
+            analyse_mb_inter( e, x, y, &e->inter_mbs[y * e->mb_width + x] );
+
+    /* Syntax pass.  nz caches are (re)built per macroblock by write_mb_inter
+     * so that the next block sees the correct neighbour counts. */
+    for( y = 0; y < e->mb_height; y++ )
+        for( x = 0; x < e->mb_width; x++ )
+        {
+            const x264pp_mb_inter_t *d = &e->inter_mbs[y * e->mb_width + x];
+            if( d->skip )
+            {
+                skip_run++;
+                continue;
+            }
+            x264pp_bs_ue( bs, (unsigned)skip_run );
+            skip_run = 0;
+            write_mb_inter( bs, e, x, y, d );
+        }
+    if( skip_run )
+        x264pp_bs_ue( bs, (unsigned)skip_run );
+}
+#endif /* X264PP_INTER_P */
+
 /* ------------------------------------------------------------------ */
 /* Frame and lifecycle                                                 */
 /* ------------------------------------------------------------------ */
@@ -964,15 +1436,30 @@ x264pp_encoder_t *x264pp_encoder_create( const x264pp_param_t *param )
         x264pp_frame_alloc( &e->fdec, param->width, param->height ) != X264PP_OK )
         goto fail;
     x264pp_frame_fill( &e->fdec, 128 );
+#if X264PP_INTER_P
+    if( x264pp_frame_alloc( &e->ref, param->width, param->height ) != X264PP_OK )
+        goto fail;
+    x264pp_frame_fill( &e->ref, 128 );       /* frame 0 is an IDR: no reference */
+#endif
 
     e->nz_y = (uint8_t *)calloc( (size_t)e->mb_count * 16, 1 );
     e->nz_c[0] = (uint8_t *)calloc( (size_t)e->mb_count * 4, 1 );
     e->nz_c[1] = (uint8_t *)calloc( (size_t)e->mb_count * 4, 1 );
     e->i4_mode = (uint8_t *)malloc( (size_t)e->mb_count * 16 );
+#if X264PP_INTER_P
+    e->mv_cache = (int16_t (*)[2])calloc( (size_t)e->mb_count * 2,
+                                          sizeof( int16_t ) );
+    e->inter_mbs = (x264pp_mb_inter_t *)calloc( (size_t)e->mb_count,
+                                                sizeof( x264pp_mb_inter_t ) );
+#endif
     e->pred_buf = (uint8_t *)malloc( 16 * 16 );
     e->res_buf  = (int16_t *)malloc( 16 * 16 * sizeof( int16_t ) );
     if( !e->nz_y || !e->nz_c[0] || !e->nz_c[1] || !e->i4_mode ||
-        !e->pred_buf || !e->res_buf )
+        !e->pred_buf || !e->res_buf
+#if X264PP_INTER_P
+        || !e->mv_cache || !e->inter_mbs
+#endif
+      )
         goto fail;
     memset( e->i4_mode, 2, (size_t)e->mb_count * 16 );
 
@@ -1009,10 +1496,17 @@ void x264pp_encoder_destroy( x264pp_encoder_t *e )
         return;
     x264pp_frame_free( &e->fenc );
     x264pp_frame_free( &e->fdec );
+#if X264PP_INTER_P
+    x264pp_frame_free( &e->ref );
+#endif
     free( e->nz_y );
     free( e->nz_c[0] );
     free( e->nz_c[1] );
     free( e->i4_mode );
+#if X264PP_INTER_P
+    free( e->mv_cache );
+    free( e->inter_mbs );
+#endif
     free( e->pred_buf );
     free( e->res_buf );
     free( e->sps_rbsp );
@@ -1038,7 +1532,8 @@ int x264pp_encoder_encode_frame( x264pp_encoder_t *e,
 {
     x264pp_bs_t bs;
     int x, y, pos = 0, len;
-    int rc;
+    int rc, is_idr;
+    int nal_type;
 
     if( !e || !pic || !out || !out_len )
         return X264PP_ERR_INVALID;
@@ -1057,22 +1552,45 @@ int x264pp_encoder_encode_frame( x264pp_encoder_t *e,
         e->wrote_headers = 1;
     }
 
+#if X264PP_INTER_P
+    is_idr = ( e->frame_num == 0 );
+    nal_type = is_idr ? 5 : 1;
+#else
+    is_idr = 1;                 /* certified all-IDR mode */
+    nal_type = 5;
+#endif
+
     x264pp_bs_init( &bs, e->slice_rbsp, e->slice_cap );
-    write_slice_header( &bs, e );
+    write_slice_header( &bs, e, is_idr );
     /* CAVLC slices are not byte-aligned after the header. */
-    for( y = 0; y < e->mb_height; y++ )
-        for( x = 0; x < e->mb_width; x++ )
-            encode_mb( e, &bs, x, y );
+    if( is_idr )
+    {
+        for( y = 0; y < e->mb_height; y++ )
+            for( x = 0; x < e->mb_width; x++ )
+                encode_mb( e, &bs, x, y );
+    }
+#if X264PP_INTER_P
+    else
+        write_inter_slice_data( &bs, e );
+#endif
     if( bs.overflow )
         return X264PP_ERR_INVALID;
     len = x264pp_bs_trailing( &bs );
     if( len <= 0 )
         return X264PP_ERR_INVALID;
 
-    rc = append_nal( out, out_cap, &pos, e->slice_rbsp, len, 3, 5 );
+    rc = append_nal( out, out_cap, &pos, e->slice_rbsp, len, 3, nal_type );
     if( rc != X264PP_OK )
         return rc;
-    /* Every picture is an IDR in I1, so frame_num stays at zero. */
+
+#if X264PP_INTER_P
+    /* The next picture references this reconstruction.  frame_num wraps at
+     * 2^log2_max_frame_num, exactly as the slice header writer assumes. */
+    copy_ref_frame( e );
+    /* Every coded picture advances frame_num, including the IDR; the next
+     * picture then uses 1, 2, ... and the writer masks to the SPS width. */
+    e->frame_num++;
+#endif
     *out_len = pos;
     return X264PP_OK;
 }
