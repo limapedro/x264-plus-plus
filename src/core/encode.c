@@ -294,7 +294,7 @@ static int encode_mb( x264pp_encoder_t *e, x264pp_bs_t *bs,
                      - (int)pred4[y * 4 + x]);
             }
         x264pp_dct4( res, ac[b] );
-        x264pp_quant4( &q, ac[b], acq[b], 4 );
+        x264pp_quant4( &q, ac[b], acq[b], 1 );
         if( x264pp_last_nonzero( acq[b], 16 ) >= 0 )
             cbp_luma |= 1 << ( b / 4 );
         x264pp_dequant4( &q, acq[b], ac[b] );

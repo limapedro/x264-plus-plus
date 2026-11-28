@@ -38,6 +38,12 @@ static int quant_one( const x264pp_quant_t *q, int coef, int factor )
         num = q->level_scale;
         den = (int64_t)1 << ( -shift );
     }
+    /* H.264 8.5.13: levelScale[q%6] << (q/6), with the 4x4 forward transform
+     * scaled so that AC coefficients use the /64 IDCT normalisation and the
+     * Hadamard DC path uses /2.  The decoder's dequantisation multiplies by
+     * levelScale << (q/6) and stores with >>6, an effective gain of 16 times
+     * the plain levelScale<<(q/6-4) value; match that gain here. */
+    num *= 4;                        /* forward: divide by 4 extra */
     /* Half-unit bias for round-to-nearest; the dead zone narrows it. */
     bias = num / 2;
     bias -= ( bias * q->deadzone ) / 64;
@@ -79,7 +85,9 @@ int x264pp_quant2( const x264pp_quant_t *q, const int16_t in[4],
 static int dequant_one( const x264pp_quant_t *q, int level )
 {
     int shift = q->qp / 6 - 4;
-    int64_t v = (int64_t)level * q->level_scale;
+    /* Match the decoder's dequant4_coeff (levelScale * 16 << (q/6+2), then
+     * >>6 on store), i.e. an effective 16x gain over plain levelScale. */
+    int64_t v = (int64_t)level * q->level_scale * 16;
     if( shift >= 0 )
         v <<= shift;
     else
