@@ -1,0 +1,494 @@
+{
+  "schema_version": 1,
+  "generated_at_utc": "2026-11-28T04:01:47+00:00",
+  "run_id": "20261128T040147Z",
+  "status": "ok",
+  "candidate_certified": true,
+  "blocked_reason": null,
+  "publication": {
+    "publish_speeds": true,
+    "reason": "candidate decoded cleanly on every real-video case"
+  },
+  "machine": {
+    "platform": "Windows-11-10.0.26300-SP0",
+    "processor": "Intel64 Family 6 Model 151 Stepping 5, GenuineIntel",
+    "cpu_count": 12,
+    "python": "3.14.7"
+  },
+  "binaries": {
+    "oracle": {
+      "path": "E:\\__PROJECTS__\\x264++\\oracle\\x264.exe",
+      "exists": true,
+      "version": "x264 0.164.x",
+      "sha256": "d6c2528d9e2ce928e6b4dc9a5ab13938c2fe6e40fee725336f5949a937bdf8c5"
+    },
+    "candidate": {
+      "path": "E:\\__PROJECTS__\\x264++\\build\\x264pp.exe",
+      "exists": true,
+      "version": "x264 0.164.x",
+      "sha256": "b9d52a6567162aac7b6341e8ff51855166f14042e5d52b65e1c7fa8ae5e9e2ff"
+    }
+  },
+  "reference_anchors": [
+    {
+      "case": "640x360, 120 f, medium, CRF 23, 6 threads (synthetic testsrc2)",
+      "fps": 609.14,
+      "source": "benchmarks.md / README.md"
+    },
+    {
+      "case": "1920x1080, 8 f, ultrafast, CRF 23, 6 threads (Fortnite I420)",
+      "fps": 126.98,
+      "source": "benchmarks.md / README.md"
+    },
+    {
+      "case": "1920x1080, 8 f, medium, CRF 23, 6 threads (Fortnite I420)",
+      "fps": 40.61,
+      "source": "benchmarks.md / README.md"
+    },
+    {
+      "case": "1920x1080, 8 f, veryslow, CRF 23, 6 threads (Fortnite I420)",
+      "fps": 13.84,
+      "source": "benchmarks.md / README.md"
+    }
+  ],
+  "settings": {
+    "corpus_dir": "D:\\Videos",
+    "clips": [
+      "fortnite-raw-1080p",
+      "twitter-640x360",
+      "twitter-1080p",
+      "twitter-720p60"
+    ],
+    "presets": [
+      "ultrafast"
+    ],
+    "frames": 8,
+    "fps_override": null,
+    "crf": 23,
+    "threads": 6,
+    "reps": 1,
+    "warmups": 0,
+    "timeout_s": 600.0,
+    "quality": true,
+    "ffmpeg": "C:\\ffmpeg\\ffmpeg-master-latest-win64-gpl\\bin\\ffmpeg.exe",
+    "mingw_path_prepended": [
+      "C:\\msys64\\usr\\bin"
+    ],
+    "assets_dir": "C:\\Users\\multi\\AppData\\Local\\Temp\\x264pp-realbench-assets",
+    "timing": "wall clock incl. process startup + file write; warm-up discarded; A/B interleaved with alternating order per repetition",
+    "cli_shape": "x264-compatible raw I420; identical argv for both encoders except -o",
+    "candidate_state": "present"
+  },
+  "clips": [
+    {
+      "id": "fortnite-raw-1080p",
+      "label": "Fortnite 1080p (ready I420 prefix)",
+      "kind": "raw",
+      "source": "D:\\Videos\\Wx264-reference\\fortnite_prefix128.yuv",
+      "source_rel": "Wx264-reference\\fortnite_prefix128.yuv",
+      "source_sha256": "c0e2c11233791b9e6a25f5672da5ba91d9071f22f0ffa3087bb96cd16f166375",
+      "source_sha256_expected": "c0e2c11233791b9e6a25f5672da5ba91d9071f22f0ffa3087bb96cd16f166375",
+      "source_sha256_match": true,
+      "width": 1920,
+      "height": 1080,
+      "fps": 30,
+      "frames": 8,
+      "expected_bytes": 24883200,
+      "frame_bytes": 3110400,
+      "file": "C:\\Users\\multi\\AppData\\Local\\Temp\\x264pp-realbench-assets\\b7da1228e8901a70a101\\clip.yuv",
+      "reused": true,
+      "clip_sha256": "473e5391be06d5fc643d958acd6c31bea2d8c9d627b8be0d017b7cb7ad4ade9c",
+      "decode_command": "python: read first 8 frames (24883200 bytes) from fortnite_prefix128.yuv"
+    },
+    {
+      "id": "twitter-640x360",
+      "label": "640x360 social clip",
+      "kind": "container",
+      "source": "D:\\Videos\\ssstwitter.com_1732158697723.mp4",
+      "source_rel": "ssstwitter.com_1732158697723.mp4",
+      "source_sha256": "ee5dabeb8ebc6bcb5a846746f7d1c82c91337d8ae040ff099acdfb6fafcf496f",
+      "source_sha256_expected": "ee5dabeb8ebc6bcb5a846746f7d1c82c91337d8ae040ff099acdfb6fafcf496f",
+      "source_sha256_match": true,
+      "width": 640,
+      "height": 360,
+      "fps": 30,
+      "frames": 8,
+      "expected_bytes": 2764800,
+      "frame_bytes": 345600,
+      "file": "C:\\Users\\multi\\AppData\\Local\\Temp\\x264pp-realbench-assets\\77d5ccb53c6de549454a\\clip.yuv",
+      "reused": true,
+      "clip_sha256": "85e4f86d600bfd1f618040f2657538aac20291524d1a7b9c6d0c98ee5ba80f3e",
+      "decode_command": "C:\\ffmpeg\\ffmpeg-master-latest-win64-gpl\\bin\\ffmpeg.exe -hide_banner -nostats -loglevel error -y -i D:\\Videos\\ssstwitter.com_1732158697723.mp4 -frames:v 8 -an -sn -dn -pix_fmt yuv420p -f rawvideo C:\\Users\\multi\\AppData\\Local\\Temp\\x264pp-realbench-assets\\77d5ccb53c6de549454a\\clip.yuv"
+    },
+    {
+      "id": "twitter-1080p",
+      "label": "1080p social clip",
+      "kind": "container",
+      "source": "D:\\Videos\\ssstwitter.com_1736929558402.mp4",
+      "source_rel": "ssstwitter.com_1736929558402.mp4",
+      "source_sha256": "284afeb9449c1baa1e6ebb3d1f6a0749aa04c1c4334190ac5b624dc03e674aa6",
+      "source_sha256_expected": "284afeb9449c1baa1e6ebb3d1f6a0749aa04c1c4334190ac5b624dc03e674aa6",
+      "source_sha256_match": true,
+      "width": 1920,
+      "height": 1080,
+      "fps": 30,
+      "frames": 8,
+      "expected_bytes": 24883200,
+      "frame_bytes": 3110400,
+      "file": "C:\\Users\\multi\\AppData\\Local\\Temp\\x264pp-realbench-assets\\2f5e3ca57c820a6c0761\\clip.yuv",
+      "reused": true,
+      "clip_sha256": "200c44e01fa99503a9f6b1d0e530aa3bc9fcb35c34d0fe94c459da21151813f5",
+      "decode_command": "C:\\ffmpeg\\ffmpeg-master-latest-win64-gpl\\bin\\ffmpeg.exe -hide_banner -nostats -loglevel error -y -i D:\\Videos\\ssstwitter.com_1736929558402.mp4 -frames:v 8 -an -sn -dn -pix_fmt yuv420p -f rawvideo C:\\Users\\multi\\AppData\\Local\\Temp\\x264pp-realbench-assets\\2f5e3ca57c820a6c0761\\clip.yuv"
+    },
+    {
+      "id": "twitter-720p60",
+      "label": "720p60 social clip",
+      "kind": "container",
+      "source": "D:\\Videos\\ssstwitter.com_1731881880284.mp4",
+      "source_rel": "ssstwitter.com_1731881880284.mp4",
+      "source_sha256": "3191e8de186709b3d4b9383cd2116b09f7710bef8679916267088497bfec1609",
+      "source_sha256_expected": "3191e8de186709b3d4b9383cd2116b09f7710bef8679916267088497bfec1609",
+      "source_sha256_match": true,
+      "width": 1280,
+      "height": 720,
+      "fps": 60,
+      "frames": 8,
+      "expected_bytes": 11059200,
+      "frame_bytes": 1382400,
+      "file": "C:\\Users\\multi\\AppData\\Local\\Temp\\x264pp-realbench-assets\\fd445f27e2a81fc8a70f\\clip.yuv",
+      "reused": true,
+      "clip_sha256": "4448ad3476c43341b1afe1c1a21b476e1003366f37389361716bd33b4acf6ab4",
+      "decode_command": "C:\\ffmpeg\\ffmpeg-master-latest-win64-gpl\\bin\\ffmpeg.exe -hide_banner -nostats -loglevel error -y -i D:\\Videos\\ssstwitter.com_1731881880284.mp4 -frames:v 8 -an -sn -dn -pix_fmt yuv420p -f rawvideo C:\\Users\\multi\\AppData\\Local\\Temp\\x264pp-realbench-assets\\fd445f27e2a81fc8a70f\\clip.yuv"
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "fortnite-raw-1080p|ultrafast",
+      "clip_id": "fortnite-raw-1080p",
+      "preset": "ultrafast",
+      "settings": {
+        "width": 1920,
+        "height": 1080,
+        "fps": 30,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "Wx264-reference\\fortnite_prefix128.yuv",
+        "source_sha256": "c0e2c11233791b9e6a25f5672da5ba91d9071f22f0ffa3087bb96cd16f166375",
+        "clip_sha256": "473e5391be06d5fc643d958acd6c31bea2d8c9d627b8be0d017b7cb7ad4ade9c",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          49.526
+        ],
+        "median_ms": 49.526,
+        "mean_ms": 49.526,
+        "min_ms": 49.526,
+        "max_ms": 49.526,
+        "fps": 161.53,
+        "sizes_bytes": [
+          493055
+        ],
+        "hash_full": "ae69c3620fe1363773ed79f2d26a69298354c690a9f55ccca248da1f6a3b3d70",
+        "size_bytes": 493055,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "fortnite-raw-1080p_ultrafast_rep0_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 44.8822,
+          "ssim": 0.9874,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          48.568
+        ],
+        "availability": "present",
+        "median_ms": 48.568,
+        "mean_ms": 48.568,
+        "min_ms": 48.568,
+        "max_ms": 48.568,
+        "fps": 164.72,
+        "sizes_bytes": [
+          25287467
+        ],
+        "hash_full": "bc538cdec58e681f08123d98bcc9dad4cb6ca241f6af7d7441ea79d81135de95",
+        "size_bytes": 25287467,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "fortnite-raw-1080p_ultrafast_rep0_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 1.0197,
+      "size_delta_pct": 5028.731
+    },
+    {
+      "case_id": "twitter-640x360|ultrafast",
+      "clip_id": "twitter-640x360",
+      "preset": "ultrafast",
+      "settings": {
+        "width": 640,
+        "height": 360,
+        "fps": 30,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "ssstwitter.com_1732158697723.mp4",
+        "source_sha256": "ee5dabeb8ebc6bcb5a846746f7d1c82c91337d8ae040ff099acdfb6fafcf496f",
+        "clip_sha256": "85e4f86d600bfd1f618040f2657538aac20291524d1a7b9c6d0c98ee5ba80f3e",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          20.73
+        ],
+        "median_ms": 20.73,
+        "mean_ms": 20.73,
+        "min_ms": 20.73,
+        "max_ms": 20.73,
+        "fps": 385.92,
+        "sizes_bytes": [
+          59902
+        ],
+        "hash_full": "fc21049455323d98c1a07e7fe282027dd3d482b0a74d661f5eaa93fd063a876e",
+        "size_bytes": 59902,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-640x360_ultrafast_rep0_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 45.8185,
+          "ssim": 0.9915,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          13.445
+        ],
+        "availability": "present",
+        "median_ms": 13.445,
+        "mean_ms": 13.445,
+        "min_ms": 13.445,
+        "max_ms": 13.445,
+        "fps": 595.0,
+        "sizes_bytes": [
+          2870827
+        ],
+        "hash_full": "1521ad1205cfbab3d464718a81f1b8309b28df5bf6c731d863f4c2822f691647",
+        "size_bytes": 2870827,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-640x360_ultrafast_rep0_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 1.5418,
+      "size_delta_pct": 4692.539
+    },
+    {
+      "case_id": "twitter-1080p|ultrafast",
+      "clip_id": "twitter-1080p",
+      "preset": "ultrafast",
+      "settings": {
+        "width": 1920,
+        "height": 1080,
+        "fps": 30,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "ssstwitter.com_1736929558402.mp4",
+        "source_sha256": "284afeb9449c1baa1e6ebb3d1f6a0749aa04c1c4334190ac5b624dc03e674aa6",
+        "clip_sha256": "200c44e01fa99503a9f6b1d0e530aa3bc9fcb35c34d0fe94c459da21151813f5",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          56.462
+        ],
+        "median_ms": 56.462,
+        "mean_ms": 56.462,
+        "min_ms": 56.462,
+        "max_ms": 56.462,
+        "fps": 141.69,
+        "sizes_bytes": [
+          30728
+        ],
+        "hash_full": "4107a45ebeb98ad37cc0edabeba37d64826aff9875be77f591e3004bc557cb0f",
+        "size_bytes": 30728,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-1080p_ultrafast_rep0_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 64.6237,
+          "ssim": 0.9998,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          50.004
+        ],
+        "availability": "present",
+        "median_ms": 50.004,
+        "mean_ms": 50.004,
+        "min_ms": 50.004,
+        "max_ms": 50.004,
+        "fps": 159.99,
+        "sizes_bytes": [
+          25287467
+        ],
+        "hash_full": "1f5434d29e331c3d3efa4bf62b23f58e89072323958cff579a2b76183f96ce90",
+        "size_bytes": 25287467,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-1080p_ultrafast_rep0_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 1.1291,
+      "size_delta_pct": 82194.542
+    },
+    {
+      "case_id": "twitter-720p60|ultrafast",
+      "clip_id": "twitter-720p60",
+      "preset": "ultrafast",
+      "settings": {
+        "width": 1280,
+        "height": 720,
+        "fps": 60,
+        "crf": 23,
+        "threads": 6,
+        "frames": 8
+      },
+      "clip": {
+        "file": "clip.yuv",
+        "source": "ssstwitter.com_1731881880284.mp4",
+        "source_sha256": "3191e8de186709b3d4b9383cd2116b09f7710bef8679916267088497bfec1609",
+        "clip_sha256": "4448ad3476c43341b1afe1c1a21b476e1003366f37389361716bd33b4acf6ab4",
+        "reused": true
+      },
+      "failures": [],
+      "status": "pass",
+      "certified": true,
+      "oracle": {
+        "times_ms": [
+          31.452
+        ],
+        "median_ms": 31.452,
+        "mean_ms": 31.452,
+        "min_ms": 31.452,
+        "max_ms": 31.452,
+        "fps": 254.35,
+        "sizes_bytes": [
+          76124
+        ],
+        "hash_full": "750c21b8a0fd5bb83c21723cccea7bc7276322fbf321995380db421734928ae3",
+        "size_bytes": 76124,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-720p60_ultrafast_rep0_oracle.264"
+        },
+        "quality": {
+          "psnr_db": 49.93,
+          "ssim": 0.9958,
+          "error": null
+        }
+      },
+      "candidate": {
+        "times_ms": [
+          26.746
+        ],
+        "availability": "present",
+        "median_ms": 26.746,
+        "mean_ms": 26.746,
+        "min_ms": 26.746,
+        "max_ms": 26.746,
+        "fps": 299.11,
+        "sizes_bytes": [
+          11116906
+        ],
+        "hash_full": "86336919021d4f130251e90c88db5163e71ca89a187b4ca5e42fd33cf0e8431b",
+        "size_bytes": 11116906,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-720p60_ultrafast_rep0_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
+      },
+      "speedup": 1.176,
+      "size_delta_pct": 14503.681
+    }
+  ],
+  "summary": {
+    "total_cases": 4,
+    "oracle_measured_cases": 4,
+    "oracle_decoded_cases": 4,
+    "candidate_measured_cases": 4,
+    "certified_cases": 4,
+    "median_speedup": 1.1525,
+    "by_preset": {
+      "ultrafast": {
+        "oracle_fps_median": 207.94,
+        "candidate_fps_median": 231.92,
+        "certified_cases": 4
+      }
+    }
+  },
+  "warnings": []
+}
