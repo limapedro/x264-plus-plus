@@ -1185,8 +1185,11 @@ static void analyse_mb_inter( x264pp_encoder_t *e, int mbx, int mby,
                            e->ref.plane[0] + (size_t)py * e->ref.stride[0] + px,
                            e->ref.stride[0], 16 );
     bestx = besty = 0;
-    for( my = miny; my <= maxy; my++ )
-        for( mx = minx; mx <= maxx; mx++ )
+    /* Deterministic coarse-to-fine search: step 4 over the full range,
+     * then step 2 and step 1 around the current best.  About 60 SAD calls
+     * instead of 289 for a +/-8 full search; ties keep the earlier vector. */
+    for( my = miny; my <= maxy; my += 4 )
+        for( mx = minx; mx <= maxx; mx += 4 )
         {
             const uint8_t *r = e->ref.plane[0]
                              + (size_t)( py + my ) * e->ref.stride[0] + px + mx;
@@ -1200,6 +1203,33 @@ static void analyse_mb_inter( x264pp_encoder_t *e, int mbx, int mby,
                 besty = my;
             }
         }
+    {
+        int step;
+        for( step = 2; step >= 1; step >>= 1 )
+        {
+            int cy = besty, cx = bestx, dy, dx;
+            for( dy = -step; dy <= step; dy += step )
+                for( dx = -step; dx <= step; dx += step )
+                {
+                    int mx2 = cx + dx, my2 = cy + dy;
+                    const uint8_t *r;
+                    int cost;
+                    if( mx2 < minx || mx2 > maxx || my2 < miny || my2 > maxy )
+                        continue;
+                    r = e->ref.plane[0]
+                      + (size_t)( py + my2 ) * e->ref.stride[0] + px + mx2;
+                    cost = sad_block( e->fenc.plane[0]
+                                      + (size_t)py * e->fenc.stride[0] + px,
+                                      e->fenc.stride[0], r, e->ref.stride[0], 16 );
+                    if( cost < best_cost )
+                    {
+                        best_cost = cost;
+                        bestx = mx2;
+                        besty = my2;
+                    }
+                }
+        }
+    }
     d->mv[0] = (int16_t)( 4 * bestx );
     d->mv[1] = (int16_t)( 4 * besty );
 
