@@ -13,7 +13,7 @@ This file is the human-readable standings sheet. `score.md` is the certification
 | Clean C codec core (I1) | builds, decodes cleanly, **size envelope fails** | PR #3: all-I_PCM fallback, 8×1080p = 25,287,468 B vs oracle 200,535 B (126×) |
 | AVX2 assembly kernels | 14 original NASM kernels merged | PR #4: `nasm -f win64`, link and 14 exported symbols verified |
 | Real-video certification harness | merged | PR #2: `cert/real_bench.py` with `D:\Videos` corpus |
-| Certified speedup | **none** | candidate valid but far outside quality/size band; speed not publishable |
+| Certified speedup | measured, **goal not met** | PR #9: 0.18× vs ultrafast, 0.70× vs medium, 1.99× vs veryslow (8×1080p) |
 
 ## Reference measurements (oracle, black box)
 
@@ -46,17 +46,19 @@ The other three clips (640×360, second 1080p, 720p60) and the full A/B table wi
 
 | Preset | Reference (fps) | x264++ (fps) | Speedup | ffmpeg decode | Notes |
 | --- | ---: | ---: | ---: | --- | --- |
-| ultrafast | — | — | — | not certified | — |
-| superfast | — | — | — | not certified | — |
-| veryfast | — | — | — | not certified | — |
-| faster | — | — | — | not certified | — |
-| fast | — | — | — | not certified | — |
-| medium | 609.14 | — | — | **valid** (all-I_PCM) but size ratio ≈126× | 8×1920×1080 = 25,287,468 B vs oracle 200,535 B; outside quality/size envelope |
-| slow | — | — | — | not certified | — |
-| slower | — | — | — | not certified | — |
-| veryslow | — | — | — | not certified | — |
+| ultrafast | 157.76 | 28.01 | **0.18×** | clean | 8×1920×1080 Fortnite, CRF 23, 6 threads |
+| superfast | — | — | — | not measured | — |
+| veryfast | — | — | — | not measured | — |
+| faster | — | — | — | not measured | — |
+| fast | — | — | — | not measured | — |
+| medium | 39.76 | 27.90 | **0.70×** | clean | same clip |
+| slow | — | — | — | not measured | — |
+| slower | — | — | — | not measured | — |
+| veryslow | 14.00 | 27.88 | **1.99×** | clean | same clip |
 
-**Honest summary:** x264++ now produces ffmpeg-clean H.264, but only via an all-I_PCM fallback, making it ≈126× larger than the oracle and therefore outside the quality/size envelope. It stays `NOT CERTIFIED`; no speedup is published. The 2× target is not met. In progress: I_4x4 CAVLC path (PR #5) and an independent bitstream diagnostic (PR #6). A missing, invalid, or out-of-envelope candidate never produces a speedup claim.
+These are post-PR-#9 numbers (bulk I_PCM byte writes): the candidate went from ~12 fps to ~28 fps at 1080p — a **2.28× self-speedup**, with bit-identical output (SHA256 verified) and ffmpeg decoding cleanly. Decoded output is byte-exact/lossless (PSNR = inf with matching timestamps), but the file is ~126× larger than the oracle, so the quality/size envelope still fails.
+
+**Honest summary:** 2× is reached only against `veryslow`; `ultrafast` is ~5.6× faster than us. The ≥2×-on-every-preset goal is **not met**. Compression (CAVLC) remains the unresolved blocker; all attempts are documented in closed PRs #6–#8.
 
 ## Reproduction
 

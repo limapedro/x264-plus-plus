@@ -1,32 +1,32 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-11-27T22:07:50+00:00",
-  "run_id": "20261127T220750Z",
-  "status": "blocked",
-  "candidate_certified": false,
-  "blocked_reason": "candidate binary missing: E:\\_wt\\x264pp-bench\\build\\x264pp.exe (NOT CERTIFIED)",
+  "generated_at_utc": "2026-11-28T02:19:20+00:00",
+  "run_id": "20261128T021920Z",
+  "status": "ok",
+  "candidate_certified": true,
+  "blocked_reason": null,
   "publication": {
-    "publish_speeds": false,
-    "reason": "NOT CERTIFIED — candidate binary missing: E:\\_wt\\x264pp-bench\\build\\x264pp.exe (NOT CERTIFIED)"
+    "publish_speeds": true,
+    "reason": "candidate decoded cleanly on every real-video case"
   },
   "machine": {
-    "platform": "Windows-10-10.0.26300-SP0",
+    "platform": "Windows-11-10.0.26300-SP0",
     "processor": "Intel64 Family 6 Model 151 Stepping 5, GenuineIntel",
     "cpu_count": 12,
-    "python": "3.10.11"
+    "python": "3.14.7"
   },
   "binaries": {
     "oracle": {
-      "path": "E:\\_wt\\x264pp-bench\\oracle\\x264.exe",
+      "path": "E:\\__PROJECTS__\\x264++\\oracle\\x264.exe",
       "exists": true,
       "version": "x264 0.164.x",
       "sha256": "d6c2528d9e2ce928e6b4dc9a5ab13938c2fe6e40fee725336f5949a937bdf8c5"
     },
     "candidate": {
-      "path": "E:\\_wt\\x264pp-bench\\build\\x264pp.exe",
-      "exists": false,
-      "version": null,
-      "sha256": null
+      "path": "E:\\__PROJECTS__\\x264++\\build\\x264pp.exe",
+      "exists": true,
+      "version": "x264 0.164.x",
+      "sha256": "af7abd56446f8a48d5c517dce969753a8e74394b59e16bcffa9e5261ab8aeede"
     }
   },
   "reference_anchors": [
@@ -74,13 +74,12 @@
     "quality": true,
     "ffmpeg": "C:\\ffmpeg\\ffmpeg-master-latest-win64-gpl\\bin\\ffmpeg.exe",
     "mingw_path_prepended": [
-      "C:\\msys64\\mingw64\\bin",
       "C:\\msys64\\usr\\bin"
     ],
     "assets_dir": "C:\\Users\\multi\\AppData\\Local\\Temp\\x264pp-realbench-assets",
     "timing": "wall clock incl. process startup + file write; warm-up discarded; A/B interleaved with alternating order per repetition",
     "cli_shape": "x264-compatible raw I420; identical argv for both encoders except -o",
-    "candidate_state": "missing"
+    "candidate_state": "present"
   },
   "clips": [
     {
@@ -185,18 +184,18 @@
         "reused": true
       },
       "failures": [],
-      "status": "reference-only",
-      "certified": false,
+      "status": "pass",
+      "certified": true,
       "oracle": {
         "times_ms": [
-          51.532,
-          49.551
+          53.882,
+          52.392
         ],
-        "median_ms": 50.541,
-        "mean_ms": 50.541,
-        "min_ms": 49.551,
-        "max_ms": 51.532,
-        "fps": 158.29,
+        "median_ms": 53.137,
+        "mean_ms": 53.137,
+        "min_ms": 52.392,
+        "max_ms": 53.882,
+        "fps": 150.55,
         "sizes_bytes": [
           493055,
           493055
@@ -216,11 +215,39 @@
         }
       },
       "candidate": {
-        "times_ms": [],
-        "availability": "missing"
+        "times_ms": [
+          650.151,
+          650.34
+        ],
+        "availability": "present",
+        "median_ms": 650.245,
+        "mean_ms": 650.245,
+        "min_ms": 650.151,
+        "max_ms": 650.34,
+        "fps": 12.3,
+        "sizes_bytes": [
+          25287468,
+          25287468
+        ],
+        "hash_full": "dbb977acc79d367e1fe035f999525415c30d08011cc308d792ea023e9f809267",
+        "size_bytes": 25287468,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "fortnite-raw-1080p_ultrafast_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": null,
+          "ssim": null,
+          "error": "ssim failed: 8c40] Terminating thread with error: Invalid argument\r\n[out#0/null @ 00000209b2646480] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
+        }
       },
-      "speedup": null,
-      "size_delta_pct": null
+      "warnings": [
+        "candidate_quality: ssim failed: 8c40] Terminating thread with error: Invalid argument\r\n[out#0/null @ 00000209b2646480] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
+      ],
+      "speedup": 0.0817,
+      "size_delta_pct": 5028.732
     },
     {
       "case_id": "fortnite-raw-1080p|medium",
@@ -242,18 +269,18 @@
         "reused": true
       },
       "failures": [],
-      "status": "reference-only",
-      "certified": false,
+      "status": "pass",
+      "certified": true,
       "oracle": {
         "times_ms": [
-          200.41,
-          200.674
+          204.889,
+          203.015
         ],
-        "median_ms": 200.542,
-        "mean_ms": 200.542,
-        "min_ms": 200.41,
-        "max_ms": 200.674,
-        "fps": 39.89,
+        "median_ms": 203.952,
+        "mean_ms": 203.952,
+        "min_ms": 203.015,
+        "max_ms": 204.889,
+        "fps": 39.22,
         "sizes_bytes": [
           200535,
           200535
@@ -273,11 +300,39 @@
         }
       },
       "candidate": {
-        "times_ms": [],
-        "availability": "missing"
+        "times_ms": [
+          644.92,
+          649.778
+        ],
+        "availability": "present",
+        "median_ms": 647.349,
+        "mean_ms": 647.349,
+        "min_ms": 644.92,
+        "max_ms": 649.778,
+        "fps": 12.36,
+        "sizes_bytes": [
+          25287468,
+          25287468
+        ],
+        "hash_full": "dbb977acc79d367e1fe035f999525415c30d08011cc308d792ea023e9f809267",
+        "size_bytes": 25287468,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "fortnite-raw-1080p_medium_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": null,
+          "ssim": null,
+          "error": "ssim failed: 0040] Terminating thread with error: Invalid argument\r\n[out#0/null @ 000002ea88a70100] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
+        }
       },
-      "speedup": null,
-      "size_delta_pct": null
+      "warnings": [
+        "candidate_quality: ssim failed: 0040] Terminating thread with error: Invalid argument\r\n[out#0/null @ 000002ea88a70100] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
+      ],
+      "speedup": 0.3151,
+      "size_delta_pct": 12510.002
     },
     {
       "case_id": "fortnite-raw-1080p|veryslow",
@@ -299,18 +354,18 @@
         "reused": true
       },
       "failures": [],
-      "status": "reference-only",
-      "certified": false,
+      "status": "pass",
+      "certified": true,
       "oracle": {
         "times_ms": [
-          594.557,
-          571.219
+          583.31,
+          589.811
         ],
-        "median_ms": 582.888,
-        "mean_ms": 582.888,
-        "min_ms": 571.219,
-        "max_ms": 594.557,
-        "fps": 13.72,
+        "median_ms": 586.56,
+        "mean_ms": 586.56,
+        "min_ms": 583.31,
+        "max_ms": 589.811,
+        "fps": 13.64,
         "sizes_bytes": [
           186685,
           186685
@@ -330,11 +385,39 @@
         }
       },
       "candidate": {
-        "times_ms": [],
-        "availability": "missing"
+        "times_ms": [
+          649.421,
+          636.575
+        ],
+        "availability": "present",
+        "median_ms": 642.998,
+        "mean_ms": 642.998,
+        "min_ms": 636.575,
+        "max_ms": 649.421,
+        "fps": 12.44,
+        "sizes_bytes": [
+          25287468,
+          25287468
+        ],
+        "hash_full": "dbb977acc79d367e1fe035f999525415c30d08011cc308d792ea023e9f809267",
+        "size_bytes": 25287468,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "fortnite-raw-1080p_veryslow_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": null,
+          "ssim": null,
+          "error": "ssim failed: 0d80] Terminating thread with error: Invalid argument\r\n[out#0/null @ 00000283ce3d3d00] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.01    \r\nConversion failed!"
+        }
       },
-      "speedup": null,
-      "size_delta_pct": null
+      "warnings": [
+        "candidate_quality: ssim failed: 0d80] Terminating thread with error: Invalid argument\r\n[out#0/null @ 00000283ce3d3d00] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.01    \r\nConversion failed!"
+      ],
+      "speedup": 0.9122,
+      "size_delta_pct": 13445.527
     },
     {
       "case_id": "twitter-640x360|ultrafast",
@@ -356,18 +439,18 @@
         "reused": true
       },
       "failures": [],
-      "status": "reference-only",
-      "certified": false,
+      "status": "pass",
+      "certified": true,
       "oracle": {
         "times_ms": [
-          22.121,
-          21.623
+          24.504,
+          24.576
         ],
-        "median_ms": 21.872,
-        "mean_ms": 21.872,
-        "min_ms": 21.623,
-        "max_ms": 22.121,
-        "fps": 365.77,
+        "median_ms": 24.54,
+        "mean_ms": 24.54,
+        "min_ms": 24.504,
+        "max_ms": 24.576,
+        "fps": 326.0,
         "sizes_bytes": [
           59902,
           59902
@@ -387,11 +470,39 @@
         }
       },
       "candidate": {
-        "times_ms": [],
-        "availability": "missing"
+        "times_ms": [
+          85.397,
+          82.692
+        ],
+        "availability": "present",
+        "median_ms": 84.045,
+        "mean_ms": 84.045,
+        "min_ms": 82.692,
+        "max_ms": 85.397,
+        "fps": 95.19,
+        "sizes_bytes": [
+          2870828,
+          2870828
+        ],
+        "hash_full": "f7c285b9569d250bb804ce80c5c754d2ee88ac19e64f2938f94f80864768cbeb",
+        "size_bytes": 2870828,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-640x360_ultrafast_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": null,
+          "ssim": null,
+          "error": "ssim failed: c300] Terminating thread with error: Invalid argument\r\n[out#0/null @ 0000020c5c630d80] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
+        }
       },
-      "speedup": null,
-      "size_delta_pct": null
+      "warnings": [
+        "candidate_quality: ssim failed: c300] Terminating thread with error: Invalid argument\r\n[out#0/null @ 0000020c5c630d80] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
+      ],
+      "speedup": 0.292,
+      "size_delta_pct": 4692.541
     },
     {
       "case_id": "twitter-640x360|medium",
@@ -413,18 +524,18 @@
         "reused": true
       },
       "failures": [],
-      "status": "reference-only",
-      "certified": false,
+      "status": "pass",
+      "certified": true,
       "oracle": {
         "times_ms": [
-          32.915,
-          33.022
+          33.012,
+          35.631
         ],
-        "median_ms": 32.968,
-        "mean_ms": 32.968,
-        "min_ms": 32.915,
-        "max_ms": 33.022,
-        "fps": 242.66,
+        "median_ms": 34.321,
+        "mean_ms": 34.321,
+        "min_ms": 33.012,
+        "max_ms": 35.631,
+        "fps": 233.09,
         "sizes_bytes": [
           19383,
           19383
@@ -444,11 +555,39 @@
         }
       },
       "candidate": {
-        "times_ms": [],
-        "availability": "missing"
+        "times_ms": [
+          84.225,
+          83.031
+        ],
+        "availability": "present",
+        "median_ms": 83.628,
+        "mean_ms": 83.628,
+        "min_ms": 83.031,
+        "max_ms": 84.225,
+        "fps": 95.66,
+        "sizes_bytes": [
+          2870828,
+          2870828
+        ],
+        "hash_full": "f7c285b9569d250bb804ce80c5c754d2ee88ac19e64f2938f94f80864768cbeb",
+        "size_bytes": 2870828,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-640x360_medium_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": null,
+          "ssim": null,
+          "error": "ssim failed: 8bc0] Terminating thread with error: Invalid argument\r\n[out#0/null @ 0000023a627440c0] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
+        }
       },
-      "speedup": null,
-      "size_delta_pct": null
+      "warnings": [
+        "candidate_quality: ssim failed: 8bc0] Terminating thread with error: Invalid argument\r\n[out#0/null @ 0000023a627440c0] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
+      ],
+      "speedup": 0.4104,
+      "size_delta_pct": 14711.061
     },
     {
       "case_id": "twitter-640x360|veryslow",
@@ -470,18 +609,18 @@
         "reused": true
       },
       "failures": [],
-      "status": "reference-only",
-      "certified": false,
+      "status": "pass",
+      "certified": true,
       "oracle": {
         "times_ms": [
-          78.467,
-          76.921
+          78.514,
+          74.696
         ],
-        "median_ms": 77.694,
-        "mean_ms": 77.694,
-        "min_ms": 76.921,
-        "max_ms": 78.467,
-        "fps": 102.97,
+        "median_ms": 76.605,
+        "mean_ms": 76.605,
+        "min_ms": 74.696,
+        "max_ms": 78.514,
+        "fps": 104.43,
         "sizes_bytes": [
           18306,
           18306
@@ -501,11 +640,39 @@
         }
       },
       "candidate": {
-        "times_ms": [],
-        "availability": "missing"
+        "times_ms": [
+          83.342,
+          83.874
+        ],
+        "availability": "present",
+        "median_ms": 83.608,
+        "mean_ms": 83.608,
+        "min_ms": 83.342,
+        "max_ms": 83.874,
+        "fps": 95.68,
+        "sizes_bytes": [
+          2870828,
+          2870828
+        ],
+        "hash_full": "f7c285b9569d250bb804ce80c5c754d2ee88ac19e64f2938f94f80864768cbeb",
+        "size_bytes": 2870828,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-640x360_veryslow_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": null,
+          "ssim": null,
+          "error": "ssim failed: a300] Terminating thread with error: Invalid argument\r\n[out#0/null @ 00000271b97d2200] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
+        }
       },
-      "speedup": null,
-      "size_delta_pct": null
+      "warnings": [
+        "candidate_quality: ssim failed: a300] Terminating thread with error: Invalid argument\r\n[out#0/null @ 00000271b97d2200] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
+      ],
+      "speedup": 0.9162,
+      "size_delta_pct": 15582.443
     },
     {
       "case_id": "twitter-1080p|ultrafast",
@@ -527,18 +694,18 @@
         "reused": true
       },
       "failures": [],
-      "status": "reference-only",
-      "certified": false,
+      "status": "pass",
+      "certified": true,
       "oracle": {
         "times_ms": [
-          46.058,
-          48.858
+          47.321,
+          50.359
         ],
-        "median_ms": 47.458,
-        "mean_ms": 47.458,
-        "min_ms": 46.058,
-        "max_ms": 48.858,
-        "fps": 168.57,
+        "median_ms": 48.84,
+        "mean_ms": 48.84,
+        "min_ms": 47.321,
+        "max_ms": 50.359,
+        "fps": 163.8,
         "sizes_bytes": [
           30728,
           30728
@@ -558,11 +725,39 @@
         }
       },
       "candidate": {
-        "times_ms": [],
-        "availability": "missing"
+        "times_ms": [
+          378.621,
+          370.371
+        ],
+        "availability": "present",
+        "median_ms": 374.496,
+        "mean_ms": 374.496,
+        "min_ms": 370.371,
+        "max_ms": 378.621,
+        "fps": 21.36,
+        "sizes_bytes": [
+          25287468,
+          25287468
+        ],
+        "hash_full": "e63d73e1d64802ee595c043b5eeb2d9ba0157e48616e7a9b3039f3a8f67b05a3",
+        "size_bytes": 25287468,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-1080p_ultrafast_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": null,
+          "ssim": null,
+          "error": "ssim failed: 00c0] Terminating thread with error: Invalid argument\r\n[out#0/null @ 0000021c02250d40] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
+        }
       },
-      "speedup": null,
-      "size_delta_pct": null
+      "warnings": [
+        "candidate_quality: ssim failed: 00c0] Terminating thread with error: Invalid argument\r\n[out#0/null @ 0000021c02250d40] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
+      ],
+      "speedup": 0.1304,
+      "size_delta_pct": 82194.546
     },
     {
       "case_id": "twitter-1080p|medium",
@@ -584,18 +779,18 @@
         "reused": true
       },
       "failures": [],
-      "status": "reference-only",
-      "certified": false,
+      "status": "pass",
+      "certified": true,
       "oracle": {
         "times_ms": [
-          103.949,
-          109.087
+          112.934,
+          116.587
         ],
-        "median_ms": 106.518,
-        "mean_ms": 106.518,
-        "min_ms": 103.949,
-        "max_ms": 109.087,
-        "fps": 75.1,
+        "median_ms": 114.761,
+        "mean_ms": 114.761,
+        "min_ms": 112.934,
+        "max_ms": 116.587,
+        "fps": 69.71,
         "sizes_bytes": [
           15584,
           15584
@@ -615,11 +810,39 @@
         }
       },
       "candidate": {
-        "times_ms": [],
-        "availability": "missing"
+        "times_ms": [
+          370.687,
+          370.517
+        ],
+        "availability": "present",
+        "median_ms": 370.602,
+        "mean_ms": 370.602,
+        "min_ms": 370.517,
+        "max_ms": 370.687,
+        "fps": 21.59,
+        "sizes_bytes": [
+          25287468,
+          25287468
+        ],
+        "hash_full": "e63d73e1d64802ee595c043b5eeb2d9ba0157e48616e7a9b3039f3a8f67b05a3",
+        "size_bytes": 25287468,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-1080p_medium_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": null,
+          "ssim": null,
+          "error": "ssim failed: 9580] Terminating thread with error: Invalid argument\r\n[out#0/null @ 000001d51e022c00] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.01    \r\nConversion failed!"
+        }
       },
-      "speedup": null,
-      "size_delta_pct": null
+      "warnings": [
+        "candidate_quality: ssim failed: 9580] Terminating thread with error: Invalid argument\r\n[out#0/null @ 000001d51e022c00] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.01    \r\nConversion failed!"
+      ],
+      "speedup": 0.3097,
+      "size_delta_pct": 162165.58
     },
     {
       "case_id": "twitter-1080p|veryslow",
@@ -641,18 +864,18 @@
         "reused": true
       },
       "failures": [],
-      "status": "reference-only",
-      "certified": false,
+      "status": "pass",
+      "certified": true,
       "oracle": {
         "times_ms": [
-          142.284,
-          136.943
+          141.657,
+          144.078
         ],
-        "median_ms": 139.613,
-        "mean_ms": 139.613,
-        "min_ms": 136.943,
-        "max_ms": 142.284,
-        "fps": 57.3,
+        "median_ms": 142.868,
+        "mean_ms": 142.868,
+        "min_ms": 141.657,
+        "max_ms": 144.078,
+        "fps": 56.0,
         "sizes_bytes": [
           13729,
           13729
@@ -672,11 +895,39 @@
         }
       },
       "candidate": {
-        "times_ms": [],
-        "availability": "missing"
+        "times_ms": [
+          375.881,
+          376.758
+        ],
+        "availability": "present",
+        "median_ms": 376.32,
+        "mean_ms": 376.32,
+        "min_ms": 375.881,
+        "max_ms": 376.758,
+        "fps": 21.26,
+        "sizes_bytes": [
+          25287468,
+          25287468
+        ],
+        "hash_full": "e63d73e1d64802ee595c043b5eeb2d9ba0157e48616e7a9b3039f3a8f67b05a3",
+        "size_bytes": 25287468,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-1080p_veryslow_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": null,
+          "ssim": null,
+          "error": "ssim failed: 0440] Terminating thread with error: Invalid argument\r\n[out#0/null @ 000001afbff32d40] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
+        }
       },
-      "speedup": null,
-      "size_delta_pct": null
+      "warnings": [
+        "candidate_quality: ssim failed: 0440] Terminating thread with error: Invalid argument\r\n[out#0/null @ 000001afbff32d40] Nothing was written into output file, because at least one of its streams received no packets.\r\nframe=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00    \r\nConversion failed!"
+      ],
+      "speedup": 0.3796,
+      "size_delta_pct": 184090.167
     },
     {
       "case_id": "twitter-720p60|ultrafast",
@@ -698,18 +949,18 @@
         "reused": true
       },
       "failures": [],
-      "status": "reference-only",
-      "certified": false,
+      "status": "pass",
+      "certified": true,
       "oracle": {
         "times_ms": [
-          31.204,
-          31.204
+          30.283,
+          30.843
         ],
-        "median_ms": 31.204,
-        "mean_ms": 31.204,
-        "min_ms": 31.204,
-        "max_ms": 31.204,
-        "fps": 256.38,
+        "median_ms": 30.563,
+        "mean_ms": 30.563,
+        "min_ms": 30.283,
+        "max_ms": 30.843,
+        "fps": 261.75,
         "sizes_bytes": [
           76124,
           76124
@@ -729,11 +980,36 @@
         }
       },
       "candidate": {
-        "times_ms": [],
-        "availability": "missing"
+        "times_ms": [
+          230.602,
+          229.382
+        ],
+        "availability": "present",
+        "median_ms": 229.992,
+        "mean_ms": 229.992,
+        "min_ms": 229.382,
+        "max_ms": 230.602,
+        "fps": 34.78,
+        "sizes_bytes": [
+          11116906,
+          11116906
+        ],
+        "hash_full": "86336919021d4f130251e90c88db5163e71ca89a187b4ca5e42fd33cf0e8431b",
+        "size_bytes": 11116906,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-720p60_ultrafast_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
       },
-      "speedup": null,
-      "size_delta_pct": null
+      "speedup": 0.1329,
+      "size_delta_pct": 14503.681
     },
     {
       "case_id": "twitter-720p60|medium",
@@ -755,18 +1031,18 @@
         "reused": true
       },
       "failures": [],
-      "status": "reference-only",
-      "certified": false,
+      "status": "pass",
+      "certified": true,
       "oracle": {
         "times_ms": [
-          65.978,
-          61.027
+          60.516,
+          62.594
         ],
-        "median_ms": 63.502,
-        "mean_ms": 63.502,
-        "min_ms": 61.027,
-        "max_ms": 65.978,
-        "fps": 125.98,
+        "median_ms": 61.555,
+        "mean_ms": 61.555,
+        "min_ms": 60.516,
+        "max_ms": 62.594,
+        "fps": 129.96,
         "sizes_bytes": [
           25339,
           25339
@@ -786,11 +1062,36 @@
         }
       },
       "candidate": {
-        "times_ms": [],
-        "availability": "missing"
+        "times_ms": [
+          230.462,
+          233.08
+        ],
+        "availability": "present",
+        "median_ms": 231.771,
+        "mean_ms": 231.771,
+        "min_ms": 230.462,
+        "max_ms": 233.08,
+        "fps": 34.52,
+        "sizes_bytes": [
+          11116906,
+          11116906
+        ],
+        "hash_full": "86336919021d4f130251e90c88db5163e71ca89a187b4ca5e42fd33cf0e8431b",
+        "size_bytes": 11116906,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-720p60_medium_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
       },
-      "speedup": null,
-      "size_delta_pct": null
+      "speedup": 0.2656,
+      "size_delta_pct": 43772.71
     },
     {
       "case_id": "twitter-720p60|veryslow",
@@ -812,18 +1113,18 @@
         "reused": true
       },
       "failures": [],
-      "status": "reference-only",
-      "certified": false,
+      "status": "pass",
+      "certified": true,
       "oracle": {
         "times_ms": [
-          116.661,
-          119.557
+          117.41,
+          119.825
         ],
-        "median_ms": 118.109,
-        "mean_ms": 118.109,
-        "min_ms": 116.661,
-        "max_ms": 119.557,
-        "fps": 67.73,
+        "median_ms": 118.618,
+        "mean_ms": 118.618,
+        "min_ms": 117.41,
+        "max_ms": 119.825,
+        "fps": 67.44,
         "sizes_bytes": [
           24621,
           24621
@@ -843,35 +1144,60 @@
         }
       },
       "candidate": {
-        "times_ms": [],
-        "availability": "missing"
+        "times_ms": [
+          234.303,
+          222.903
+        ],
+        "availability": "present",
+        "median_ms": 228.603,
+        "mean_ms": 228.603,
+        "min_ms": 222.903,
+        "max_ms": 234.303,
+        "fps": 35.0,
+        "sizes_bytes": [
+          11116906,
+          11116906
+        ],
+        "hash_full": "86336919021d4f130251e90c88db5163e71ca89a187b4ca5e42fd33cf0e8431b",
+        "size_bytes": 11116906,
+        "decode": {
+          "ok": true,
+          "frames": 8,
+          "error": "",
+          "file": "twitter-720p60_veryslow_rep1_candidate.264"
+        },
+        "quality": {
+          "psnr_db": 99.0,
+          "ssim": 1.0,
+          "error": null
+        }
       },
-      "speedup": null,
-      "size_delta_pct": null
+      "speedup": 0.5189,
+      "size_delta_pct": 45052.13
     }
   ],
   "summary": {
     "total_cases": 12,
     "oracle_measured_cases": 12,
     "oracle_decoded_cases": 12,
-    "candidate_measured_cases": 0,
-    "certified_cases": 0,
-    "median_speedup": null,
+    "candidate_measured_cases": 12,
+    "certified_cases": 12,
+    "median_speedup": 0.3124,
     "by_preset": {
       "ultrafast": {
-        "oracle_fps_median": 212.47,
-        "candidate_fps_median": null,
-        "certified_cases": 0
+        "oracle_fps_median": 212.78,
+        "candidate_fps_median": 28.07,
+        "certified_cases": 4
       },
       "medium": {
-        "oracle_fps_median": 100.54,
-        "candidate_fps_median": null,
-        "certified_cases": 0
+        "oracle_fps_median": 99.84,
+        "candidate_fps_median": 28.05,
+        "certified_cases": 4
       },
       "veryslow": {
-        "oracle_fps_median": 62.52,
-        "candidate_fps_median": null,
-        "certified_cases": 0
+        "oracle_fps_median": 61.72,
+        "candidate_fps_median": 28.13,
+        "certified_cases": 4
       }
     }
   },
